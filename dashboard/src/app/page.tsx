@@ -2,6 +2,7 @@ import { Header } from "@/components/Header";
 import { StatsCard } from "@/components/StatsCard";
 import { MevLeaderboard } from "@/components/MevLeaderboard";
 import { LstComparison } from "@/components/LstComparison";
+import { StakePositions } from "@/components/StakePositions";
 import { getMevStats } from "@/lib/jito";
 import { getCurrentEpoch, getEpochInfo, getEpochProgress, getTimeUntilNextEpoch } from "@/lib/solana";
 import { getLstComparison } from "@/lib/lst";
@@ -80,6 +81,9 @@ export default async function Dashboard() {
             Make data-driven staking decisions.
           </p>
         </section>
+
+        {/* User's Stake Positions (shown when wallet connected) */}
+        <StakePositions />
 
         {/* Stats Grid */}
         <section id="dashboard" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
