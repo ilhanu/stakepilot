@@ -10,6 +10,7 @@
 
 import { getValidatorRewards, getBamValidators, ValidatorReward, BamValidator } from './jito';
 import { getStakeCommissions } from './solana';
+import { fetchAllValidatorsFromStakeWiz } from './validator-names';
 
 // Solana base staking APY (approximate, from inflation)
 const BASE_STAKING_APY = 7.0; // ~7% base inflation rewards
@@ -402,6 +403,23 @@ export async function generatePredictions(
 
   // Sort by NET TOTAL APY (what stakers actually earn) - descending
   predictions.sort((a, b) => b.netTotalApy - a.netTotalApy);
+
+  // Enrich with validator names/info from StakeWiz
+  try {
+    const validatorInfo = await fetchAllValidatorsFromStakeWiz();
+    for (const pred of predictions) {
+      const info = validatorInfo.get(pred.voteAccount);
+      if (info) {
+        // Use StakeWiz name if available (overrides BAM name which is often null)
+        if (info.name) {
+          pred.name = info.name;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Could not enrich with StakeWiz data:', e);
+    // Continue without enrichment - names will be null or from BAM
+  }
 
   const stats: PredictionStats = {
     currentEpoch,
