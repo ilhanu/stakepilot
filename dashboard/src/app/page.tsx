@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getLstComparison } from "@/lib/lst";
 import { formatNumber } from "@/lib/utils";
-import { Header } from "@/components/Header";
 
 export const revalidate = 60;
 
@@ -34,8 +33,7 @@ export default async function Home() {
       {/* Radial glow at top */}
       <div className="absolute inset-x-0 top-0 h-[500px] bg-radial pointer-events-none" />
       
-      {/* Header */}
-      <Header />
+      {/* Header is in layout */}
 
       <main className="relative">
         {/* Hero Section */}

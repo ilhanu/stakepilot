@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useState } from "react";
 import Link from "next/link";
 
@@ -130,7 +131,7 @@ export default function AlertsPage() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] bg-grid">
       <div className="absolute inset-x-0 top-0 h-[500px] bg-radial pointer-events-none" />
-      <Header />
+      
 
       <main className="relative pt-8 pb-16 px-6">
         <div className="container-lg">
@@ -401,23 +402,4 @@ export default function AlertsPage() {
   );
 }
 
-function Header() {
-  return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
-      <div className="container-lg">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">🚀</span>
-            <span className="text-lg font-semibold hidden sm:inline">StakePilot</span>
-          </Link>
-          <nav className="flex items-center gap-1">
-            <Link href="/compare" className="btn-ghost">Compare</Link>
-            <Link href="/discover" className="btn-ghost">Discover</Link>
-            <Link href="/autopilot" className="btn-ghost">Autopilot</Link>
-            <Link href="/alerts" className="btn-ghost text-[var(--accent)]">🔔 Alerts</Link>
-          </nav>
-        </div>
-      </div>
-    </header>
-  );
-}
+// Header imported from @/components/Header

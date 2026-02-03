@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { WalletProvider } from "@/components/WalletProvider";
+import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "StakePilot - MEV-Aware Staking Autopilot for Solana",
@@ -33,7 +34,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="antialiased">
-        <WalletProvider>{children}</WalletProvider>
+        <WalletProvider>
+          <Header />
+          <main>{children}</main>
+        </WalletProvider>
       </body>
     </html>
   );

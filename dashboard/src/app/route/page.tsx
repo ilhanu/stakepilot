@@ -113,7 +113,7 @@ export default function RoutePage() {
     <div className="min-h-screen bg-[var(--bg-primary)] bg-grid">
       <div className="absolute inset-x-0 top-0 h-[400px] bg-radial pointer-events-none" />
       
-      <Header />
+      
 
       <main className="relative">
         {/* Hero */}
@@ -512,23 +512,4 @@ export default function RoutePage() {
 }
 
 // Header Component
-function Header() {
-  return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
-      <div className="container-lg">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">🚀</span>
-            <span className="text-lg font-semibold hidden sm:inline">StakePilot</span>
-          </Link>
-          <nav className="flex items-center gap-1">
-            <Link href="/compare" className="btn-ghost">Compare</Link>
-            <Link href="/discover" className="btn-ghost">Discover</Link>
-            <Link href="/autopilot" className="btn-ghost">Autopilot</Link>
-            <Link href="/route" className="btn-ghost text-[var(--accent)]">Route</Link>
-          </nav>
-        </div>
-      </div>
-    </header>
-  );
-}
+// Header imported from @/components/Header
