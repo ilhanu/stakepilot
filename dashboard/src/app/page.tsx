@@ -164,11 +164,7 @@ export default async function Dashboard() {
           <StatsCard
             title="Best LST Yield"
             value={`${bestApy.toFixed(2)}%`}
-            subtitle={
-              <span>
-                via {bestProtocol?.token} <span className="text-gray-500">(Base: {bestProtocol?.baseAPY?.toFixed(1) || bestApy.toFixed(1)}%)</span>
-              </span>
-            }
+            subtitle={`via ${bestProtocol?.token} (Base: ${bestProtocol?.baseAPY?.toFixed(1) || bestApy.toFixed(1)}%)`}
             icon={<span className="text-xl">📈</span>}
           />
           <StatsCard

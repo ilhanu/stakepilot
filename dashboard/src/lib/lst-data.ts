@@ -80,12 +80,10 @@ async function fetchJitoData(): Promise<{
   try {
     const [statsRes, ratioRes] = await Promise.all([
       fetch('https://kobe.mainnet.jito.network/api/v1/stake_pool_stats', { 
-        next: { revalidate: 300 },
-        cache: 'no-store'
+        next: { revalidate: 300 }
       }),
       fetch('https://kobe.mainnet.jito.network/api/v1/jitosol_sol_ratio', { 
-        next: { revalidate: 300 },
-        cache: 'no-store'
+        next: { revalidate: 300 }
       }),
     ]);
 
@@ -164,12 +162,10 @@ async function fetchMarinadeData(): Promise<{
   try {
     const [apyRes, tlvRes] = await Promise.all([
       fetch('https://api.marinade.finance/msol/apy/30d', { 
-        next: { revalidate: 300 },
-        cache: 'no-store'
+        next: { revalidate: 300 }
       }),
       fetch('https://api.marinade.finance/tlv', { 
-        next: { revalidate: 300 },
-        cache: 'no-store'
+        next: { revalidate: 300 }
       }),
     ]);
 
@@ -247,8 +243,7 @@ async function fetchBlazeData(): Promise<{
 }> {
   try {
     const res = await fetch('https://stake.solblaze.org/api/v1/stats', { 
-      next: { revalidate: 300 },
-      cache: 'no-store'
+      next: { revalidate: 300 }
     });
     const data: BlazeStatsResponse = await res.json();
 
