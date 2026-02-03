@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLstComparison } from "@/lib/lst";
 import { formatNumber } from "@/lib/utils";
+import { Header } from "@/components/Header";
 
 export const revalidate = 60;
 
@@ -89,7 +90,7 @@ export default async function Home() {
         {/* Product Cards */}
         <section className="py-16 md:py-24 px-6">
           <div className="container-lg">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Compare Card */}
               <Link href="/compare" className="card card-interactive p-8 group">
                 <div className="mb-6">
@@ -156,6 +157,28 @@ export default async function Home() {
                   </svg>
                 </div>
               </Link>
+
+              {/* My Stakes Card */}
+              <Link href="/my-stakes" className="card card-interactive p-8 group">
+                <div className="mb-6">
+                  <span className="text-4xl">💼</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3 group-hover:text-[var(--accent)] transition-colors">
+                  My Stakes
+                </h3>
+                <p className="text-[var(--text-secondary)] text-sm mb-6 leading-relaxed">
+                  Connect wallet to see your positions and discover how much more you could earn.
+                </p>
+                <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-6">
+                  <span className="badge">Wallet Required</span>
+                </div>
+                <div className="flex items-center text-[var(--accent)] text-sm font-medium">
+                  View My Stakes
+                  <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
             </div>
           </div>
         </section>
@@ -210,32 +233,4 @@ export default async function Home() {
   );
 }
 
-// Header Component (inline for cleaner imports)
-function Header() {
-  return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
-      <div className="container-lg">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">🚀</span>
-            <span className="text-lg font-semibold hidden sm:inline">StakePilot</span>
-          </Link>
-
-          {/* Navigation */}
-          <nav className="flex items-center gap-1">
-            <Link href="/compare" className="btn-ghost">
-              Compare
-            </Link>
-            <Link href="/discover" className="btn-ghost">
-              Discover
-            </Link>
-            <Link href="/autopilot" className="btn-ghost text-[var(--accent)]">
-              🤖 Autopilot
-            </Link>
-          </nav>
-        </div>
-      </div>
-    </header>
-  );
-}
+// Header is now imported from @/components/Header
