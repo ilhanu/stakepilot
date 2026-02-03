@@ -12,6 +12,9 @@ interface Allocation {
   decentralizationScore: number;
   isRisingStar: boolean;
   reason: string;
+  totalStakeSol?: number;
+  stakeRank?: string;
+  mevDilution?: string;
 }
 
 interface RouteResult {
@@ -25,6 +28,29 @@ interface RouteResult {
   warnings: string[];
 }
 
+// Advanced filter options
+interface AdvancedFilters {
+  minUptime: number;      // Minimum uptime % (default 95)
+  minAge: number;         // Minimum days online (default 30)
+  maxCommission: number;  // Max stake commission % (default 10)
+  location: string;       // Country filter ("" = all)
+  excludeCountries: string[]; // Countries to exclude
+  requireJito: boolean;   // Must run Jito
+}
+
+const COUNTRY_OPTIONS = [
+  { code: "", label: "🌍 All Locations" },
+  { code: "US", label: "🇺🇸 United States" },
+  { code: "DE", label: "🇩🇪 Germany" },
+  { code: "NL", label: "🇳🇱 Netherlands" },
+  { code: "FI", label: "🇫🇮 Finland" },
+  { code: "GB", label: "🇬🇧 United Kingdom" },
+  { code: "JP", label: "🇯🇵 Japan" },
+  { code: "SG", label: "🇸🇬 Singapore" },
+  { code: "CA", label: "🇨🇦 Canada" },
+  { code: "FR", label: "🇫🇷 France" },
+];
+
 export default function RoutePage() {
   const [amount, setAmount] = useState(100);
   const [riskTolerance, setRiskTolerance] = useState<"low" | "medium" | "high">("medium");
@@ -32,6 +58,17 @@ export default function RoutePage() {
   const [result, setResult] = useState<RouteResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Advanced filters
+  const [filters, setFilters] = useState<AdvancedFilters>({
+    minUptime: 95,
+    minAge: 30,
+    maxCommission: 10,
+    location: "",
+    excludeCountries: [],
+    requireJito: false,
+  });
 
   async function calculateRoute() {
     setLoading(true);
@@ -46,6 +83,8 @@ export default function RoutePage() {
           riskTolerance,
           decentralizationPreference: decentralization,
           maxValidators: 5,
+          // Pass advanced filters
+          filters: showAdvanced ? filters : undefined,
         }),
       });
 
@@ -58,6 +97,16 @@ export default function RoutePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Generate native staking URL for Phantom
+  function getPhantomStakeUrl(voteAccount: string) {
+    return `https://phantom.app/ul/stake/${voteAccount}`;
+  }
+
+  // Generate Solflare stake URL
+  function getSolflareStakeUrl(voteAccount: string) {
+    return `https://solflare.com/stake/${voteAccount}`;
   }
 
   return (
@@ -80,7 +129,7 @@ export default function RoutePage() {
               Route My Stake
             </h1>
             <p className="text-lg text-[var(--text-secondary)] max-w-xl mx-auto">
-              Smart allocation based on your goals. Tell us what matters to you.
+              Smart native staking allocation. Get recommendations, then stake directly with Phantom or Solflare.
             </p>
           </div>
         </section>
@@ -122,9 +171,9 @@ export default function RoutePage() {
                 </label>
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { key: "low", label: "Conservative", desc: "Stable yields" },
-                    { key: "medium", label: "Balanced", desc: "Mix of stable & growth" },
-                    { key: "high", label: "Aggressive", desc: "Chase alpha" },
+                    { key: "low", label: "Conservative", desc: "Stable yields", emoji: "🛡️" },
+                    { key: "medium", label: "Balanced", desc: "Mix of stable & growth", emoji: "⚖️" },
+                    { key: "high", label: "Aggressive", desc: "Chase alpha", emoji: "🚀" },
                   ].map((opt) => (
                     <button
                       key={opt.key}
@@ -135,6 +184,7 @@ export default function RoutePage() {
                           : "bg-[var(--bg-primary)] border-[var(--border)] hover:border-[var(--border-hover)]"
                       }`}
                     >
+                      <div className="text-2xl mb-2">{opt.emoji}</div>
                       <div className={`font-semibold ${riskTolerance === opt.key ? "text-[var(--accent)]" : ""}`}>
                         {opt.label}
                       </div>
@@ -151,9 +201,9 @@ export default function RoutePage() {
                 </label>
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { key: "none", label: "None", desc: "Pure yield focus" },
-                    { key: "moderate", label: "Moderate", desc: "Some small validators" },
-                    { key: "strong", label: "Strong", desc: "Prioritize underdogs" },
+                    { key: "none", label: "None", desc: "Pure yield focus", emoji: "💰" },
+                    { key: "moderate", label: "Moderate", desc: "Some small validators", emoji: "🌱" },
+                    { key: "strong", label: "Strong", desc: "Prioritize underdogs", emoji: "🌍" },
                   ].map((opt) => (
                     <button
                       key={opt.key}
@@ -164,6 +214,7 @@ export default function RoutePage() {
                           : "bg-[var(--bg-primary)] border-[var(--border)] hover:border-[var(--border-hover)]"
                       }`}
                     >
+                      <div className="text-2xl mb-2">{opt.emoji}</div>
                       <div className={`font-semibold ${decentralization === opt.key ? "text-purple-400" : ""}`}>
                         {opt.label}
                       </div>
@@ -172,6 +223,124 @@ export default function RoutePage() {
                   ))}
                 </div>
               </div>
+
+              {/* Advanced Filters Toggle */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+                >
+                  <svg 
+                    className={`w-4 h-4 transition-transform ${showAdvanced ? "rotate-90" : ""}`} 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Advanced Filters
+                </button>
+              </div>
+
+              {/* Advanced Filters Panel */}
+              {showAdvanced && (
+                <div className="mb-10 p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] space-y-6 animate-fade-in">
+                  {/* Uptime */}
+                  <div>
+                    <label className="flex items-center justify-between text-sm mb-2">
+                      <span>⏱️ Minimum Uptime</span>
+                      <span className="font-mono text-[var(--accent)]">{filters.minUptime}%</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="90"
+                      max="99.9"
+                      step="0.1"
+                      value={filters.minUptime}
+                      onChange={(e) => setFilters({ ...filters, minUptime: parseFloat(e.target.value) })}
+                      className="w-full h-2 rounded-lg accent-[var(--accent)]"
+                    />
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      Exclude validators with poor uptime/skipped slots
+                    </p>
+                  </div>
+
+                  {/* Age */}
+                  <div>
+                    <label className="flex items-center justify-between text-sm mb-2">
+                      <span>📅 Minimum Age</span>
+                      <span className="font-mono text-[var(--accent)]">{filters.minAge} days</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="365"
+                      step="7"
+                      value={filters.minAge}
+                      onChange={(e) => setFilters({ ...filters, minAge: parseInt(e.target.value) })}
+                      className="w-full h-2 rounded-lg accent-[var(--accent)]"
+                    />
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      How long the validator has been operating
+                    </p>
+                  </div>
+
+                  {/* Max Commission */}
+                  <div>
+                    <label className="flex items-center justify-between text-sm mb-2">
+                      <span>💸 Max Commission</span>
+                      <span className="font-mono text-[var(--accent)]">{filters.maxCommission}%</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="20"
+                      step="1"
+                      value={filters.maxCommission}
+                      onChange={(e) => setFilters({ ...filters, maxCommission: parseInt(e.target.value) })}
+                      className="w-full h-2 rounded-lg accent-[var(--accent)]"
+                    />
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      Maximum stake commission (typical: 5-10%)
+                    </p>
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <label className="block text-sm mb-2">
+                      📍 Validator Location
+                    </label>
+                    <select
+                      value={filters.location}
+                      onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                      className="w-full p-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] text-sm"
+                    >
+                      {COUNTRY_OPTIONS.map((c) => (
+                        <option key={c.code} value={c.code}>{c.label}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      Filter by datacenter country (supports decentralization)
+                    </p>
+                  </div>
+
+                  {/* Jito Requirement */}
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.requireJito}
+                      onChange={(e) => setFilters({ ...filters, requireJito: e.target.checked })}
+                      className="w-5 h-5 accent-[var(--accent)]"
+                    />
+                    <div>
+                      <span className="text-sm font-medium">🔥 Require Jito MEV</span>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Only validators running Jito client (for MEV rewards)
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               {/* Calculate Button */}
               <button
@@ -234,33 +403,75 @@ export default function RoutePage() {
                   </div>
                 </div>
 
-                {/* Allocations */}
+                {/* Allocations with Native Staking */}
                 <div className="space-y-4 mb-8">
                   {result.allocations.map((alloc) => (
                     <div key={alloc.voteAccount} className="card p-5">
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-start justify-between gap-4 mb-4">
                         <div className="flex items-center gap-4 min-w-0">
-                          <div className="w-14 h-14 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center font-bold text-[var(--accent)] text-lg">
+                          <div className="w-14 h-14 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center font-bold text-[var(--accent)] text-lg shrink-0">
                             {alloc.allocationPercent.toFixed(0)}%
                           </div>
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold truncate text-lg">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold text-lg">
                                 {alloc.name || "Validator"}
                               </h3>
                               {alloc.isRisingStar && (
-                                <span className="badge">🌟 Rising</span>
+                                <span className="badge bg-amber-500/20 text-amber-400 border-amber-500/30">🌟 Rising</span>
+                              )}
+                              {alloc.stakeRank && (
+                                <span className={`badge ${
+                                  alloc.stakeRank === "small" ? "bg-green-500/20 text-green-400" :
+                                  alloc.stakeRank === "medium" ? "bg-blue-500/20 text-blue-400" :
+                                  alloc.stakeRank === "large" ? "bg-orange-500/20 text-orange-400" :
+                                  "bg-red-500/20 text-red-400"
+                                }`}>
+                                  {alloc.stakeRank === "small" ? "🎯 Small" :
+                                   alloc.stakeRank === "medium" ? "📊 Medium" :
+                                   alloc.stakeRank === "large" ? "🏢 Large" : "🐋 Whale"}
+                                </span>
                               )}
                             </div>
                             <p className="text-sm text-[var(--text-muted)]">{alloc.reason}</p>
+                            {alloc.mevDilution && (
+                              <p className="text-xs text-[var(--text-muted)] mt-1 italic">
+                                💎 {alloc.mevDilution}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
                           <div className="text-xl font-bold">{alloc.allocationSol.toFixed(1)} SOL</div>
-                          <div className="text-sm text-[var(--text-muted)]">
-                            ~{alloc.expectedYieldPercent.toFixed(2)}% yield
+                          <div className="text-sm text-[var(--accent)] font-medium">
+                            ~{alloc.expectedYieldPercent.toFixed(2)}% APY
                           </div>
+                          {alloc.totalStakeSol && (
+                            <div className="text-xs text-[var(--text-muted)]">
+                              {(alloc.totalStakeSol / 1000).toFixed(0)}k SOL stake
+                            </div>
+                          )}
                         </div>
+                      </div>
+                      
+                      {/* Native Staking Buttons */}
+                      <div className="flex gap-2 pt-3 border-t border-[var(--border)]">
+                        <a
+                          href={getPhantomStakeUrl(alloc.voteAccount)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 px-4 py-2 text-center text-sm rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
+                        >
+                          👻 Stake with Phantom
+                        </a>
+                        <a
+                          href={getSolflareStakeUrl(alloc.voteAccount)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 px-4 py-2 text-center text-sm rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors"
+                        >
+                          🔥 Stake with Solflare
+                        </a>
                       </div>
                     </div>
                   ))}
@@ -275,29 +486,21 @@ export default function RoutePage() {
                   </div>
                 )}
 
-                {/* Action */}
-                <div className="text-center">
-                  <p className="text-[var(--text-muted)] mb-6">
-                    Execute this allocation via your preferred staking interface.
+                {/* Info Box */}
+                <div className="card p-6 bg-[var(--bg-secondary)]">
+                  <h3 className="font-semibold mb-3">📚 About Native Staking</h3>
+                  <ul className="text-sm text-[var(--text-secondary)] space-y-2">
+                    <li>✅ <strong>Direct staking</strong> — No LST smart contract risk</li>
+                    <li>✅ <strong>Full MEV rewards</strong> — Get 100% of MEV the validator shares</li>
+                    <li>✅ <strong>Support validators</strong> — Your stake directly helps decentralization</li>
+                    <li>⏳ <strong>Warmup period</strong> — Stakes activate next epoch (~2 days)</li>
+                    <li>⏳ <strong>Cooldown</strong> — Unstaking takes ~2-3 days</li>
+                  </ul>
+                  <p className="text-xs text-[var(--text-muted)] mt-4">
+                    Want instant liquidity instead? Consider LSTs like 
+                    <a href="https://jito.network/staking" target="_blank" className="text-[var(--accent)] hover:underline ml-1">jitoSOL</a> or 
+                    <a href="https://marinade.finance" target="_blank" className="text-[var(--accent)] hover:underline ml-1">mSOL</a>.
                   </p>
-                  <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <a
-                      href="https://jito.network/staking"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-primary"
-                    >
-                      Stake on Jito
-                    </a>
-                    <a
-                      href="https://marinade.finance/app/stake"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-secondary"
-                    >
-                      Stake on Marinade
-                    </a>
-                  </div>
                 </div>
               </section>
             )}
@@ -319,15 +522,10 @@ function Header() {
             <span className="text-lg font-semibold hidden sm:inline">StakePilot</span>
           </Link>
           <nav className="flex items-center gap-1">
-            <Link href="/compare" className="btn-ghost">
-              Compare
-            </Link>
-            <Link href="/discover" className="btn-ghost">
-              Discover
-            </Link>
-            <Link href="/route" className="btn-ghost text-[var(--text-primary)]">
-              Route
-            </Link>
+            <Link href="/compare" className="btn-ghost">Compare</Link>
+            <Link href="/discover" className="btn-ghost">Discover</Link>
+            <Link href="/autopilot" className="btn-ghost">Autopilot</Link>
+            <Link href="/route" className="btn-ghost text-[var(--accent)]">Route</Link>
           </nav>
         </div>
       </div>
