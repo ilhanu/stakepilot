@@ -3,6 +3,12 @@ import { StatsCard } from "@/components/StatsCard";
 import { MevLeaderboard } from "@/components/MevLeaderboard";
 import { LstComparison } from "@/components/LstComparison";
 import { StakePositions } from "@/components/StakePositions";
+import { YieldSimulator } from "@/components/YieldSimulator";
+import { PortfolioTracker } from "@/components/PortfolioTracker";
+import { RebalancePreview } from "@/components/RebalancePreview";
+import { MevAlerts } from "@/components/MevAlerts";
+import { ValidatorInsights } from "@/components/ValidatorInsights";
+import { generateMockInsightsData } from "@/lib/validator-insights";
 import { getMevStats } from "@/lib/jito";
 import { getCurrentEpoch, getEpochInfo, getEpochProgress, getTimeUntilNextEpoch } from "@/lib/solana";
 import { getLstComparison } from "@/lib/lst";
@@ -47,12 +53,16 @@ async function getDashboardData() {
       };
     }
 
+    // Generate validator insights data
+    const validatorInsights = generateMockInsightsData(epochInfo.epoch);
+
     return {
       epochInfo,
       mevStats,
       lstComparison,
       epochProgress: getEpochProgress(epochInfo),
       timeToNextEpoch: getTimeUntilNextEpoch(epochInfo),
+      validatorInsights,
     };
   } catch (error) {
     console.error("Failed to fetch dashboard data:", error);
@@ -62,9 +72,11 @@ async function getDashboardData() {
 
 export default async function Dashboard() {
   const data = await getDashboardData();
-  const { epochInfo, mevStats, lstComparison, epochProgress, timeToNextEpoch } = data;
+  const { epochInfo, mevStats, lstComparison, epochProgress, timeToNextEpoch, validatorInsights } = data;
 
   const bestApy = Math.max(...lstComparison.protocols.map((p) => p.apy));
+  const jitoApy = lstComparison.protocols.find(p => p.id === "jito")?.apy || 8.0;
+  const msolApy = lstComparison.protocols.find(p => p.id === "marinade")?.apy || 7.0;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -82,8 +94,8 @@ export default async function Dashboard() {
           </p>
         </section>
 
-        {/* User's Stake Positions (shown when wallet connected) */}
-        <StakePositions />
+        {/* Portfolio Tracker (when wallet connected) */}
+        <PortfolioTracker />
 
         {/* Stats Grid */}
         <section id="dashboard" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -114,12 +126,42 @@ export default async function Dashboard() {
           />
         </section>
 
-        {/* MEV Leaderboard */}
-        <section id="validators" className="mb-8">
-          <MevLeaderboard
-            validators={mevStats.topValidators}
-            epoch={mevStats.epoch}
+        {/* MEV Alerts */}
+        <section className="mb-8">
+          <MevAlerts />
+        </section>
+
+        {/* Yield Simulator */}
+        <section id="simulator" className="mb-8">
+          <YieldSimulator
+            currentJitoApy={jitoApy}
+            currentMsolApy={msolApy}
+            avgMevPerEpoch={mevStats.avgMevPerValidator / 1e9}
           />
+        </section>
+
+        {/* Auto-Rebalance Preview */}
+        <section id="rebalance" className="mb-8">
+          <RebalancePreview />
+        </section>
+
+        {/* Two Column Layout: Leaderboard & Insights */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* MEV Leaderboard */}
+          <div id="validators">
+            <MevLeaderboard
+              validators={mevStats.topValidators}
+              epoch={mevStats.epoch}
+            />
+          </div>
+
+          {/* Validator Insights */}
+          <div>
+            <ValidatorInsights
+              validators={validatorInsights}
+              currentEpoch={epochInfo.epoch}
+            />
+          </div>
         </section>
 
         {/* LST Comparison */}
@@ -143,29 +185,81 @@ export default async function Dashboard() {
             </p>
           </div>
           <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-            <div className="text-3xl mb-4">🔄</div>
-            <h3 className="text-xl font-semibold mb-2">Auto-Rebalancing</h3>
+            <div className="text-3xl mb-4">🧮</div>
+            <h3 className="text-xl font-semibold mb-2">Yield Simulator</h3>
             <p className="text-gray-400 text-sm">
-              Coming soon: Automatic stake rebalancing to chase the highest yields
-              across validators and liquid staking protocols.
+              Interactive calculator to compare projected earnings across staking strategies.
+              Factor in MEV, commission, and compounding.
             </p>
           </div>
           <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-            <div className="text-3xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold mb-2">Historical Analysis</h3>
+            <div className="text-3xl mb-4">⚖️</div>
+            <h3 className="text-xl font-semibold mb-2">Auto-Rebalance</h3>
             <p className="text-gray-400 text-sm">
-              Track MEV trends over time. Identify consistently high-performing
-              validators before the crowd.
+              Preview optimal allocation strategies and see potential yield improvements.
+              Execution coming in Phase 2.
+            </p>
+          </div>
+        </section>
+
+        {/* Additional Features Row */}
+        <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+          <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border border-blue-800/50 rounded-xl p-4 text-center">
+            <div className="text-2xl mb-2">🔔</div>
+            <h4 className="font-semibold mb-1">Smart Alerts</h4>
+            <p className="text-xs text-gray-400">
+              Get notified about yield opportunities and validator changes
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-green-900/30 to-blue-900/30 border border-green-800/50 rounded-xl p-4 text-center">
+            <div className="text-2xl mb-2">💼</div>
+            <h4 className="font-semibold mb-1">Portfolio Tracking</h4>
+            <p className="text-xs text-gray-400">
+              Full overview of your staking positions and projected yields
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border border-yellow-800/50 rounded-xl p-4 text-center">
+            <div className="text-2xl mb-2">🌟</div>
+            <h4 className="font-semibold mb-1">Rising Stars</h4>
+            <p className="text-xs text-gray-400">
+              Discover validators with improving MEV performance
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-800/50 rounded-xl p-4 text-center">
+            <div className="text-2xl mb-2">📊</div>
+            <h4 className="font-semibold mb-1">Historical Data</h4>
+            <p className="text-xs text-gray-400">
+              Track MEV trends over time across epochs
             </p>
           </div>
         </section>
 
         {/* Footer */}
         <footer className="text-center text-gray-500 text-sm py-8 border-t border-gray-800">
+          <p className="text-lg font-semibold text-white mb-2">🚀 StakePilot</p>
           <p>Built for the Colosseum Agent Hackathon 🏆</p>
           <p className="mt-2">
             Powered by Jito MEV data • Solana • Next.js
           </p>
+          <div className="mt-4 flex justify-center gap-4">
+            <a
+              href="https://github.com/ilhanu/stakepilot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              GitHub
+            </a>
+            <span className="text-gray-700">|</span>
+            <a
+              href="https://stakepilot-olig.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Live Demo
+            </a>
+          </div>
         </footer>
       </main>
     </div>
