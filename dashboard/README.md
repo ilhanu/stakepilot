@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StakePilot Dashboard
+
+The web dashboard for StakePilot - MEV-Aware Staking Autopilot for Solana.
+
+## Features
+
+- 🏆 **MEV Leaderboard** - Real-time ranking of validators by MEV earnings
+- 📊 **Validator Detail Pages** - Historical MEV performance with charts
+- 🔄 **LST Comparison** - Compare jitoSOL, mSOL, bSOL yields
+- 👛 **Wallet Connect** - View your stake positions with Phantom, Solflare, Coinbase
+- 🌙 **Dark Mode UI** - Beautiful, modern interface
+
+## Data Sources
+
+- **Jito Kobe API** - MEV rewards, BAM validators, stake pool stats
+- **Solana RPC** - Epoch info, stake accounts, token balances
+- **Marinade API** - mSOL TVL and APY
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the dashboard.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` to `.env.local`:
 
-## Learn More
+```bash
+cp .env.example .env.local
+```
 
-To learn more about Next.js, take a look at the following resources:
+For better performance, use a dedicated RPC endpoint (Helius, QuickNode, etc).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API Routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `GET /api/validators` - Scored validators with MEV metrics
+- `GET /api/mev?epoch=N` - MEV stats and history
+- `GET /api/lst` - Liquid staking token comparison
 
-## Deploy on Vercel
+## Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Vercel (Recommended)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ilhanu/stakepilot/tree/main/dashboard)
+
+Or via CLI:
+```bash
+npm i -g vercel
+vercel --prod
+```
+
+### Netlify
+
+```bash
+npm i -g netlify-cli
+netlify deploy --prod --dir=.next
+```
+
+## Architecture
+
+```
+src/
+├── app/
+│   ├── api/           # API routes
+│   │   ├── validators/
+│   │   ├── mev/
+│   │   └── lst/
+│   ├── validator/     # Validator detail pages
+│   └── page.tsx       # Main dashboard
+├── components/
+│   ├── Header.tsx
+│   ├── MevLeaderboard.tsx
+│   ├── LstComparison.tsx
+│   ├── StakePositions.tsx
+│   ├── WalletProvider.tsx
+│   └── ui/            # Reusable UI components
+└── lib/
+    ├── jito.ts        # Jito Kobe API client
+    ├── lst.ts         # LST comparison logic
+    ├── solana.ts      # Solana RPC utilities
+    └── utils.ts       # Helper functions
+```
+
+## Built For
+
+🏆 [Colosseum Agent Hackathon](https://agents.colosseum.com)
+
+## License
+
+MIT
