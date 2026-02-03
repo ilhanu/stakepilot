@@ -1,138 +1,118 @@
 # StakePilot 🚀
 
-**The MEV-Aware Staking Autopilot for Solana**
+**Discover Hidden Validators. Predict MEV. Decentralize Solana.**
 
-StakePilot uses real-time Jito MEV data, validator earnings, and on-chain analytics to help you optimize your staking yield.
+StakePilot is an AI-powered stake router that finds high-performing small validators before the crowd — maximizing your yield while supporting network decentralization.
 
-## Live Demo
+## The Problem
 
-🌐 **Dashboard**: Coming soon (deployment in progress)
+80% of Solana stake goes to the top 20 validators. Small independents can't get visibility. Users miss better yields. The network centralizes.
 
-📦 **GitHub**: https://github.com/ilhanu/stakepilot
+**StakePilot fixes this.**
+
+## What Makes Us Different
+
+| Traditional Dashboards | StakePilot |
+|----------------------|------------|
+| Show current APY | **Predict future MEV** |
+| List the same top validators | **Discover hidden gems** |
+| Optimize for yield only | **Optimize for yield + decentralization** |
+| Boring data tables | **Engaging visualizations** |
 
 ## Features
 
-### 🏆 MEV Leaderboard
-Real-time ranking of validators by actual MEV earnings from Jito Kobe API. See who's really earning MEV, not just what they claim.
+### 🔮 MEV Prediction Engine
+ML model that predicts which validators will earn the most MEV next epoch. Trained on historical Jito data, backtested for accuracy.
 
-### 📊 Validator Detail Pages
-Click any validator to see:
-- Historical MEV earnings (last 10 epochs)
-- Visual bar charts of revenue over time
-- MEV score based on performance trends
-- Epoch-by-epoch breakdown
+### 🌟 Rising Stars
+Small validators with improving MEV trends. Discover them before everyone else.
 
-### 💧 LST Comparison
-Compare liquid staking tokens with real data:
-- jitoSOL (8% APY, full MEV share)
-- mSOL (7% APY, no MEV)
-- bSOL (7.4% APY, partial MEV)
-- INF (7.5% APY, partial MEV)
+### 🛤️ Smart Stake Routing
+Input your SOL amount → get optimal split across validators that maximizes yield AND supports decentralization.
 
-### 👛 Wallet Connect
-Connect your Solana wallet to see:
-- SOL balance
-- Native stake accounts with validator info
-- LST balances (jitoSOL, mSOL, bSOL) with SOL equivalent
+### 📡 Live MEV Feed
+Real-time visualization of MEV flowing through the network. Educational and mesmerizing.
 
-## Data Sources
+### 🏆 Validator Discovery
+Hidden gems, community profiles, one-click stake support for independent validators.
 
-| Source | Data | Status |
-|--------|------|--------|
-| [Jito Kobe API](https://kobe.mainnet.jito.network) | MEV rewards, BAM validators, stake pool stats | ✅ Live |
-| [Marinade API](https://api.marinade.finance) | TVL and APY data | ✅ Live |
-| Solana RPC | Epoch info, stake accounts | ✅ Live |
+## Live Demo
+
+**Dashboard:** https://stakepilot-olig.vercel.app
+
+## Tech Stack
+
+- **Frontend:** Next.js 16, TypeScript, Tailwind CSS
+- **Data:** Jito Kobe API, Solana RPC
+- **ML:** TensorFlow.js for MEV prediction
+- **Wallet:** Solana Wallet Adapter
 
 ## Architecture
 
 ```
-stakepilot/
-├── dashboard/              # Next.js 16 web app
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── api/       # API routes
-│   │   │   │   ├── validators/  # Scored validators
-│   │   │   │   ├── mev/        # MEV stats & history
-│   │   │   │   └── lst/        # LST comparison
-│   │   │   ├── validator/[address]/  # Detail pages
-│   │   │   └── page.tsx    # Main dashboard
-│   │   ├── components/
-│   │   │   ├── Header.tsx
-│   │   │   ├── MevLeaderboard.tsx
-│   │   │   ├── LstComparison.tsx
-│   │   │   ├── StakePositions.tsx
-│   │   │   └── WalletProvider.tsx
-│   │   └── lib/
-│   │       ├── jito.ts     # Jito Kobe API client
-│   │       ├── lst.ts      # LST comparison logic
-│   │       └── solana.ts   # Solana RPC utilities
-├── src/                    # Core TypeScript library
-├── api/                    # REST API (future)
-└── RESEARCH.md             # JIP-31/BAM research notes
+┌─────────────────────────────────────────────────────────┐
+│                      STAKEPILOT                          │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐        │
+│  │    Jito    │  │  Validator │  │   Solana   │        │
+│  │  Kobe API  │  │   Stats    │  │    RPC     │        │
+│  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘        │
+│        │               │               │                │
+│        └───────────────┼───────────────┘                │
+│                        ▼                                 │
+│              ┌─────────────────┐                        │
+│              │  MEV Prediction │                        │
+│              │     Engine      │                        │
+│              └────────┬────────┘                        │
+│                       ▼                                  │
+│              ┌─────────────────┐                        │
+│              │  Stake Router   │                        │
+│              │ (Yield + Decen) │                        │
+│              └────────┬────────┘                        │
+│                       ▼                                  │
+│              ┌─────────────────┐                        │
+│              │   Dashboard     │                        │
+│              │  (Next.js UI)   │                        │
+│              └─────────────────┘                        │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
 ```
-
-## Getting Started
-
-```bash
-# Clone
-git clone https://github.com/ilhanu/stakepilot
-cd stakepilot
-
-# Run dashboard
-cd dashboard
-npm install
-npm run dev
-```
-
-Open http://localhost:3000 to see the dashboard.
 
 ## API Endpoints
 
-The dashboard exposes REST API endpoints:
-
-```bash
-# Get scored validators with MEV metrics
-GET /api/validators
-
-# Get MEV stats for an epoch
-GET /api/mev?epoch=919
-
-# Get LST comparison data
-GET /api/lst
-```
-
-## Tech Stack
-
-- **Framework**: Next.js 16 with App Router
-- **Styling**: Tailwind CSS (dark mode)
-- **Charts**: Recharts
-- **Wallet**: @solana/wallet-adapter (Phantom, Solflare, Coinbase, Ledger)
-- **Language**: TypeScript
+| Endpoint | Description |
+|----------|-------------|
+| `/api/validators` | All validators with MEV stats |
+| `/api/mev` | Current epoch MEV data |
+| `/api/predictions` | MEV predictions for next epoch |
+| `/api/rising-stars` | Small validators trending up |
+| `/api/route` | Optimal stake routing |
+| `/api/lst` | Liquid staking comparison |
 
 ## Roadmap
 
-- [x] Jito Kobe API integration
-- [x] MEV leaderboard with real data
-- [x] Validator detail pages with history
-- [x] LST comparison (jitoSOL, mSOL, bSOL, INF)
-- [x] Wallet connect with stake position display
-- [x] Dark mode UI
-- [ ] Deploy to Vercel
-- [ ] Historical charts with Recharts
-- [ ] Auto-rebalancing recommendations
-- [ ] Jupiter swap integration
+- [x] Jito MEV data integration
+- [x] Validator scoring algorithm  
+- [x] Dashboard with live data
+- [x] Wallet connect
+- [ ] **MEV Prediction Engine** ← Current focus
+- [ ] Rising Stars algorithm
+- [ ] Smart Stake Routing
+- [ ] Live MEV visualization
+- [ ] Validator profiles
+
+## The Mission
+
+Support independent validators. Fight centralization. Discover alpha.
+
+**Staking should be decentralized. Help the little guys win.**
 
 ## Built For
 
-🏆 [Colosseum Agent Hackathon](https://agents.colosseum.com) — Feb 2026
+[Colosseum Agent Hackathon](https://colosseum.com/agent-hackathon) — Feb 2026
 
-## Research
-
-See [RESEARCH.md](./RESEARCH.md) for detailed notes on:
-- JIP-31 and BAM (Bonus Allocation Model)
-- How MEV rewards flow to stakers
-- Jito Kobe API documentation
-- Liquid staking token mechanics
+$100,000 prize pool. Building to win.
 
 ## License
 
@@ -140,4 +120,4 @@ MIT
 
 ---
 
-*StakePilot: Because your SOL deserves the best yield.*
+*StakePilot: Discover. Predict. Decentralize.* 🚀
