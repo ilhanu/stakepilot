@@ -3,14 +3,22 @@
  * 
  * Predicts future MEV performance for validators based on historical trends.
  * Identifies "Rising Stars" - small validators with strong upward momentum.
+ * 
+ * CRITICAL: All yields are calculated as NET TO STAKER (after commissions).
+ * This is what stakers actually earn, not what validators earn.
  */
 
 import { getValidatorRewards, getBamValidators, ValidatorReward, BamValidator } from './jito';
+import { getStakeCommissions } from './solana';
+
+// Solana base staking APY (approximate, from inflation)
+const BASE_STAKING_APY = 7.0; // ~7% base inflation rewards
 
 export interface ValidatorHistory {
   voteAccount: string;
   name: string | null;
   activeStake: number;
+  mevCommission: number; // 0-10000 (basis points) from Jito
   history: {
     epoch: number;
     mevRevenue: number;
@@ -35,6 +43,21 @@ export interface MevPrediction {
   mevEfficiency: number; // MEV per stake ratio
   epochsAnalyzed: number;
   history: { epoch: number; mevSol: number }[];
+  
+  // COMMISSION DATA (NEW)
+  stakeCommission: number;      // 0-100 (%) on base staking rewards
+  mevCommission: number;        // 0-10000 (bps) on MEV rewards
+  
+  // STAKER NET YIELDS (NEW - what stakers actually earn)
+  grossBaseApy: number;         // ~7% base inflation
+  grossMevApy: number;          // Calculated from MEV revenue
+  netBaseApy: number;           // grossBase * (1 - stakeCommission/100)
+  netMevApy: number;            // grossMev * (1 - mevCommission/10000)
+  netTotalApy: number;          // netBase + netMev
+  
+  // VIABILITY FLAGS (NEW)
+  isViable: boolean;            // false if commission too high for stakers
+  commissionWarning: string | null; // "High commission (50%)" etc.
 }
 
 export interface PredictionStats {
@@ -90,17 +113,20 @@ export async function getHistoricalMevData(
             voteAccount: reward.vote_account,
             name: bam?.name || null,
             activeStake: bam?.active_stake || 0,
+            mevCommission: reward.mev_commission, // MEV commission in bps (0-10000)
             history: [],
           });
         }
         
         const validator = validatorMap.get(reward.vote_account)!;
-        // Update stake to most recent
+        // Update to most recent data
         const bam = bamLookup.get(reward.vote_account);
         if (bam && bam.active_stake > 0) {
           validator.activeStake = bam.active_stake;
           validator.name = bam.name || validator.name;
         }
+        // Update MEV commission to most recent
+        validator.mevCommission = reward.mev_commission;
         
         validator.history.push({
           epoch,
@@ -185,12 +211,49 @@ function predictMev(history: number[], trend: { slope: number; r2: number }): nu
   return Math.max(0, basePredict + trendAdjust);
 }
 
+/**
+ * Calculate commission warning message
+ */
+function getCommissionWarning(stakeCommission: number, mevCommission: number): string | null {
+  // mevCommission is in basis points (0-10000)
+  const mevCommissionPercent = mevCommission / 100;
+  
+  if (mevCommission >= 10000) {
+    return "🚫 100% MEV commission - stakers get ZERO MEV rewards";
+  }
+  if (stakeCommission >= 100) {
+    return "🚫 100% stake commission - stakers get ZERO base rewards";
+  }
+  if (mevCommission >= 5000 || stakeCommission >= 50) {
+    return `⚠️ High commission (${stakeCommission}% stake, ${mevCommissionPercent.toFixed(0)}% MEV)`;
+  }
+  if (mevCommission >= 2000 || stakeCommission >= 20) {
+    return `⚡ Elevated commission (${stakeCommission}% stake, ${mevCommissionPercent.toFixed(0)}% MEV)`;
+  }
+  return null;
+}
+
+/**
+ * Calculate gross MEV APY from MEV revenue
+ * Assumes ~73 epochs per year, converts MEV SOL to APY based on stake
+ */
+function calculateMevApy(mevSolPerEpoch: number, stakeSol: number): number {
+  if (stakeSol <= 0) return 0;
+  const epochsPerYear = 73; // ~5 days per epoch
+  const yearlyMev = mevSolPerEpoch * epochsPerYear;
+  return (yearlyMev / stakeSol) * 100;
+}
+
 // Generate predictions for all validators
 export async function generatePredictions(
   currentEpoch: number,
   numEpochs: number = 15
 ): Promise<{ predictions: MevPrediction[]; stats: PredictionStats }> {
-  const historicalData = await getHistoricalMevData(currentEpoch, numEpochs);
+  // Fetch historical data AND stake commissions in parallel
+  const [historicalData, stakeCommissions] = await Promise.all([
+    getHistoricalMevData(currentEpoch, numEpochs),
+    getStakeCommissions(),
+  ]);
   
   const predictions: MevPrediction[] = [];
   let totalNetworkMev = 0;
@@ -241,6 +304,31 @@ export async function generatePredictions(
     if (validator.activeStake > 0) allStakes.push(stakeSol);
     if (currentMev > 0) allMevs.push(currentMev);
     
+    // ========== COMMISSION & NET YIELD CALCULATIONS ==========
+    
+    // Get commission rates
+    const stakeCommission = stakeCommissions.get(voteAccount) ?? 10; // Default 10% if unknown
+    const mevCommission = validator.mevCommission ?? 0; // From Jito, in basis points (0-10000)
+    
+    // Calculate GROSS yields (what validator earns)
+    const grossBaseApy = BASE_STAKING_APY; // ~7%
+    const grossMevApy = calculateMevApy(currentMev, stakeSol);
+    
+    // Calculate NET yields (what STAKER actually earns after commissions)
+    const netBaseApy = grossBaseApy * (1 - stakeCommission / 100);
+    const netMevApy = grossMevApy * (1 - mevCommission / 10000);
+    const netTotalApy = netBaseApy + netMevApy;
+    
+    // Determine viability for stakers
+    // A validator is NOT viable if stakers earn essentially nothing
+    const isViable = !(
+      mevCommission >= 10000 || // 100% MEV commission
+      stakeCommission >= 100 || // 100% stake commission
+      (mevCommission >= 5000 && stakeCommission >= 50) // Both very high
+    );
+    
+    const commissionWarning = getCommissionWarning(stakeCommission, mevCommission);
+    
     predictions.push({
       voteAccount,
       name: validator.name,
@@ -258,6 +346,21 @@ export async function generatePredictions(
       mevEfficiency,
       epochsAnalyzed: validator.history.length,
       history: validator.history.map(h => ({ epoch: h.epoch, mevSol: h.mevRevenueSol })),
+      
+      // Commission data
+      stakeCommission,
+      mevCommission,
+      
+      // Net yields (what stakers actually earn)
+      grossBaseApy,
+      grossMevApy,
+      netBaseApy,
+      netMevApy,
+      netTotalApy,
+      
+      // Viability
+      isViable,
+      commissionWarning,
     });
   }
 
@@ -270,12 +373,16 @@ export async function generatePredictions(
 
   // Identify rising stars and calculate decentralization scores
   for (const pred of predictions) {
-    // Rising Star: below median stake, rising trend, above average MEV growth
+    // Rising Star criteria - MUST be viable for stakers!
     const isBelowMedianStake = pred.stakeSol < medianStake;
     const isRising = pred.trend === 'rising' && pred.trendStrength > 20;
     const hasDecentMev = pred.currentMevSol > medianMev * 0.5;
+    const hasReasonableCommission = pred.mevCommission < 5000 && pred.stakeCommission < 30;
+    const hasDecentNetYield = pred.netTotalApy >= 5; // At least 5% net APY
     
-    pred.isRisingStar = isBelowMedianStake && isRising && hasDecentMev;
+    // CRITICAL: Only mark as Rising Star if stakers actually benefit!
+    pred.isRisingStar = isBelowMedianStake && isRising && hasDecentMev && 
+                        hasReasonableCommission && hasDecentNetYield && pred.isViable;
     
     // Decentralization score: inverse of stake concentration
     // Higher score = staking here helps decentralization more
@@ -293,8 +400,8 @@ export async function generatePredictions(
     pred.decentralizationScore = Math.min(100, Math.max(0, pred.decentralizationScore));
   }
 
-  // Sort by predicted MEV (descending)
-  predictions.sort((a, b) => b.predictedMevSol - a.predictedMevSol);
+  // Sort by NET TOTAL APY (what stakers actually earn) - descending
+  predictions.sort((a, b) => b.netTotalApy - a.netTotalApy);
 
   const stats: PredictionStats = {
     currentEpoch,
@@ -309,7 +416,7 @@ export async function generatePredictions(
   return { predictions, stats };
 }
 
-// Get just rising stars
+// Get just rising stars - filtered for staker viability
 export async function getRisingStars(
   currentEpoch: number,
   numEpochs: number = 15,
@@ -318,11 +425,29 @@ export async function getRisingStars(
   const { predictions } = await generatePredictions(currentEpoch, numEpochs);
   
   return predictions
-    .filter(p => p.isRisingStar)
+    .filter(p => {
+      // MUST be marked as rising star (already includes viability check)
+      if (!p.isRisingStar) return false;
+      
+      // Double-check viability for stakers
+      if (!p.isViable) return false;
+      
+      // Exclude 100% MEV commission (staker gets ZERO MEV)
+      if (p.mevCommission >= 10000) return false;
+      
+      // Exclude very high stake commission (>50%)
+      if (p.stakeCommission > 50) return false;
+      
+      // Must have reasonable net yield (at least 5% APY to staker)
+      if (p.netTotalApy < 5) return false;
+      
+      return true;
+    })
     .sort((a, b) => {
-      // Sort by combination of trend strength, MEV efficiency, and decentralization
-      const scoreA = a.trendStrength * 0.4 + a.mevEfficiency * 0.3 + a.decentralizationScore * 0.3;
-      const scoreB = b.trendStrength * 0.4 + b.mevEfficiency * 0.3 + b.decentralizationScore * 0.3;
+      // Sort by NET TOTAL APY (what staker earns) as primary factor
+      // Secondary: trend strength and decentralization
+      const scoreA = a.netTotalApy * 0.5 + a.trendStrength * 0.25 + a.decentralizationScore * 0.25;
+      const scoreB = b.netTotalApy * 0.5 + b.trendStrength * 0.25 + b.decentralizationScore * 0.25;
       return scoreB - scoreA;
     })
     .slice(0, limit);

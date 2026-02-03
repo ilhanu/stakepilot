@@ -18,6 +18,14 @@ interface RisingStar {
   mevEfficiency: number;
   epochsAnalyzed: number;
   history: { epoch: number; mevSol: number }[];
+  // Commission & net yields
+  stakeCommission: number;
+  mevCommission: number;
+  netBaseApy: number;
+  netMevApy: number;
+  netTotalApy: number;
+  isViable: boolean;
+  commissionWarning: string | null;
 }
 
 interface ApiResponse {
@@ -82,6 +90,38 @@ function DecentralizationBadge({ score }: { score: number }) {
   );
 }
 
+// Net APY badge (what staker actually earns)
+function NetApyBadge({ apy, label }: { apy: number; label?: string }) {
+  const getColor = () => {
+    if (apy >= 10) return "from-green-400 to-emerald-500";
+    if (apy >= 8) return "from-green-500 to-teal-500";
+    if (apy >= 6) return "from-blue-400 to-cyan-500";
+    return "from-gray-400 to-gray-500";
+  };
+  
+  return (
+    <div className={`inline-flex flex-col items-center px-3 py-2 rounded-lg bg-gradient-to-r ${getColor()} text-white`}>
+      <span className="text-lg font-bold">{apy.toFixed(1)}%</span>
+      <span className="text-xs opacity-90">{label || "Net APY"}</span>
+    </div>
+  );
+}
+
+// Commission info badge
+function CommissionBadge({ stakeCommission, mevCommission }: { stakeCommission: number; mevCommission: number }) {
+  const mevPercent = (mevCommission / 100).toFixed(0);
+  const isLow = stakeCommission <= 10 && mevCommission <= 1000;
+  
+  return (
+    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
+      isLow ? "bg-green-900/30 text-green-400" : "bg-yellow-900/30 text-yellow-400"
+    }`}>
+      <span>{stakeCommission}% / {mevPercent}%</span>
+      <span className="text-gray-500 text-[10px]">(stake/MEV)</span>
+    </div>
+  );
+}
+
 export default function RisingStarsPage() {
   const [risingStars, setRisingStars] = useState<RisingStar[]>([]);
   const [currentEpoch, setCurrentEpoch] = useState<number>(0);
@@ -139,7 +179,7 @@ export default function RisingStarsPage() {
           <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
             <span>💡</span> What makes a Rising Star?
           </h2>
-          <div className="grid md:grid-cols-3 gap-4 text-sm">
+          <div className="grid md:grid-cols-4 gap-4 text-sm">
             <div className="flex items-start gap-2">
               <span className="text-2xl">📉</span>
               <div>
@@ -161,6 +201,19 @@ export default function RisingStarsPage() {
                 <div className="text-gray-400">Above-average MEV earnings despite smaller size</div>
               </div>
             </div>
+            <div className="flex items-start gap-2">
+              <span className="text-2xl">💰</span>
+              <div>
+                <div className="font-medium text-green-400">Fair Commission</div>
+                <div className="text-gray-400">Low fees = more yield for YOU</div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-yellow-800/30">
+            <p className="text-xs text-yellow-400/80">
+              ✨ <strong>Commission-Aware:</strong> All APYs shown are NET TO STAKER — what you actually earn after validator commissions. 
+              We filter out validators with 100% commission (where stakers earn nothing).
+            </p>
           </div>
         </section>
 
@@ -219,10 +272,31 @@ export default function RisingStarsPage() {
                         >
                           {validator.voteAccount.slice(0, 8)}...{validator.voteAccount.slice(-8)}
                         </Link>
+                        {/* Commission badge under name */}
+                        <div className="mt-1">
+                          <CommissionBadge 
+                            stakeCommission={validator.stakeCommission} 
+                            mevCommission={validator.mevCommission} 
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Center: Trend Chart */}
+                    {/* Center: NET APY (what staker earns) */}
+                    <div className="flex items-center gap-4">
+                      <NetApyBadge apy={validator.netTotalApy} label="Your Net APY" />
+                      <div className="text-center border-l border-gray-700 pl-4">
+                        <div className="text-sm text-gray-400">Breakdown</div>
+                        <div className="text-xs">
+                          <span className="text-blue-400">{validator.netBaseApy.toFixed(1)}%</span>
+                          <span className="text-gray-500"> base + </span>
+                          <span className="text-green-400">{validator.netMevApy.toFixed(1)}%</span>
+                          <span className="text-gray-500"> MEV</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Trend & Stats */}
                     <div className="flex items-center gap-4">
                       <TrendChart history={validator.history} />
                       <div className="text-right">
@@ -233,22 +307,10 @@ export default function RisingStarsPage() {
                       </div>
                     </div>
 
-                    {/* Right: Stats */}
-                    <div className="grid grid-cols-3 gap-6 text-center">
-                      <div>
-                        <div className="text-sm text-gray-400">Current MEV</div>
-                        <div className="font-semibold">{validator.currentMevSol.toFixed(2)} SOL</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-400">Predicted</div>
-                        <div className="font-semibold text-green-400">
-                          {validator.predictedMevSol.toFixed(2)} SOL
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-400">Decentralization</div>
-                        <DecentralizationBadge score={validator.decentralizationScore} />
-                      </div>
+                    {/* Far Right: Decentralization */}
+                    <div className="text-center">
+                      <div className="text-sm text-gray-400 mb-1">Decentralization</div>
+                      <DecentralizationBadge score={validator.decentralizationScore} />
                     </div>
                   </div>
 
@@ -256,9 +318,9 @@ export default function RisingStarsPage() {
                   <div className="mt-4 pt-4 border-t border-gray-800 flex flex-wrap items-center justify-between gap-4 text-sm">
                     <div className="flex gap-4 text-gray-400">
                       <span>Stake: <span className="text-white">{validator.stakeSol.toLocaleString(undefined, { maximumFractionDigits: 0 })} SOL</span></span>
-                      <span>Efficiency: <span className="text-white">{validator.mevEfficiency.toFixed(3)}</span></span>
+                      <span>MEV/epoch: <span className="text-green-400">{validator.currentMevSol.toFixed(2)} SOL</span></span>
+                      <span>Predicted: <span className="text-green-300">{validator.predictedMevSol.toFixed(2)} SOL</span></span>
                       <span>Confidence: <span className="text-white">{validator.confidence.toFixed(0)}%</span></span>
-                      <span>Epochs analyzed: <span className="text-white">{validator.epochsAnalyzed}</span></span>
                     </div>
                     <div className="flex gap-2">
                       <Link
@@ -273,7 +335,7 @@ export default function RisingStarsPage() {
                         rel="noopener noreferrer"
                         className="px-4 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 rounded-lg transition text-sm font-medium"
                       >
-                        🚀 Support This Validator
+                        🚀 Stake Here ({validator.netTotalApy.toFixed(1)}% APY)
                       </a>
                     </div>
                   </div>

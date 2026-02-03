@@ -8,6 +8,19 @@ StakePilot is the complete staking brain — **Yield Truth**, **Validator Discov
 
 🌐 **Live:** [stakepilot-olig.vercel.app](https://stakepilot-olig.vercel.app)
 
+## ⚡ Commission-Aware Yields — Industry First!
+
+**Most staking tools show validator earnings. We show what YOU earn.**
+
+A validator earning 10 SOL MEV with 100% commission = **0 for you**.
+A validator earning 1 SOL MEV with 0% commission = **1 SOL for you**.
+
+StakePilot is the **ONLY** tool that calculates true staker returns after ALL commissions:
+- ✅ **Net APY** = Base yield × (1 - stake commission) + MEV yield × (1 - MEV commission)
+- ✅ Automatic filtering of 100% commission validators from Rising Stars
+- ✅ Commission warnings and viability checks
+- ✅ Sort by what stakers actually earn, not validator revenue
+
 ## 📊 The Three Pillars
 
 ### 1. Yield Truth
@@ -16,7 +29,7 @@ StakePilot is the complete staking brain — **Yield Truth**, **Validator Discov
 We fetch directly from Marinade, BlazeStake, and Jito APIs:
 - **Base APY** — The guaranteed staking yield (~6-7%)
 - **MEV Bonus** — The variable upside (0-2%+ for jitoSOL)
-- **Net Yield** — What you actually get after fees
+- **Net Yield** — What you actually get after commissions
 
 | Protocol | Token | Base APY | MEV Bonus | Total APY | Source |
 |----------|-------|----------|-----------|-----------|--------|
@@ -25,11 +38,13 @@ We fetch directly from Marinade, BlazeStake, and Jito APIs:
 | BlazeStake | bSOL | ~6.1% | +BLZE | ~6.1%+ | stake.solblaze.org |
 
 ### 2. Validator Discovery
-**Find rising stars before everyone else.**
+**Find rising stars before everyone else — with fair commissions.**
 
 80% of stake goes to the top 20 validators. We fix this:
-- **Rising Stars** — Small validators with explosive MEV growth
+- **Rising Stars** — Small validators with explosive MEV growth **AND** fair commissions
 - **MEV Prediction** — AI predicts next epoch's top performers
+- **Net APY Ranking** — Sorted by what stakers actually earn
+- **Commission Transparency** — See stake & MEV commission rates
 - **Decentralization Score** — Bonus for supporting network health
 
 ### 3. Smart Routing
@@ -125,7 +140,27 @@ Get smart stake routing.
 ```
 
 ### GET `/api/predictions?type=rising-stars`
-Get rising star validators.
+Get rising star validators (commission-filtered).
+```json
+{
+  "validators": [{
+    "voteAccount": "...",
+    "name": "Validator Name",
+    "stakeCommission": 5,       // % on base rewards
+    "mevCommission": 700,       // bps on MEV (7%)
+    "netBaseApy": 6.65,         // After stake commission
+    "netMevApy": 1.86,          // After MEV commission  
+    "netTotalApy": 8.51,        // What YOU earn
+    "isViable": true,
+    "commissionWarning": null
+  }],
+  "avgNetApy": 8.2,
+  "note": "Filtered for staker viability"
+}
+```
+
+### GET `/api/predictions?hideHighCommission=true&minNetApy=7`
+Get all predictions with commission filters.
 
 ## 🎯 The Vision
 

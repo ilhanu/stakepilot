@@ -182,29 +182,55 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
           </div>
         </div>
 
-        {/* Prediction Banner (if available) */}
+        {/* NET YIELD BANNER - What stakers actually earn */}
         {prediction && (
           <div className={`mb-8 p-6 rounded-xl border ${
-            prediction.isRisingStar 
-              ? "bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-yellow-700/50" 
-              : "bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50"
+            !prediction.isViable
+              ? "bg-gradient-to-r from-red-900/30 to-orange-900/30 border-red-700/50"
+              : prediction.isRisingStar 
+                ? "bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-yellow-700/50" 
+                : "bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50"
           }`}>
+            {/* Commission Warning */}
+            {prediction.commissionWarning && (
+              <div className={`mb-4 p-3 rounded-lg ${
+                prediction.mevCommission >= 10000 
+                  ? "bg-red-900/50 border border-red-700 text-red-300"
+                  : "bg-yellow-900/50 border border-yellow-700 text-yellow-300"
+              }`}>
+                {prediction.commissionWarning}
+              </div>
+            )}
+            
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
-                  <span>🔮</span> Next Epoch Prediction
+                  <span>💰</span> Your Expected Returns
                 </h3>
                 <p className="text-sm text-gray-400">
-                  Based on analysis of {prediction.epochsAnalyzed} epochs
+                  Net APY after {prediction.stakeCommission}% stake / {(prediction.mevCommission/100).toFixed(0)}% MEV commissions
                 </p>
               </div>
               <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400">
-                    {prediction.predictedMevSol.toFixed(2)} SOL
+                {/* NET TOTAL APY - Most prominent */}
+                <div className="text-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg">
+                  <div className="text-3xl font-bold text-white">
+                    {prediction.netTotalApy.toFixed(1)}%
                   </div>
-                  <div className="text-xs text-gray-500">Predicted MEV</div>
+                  <div className="text-xs text-green-100">Net APY (You Earn)</div>
                 </div>
+                
+                {/* Breakdown */}
+                <div className="text-center border-l border-gray-700 pl-4">
+                  <div className="text-sm text-blue-400">
+                    {prediction.netBaseApy.toFixed(1)}% base
+                  </div>
+                  <div className="text-sm text-green-400">
+                    +{prediction.netMevApy.toFixed(1)}% MEV
+                  </div>
+                  <div className="text-xs text-gray-500">Net yields</div>
+                </div>
+                
                 <div className="text-center">
                   <div className={`text-2xl font-bold ${
                     prediction.trend === "rising" ? "text-green-400" : 
@@ -216,17 +242,24 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
                   <div className="text-xs text-gray-500">Trend</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-400">
-                    {prediction.confidence.toFixed(0)}%
-                  </div>
-                  <div className="text-xs text-gray-500">Confidence</div>
-                </div>
-                <div className="text-center">
                   <div className="text-2xl font-bold text-purple-400">
                     {prediction.decentralizationScore.toFixed(0)}
                   </div>
                   <div className="text-xs text-gray-500">Decentralization</div>
                 </div>
+              </div>
+            </div>
+            
+            {/* Prediction row */}
+            <div className="mt-4 pt-4 border-t border-gray-700/50 flex items-center justify-between">
+              <div className="text-sm text-gray-400">
+                <span>🔮 Predicted MEV next epoch: </span>
+                <span className="text-green-400 font-medium">{prediction.predictedMevSol.toFixed(2)} SOL</span>
+                <span className="text-gray-500"> (based on {prediction.epochsAnalyzed} epochs)</span>
+              </div>
+              <div className="text-sm">
+                <span className="text-gray-500">Confidence: </span>
+                <span className="text-blue-400">{prediction.confidence.toFixed(0)}%</span>
               </div>
             </div>
           </div>
@@ -303,11 +336,14 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
         </div>
 
         {/* Support This Validator CTA */}
-        {prediction?.isRisingStar && (
+        {prediction?.isRisingStar && prediction.isViable && (
           <div className="mb-8 p-6 rounded-xl bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-800/50 text-center">
             <h3 className="text-xl font-bold mb-2">Champion This Rising Star!</h3>
-            <p className="text-gray-400 mb-4">
+            <p className="text-gray-400 mb-2">
               This small validator is showing strong MEV growth. Supporting them helps decentralize Solana.
+            </p>
+            <p className="text-green-400 font-medium mb-4">
+              💰 Expected net yield: {prediction.netTotalApy.toFixed(1)}% APY to you
             </p>
             <div className="flex justify-center gap-4">
               <a
@@ -316,7 +352,7 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
                 rel="noopener noreferrer"
                 className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 rounded-lg transition font-medium"
               >
-                🚀 Stake with This Validator
+                🚀 Stake with This Validator ({prediction.netTotalApy.toFixed(1)}% APY)
               </a>
               <a
                 href={`https://validators.app/validators/${address}?network=mainnet`}
@@ -326,6 +362,27 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
               >
                 📊 View on validators.app
               </a>
+            </div>
+          </div>
+        )}
+        
+        {/* Warning for non-viable validators */}
+        {prediction && !prediction.isViable && (
+          <div className="mb-8 p-6 rounded-xl bg-gradient-to-r from-red-900/20 to-orange-900/20 border border-red-800/50 text-center">
+            <h3 className="text-xl font-bold mb-2 text-red-400">⚠️ High Commission Warning</h3>
+            <p className="text-gray-400 mb-2">
+              {prediction.commissionWarning || "This validator has very high commissions."}
+            </p>
+            <p className="text-red-300 text-sm">
+              Consider validators with lower commissions for better staker returns.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/rising-stars"
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg transition font-medium"
+              >
+                🌟 Find Better Rising Stars
+              </Link>
             </div>
           </div>
         )}
@@ -411,8 +468,15 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
                         <td className="py-3 px-2 text-right text-gray-300">
                           {(epoch.priorityFeeRevenue / 1e9).toFixed(4)} SOL
                         </td>
-                        <td className="py-3 px-2 text-right text-gray-400">
-                          {epoch.mevCommission}%
+                        <td className={`py-3 px-2 text-right ${
+                          epoch.mevCommission >= 10000 
+                            ? "text-red-400 font-medium" 
+                            : epoch.mevCommission >= 5000 
+                              ? "text-yellow-400" 
+                              : "text-gray-400"
+                        }`}>
+                          {(epoch.mevCommission / 100).toFixed(0)}%
+                          {epoch.mevCommission >= 10000 && " ⚠️"}
                         </td>
                         <td className="py-3 px-2 text-right font-semibold">
                           {total.toFixed(4)} SOL
