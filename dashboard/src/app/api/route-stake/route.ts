@@ -176,9 +176,17 @@ export async function POST(request: Request) {
       const weight = s.score / totalScore;
       const allocationSol = amountSol * weight;
       
-      // Estimate expected yield (simplified: assume MEV is proportional to stake)
-      const expectedMev = s.validator.predictedMevSol * (allocationSol / s.validator.stakeSol);
-      const expectedYield = allocationSol > 0 ? (expectedMev / allocationSol) * 100 : 0;
+      // Use the NET APY from our predictions (what stakers actually earn)
+      // This already accounts for commissions
+      const expectedYield = s.validator.netTotalApy || 7.0; // Default to base APY if not available
+      
+      // Estimate expected MEV contribution based on allocation
+      const epochsPerYear = 73;
+      const expectedMev = s.validator.stakeSol > 0 
+        ? (allocationSol / s.validator.stakeSol) * s.validator.predictedMevSol * epochsPerYear
+        : s.validator.predictedMevSol > 0 
+          ? (allocationSol / 1000) * (s.validator.netMevApy / 100) // Rough estimate based on APY
+          : 0;
       
       return {
         voteAccount: s.validator.voteAccount,
@@ -197,6 +205,9 @@ export async function POST(request: Request) {
     const totalMev = allocations.reduce((sum, a) => sum + a.predictedMevSol, 0);
     const avgDecentralization = allocations.reduce((sum, a) => sum + a.decentralizationScore * a.allocationPercent, 0) / 100;
     const risingStarsCount = allocations.filter(a => a.isRisingStar).length;
+    
+    // Weighted average yield
+    const weightedYield = allocations.reduce((sum, a) => sum + a.expectedYieldPercent * a.allocationPercent, 0) / 100;
     
     // Diversification: how evenly spread across validators (HHI inverse)
     const hhi = allocations.reduce((sum, a) => sum + Math.pow(a.allocationPercent / 100, 2), 0);
@@ -222,7 +233,7 @@ export async function POST(request: Request) {
       summary: {
         totalAllocated: amountSol,
         expectedTotalMev: totalMev,
-        expectedYieldPercent: amountSol > 0 ? (totalMev / amountSol) * 100 : 0,
+        expectedYieldPercent: weightedYield,
         avgDecentralizationScore: avgDecentralization,
         risingStarsCount,
         diversificationScore,
