@@ -2,11 +2,11 @@
 
 **The MEV-Aware Staking Autopilot for Solana**
 
-StakePilot uses real-time JIP-31 data, validator MEV earnings, and on-chain analytics to automatically optimize your staking yield.
+StakePilot uses real-time Jito MEV data, validator earnings, and on-chain analytics to automatically optimize your staking yield.
 
 ## What It Does
 
-- 📊 **Tracks Real MEV** — Not just advertised APY, but actual MEV earnings per validator via JIP-31
+- 📊 **Tracks Real MEV** — Not just advertised APY, but actual MEV earnings per validator via Jito
 - 🔄 **Auto-Rebalances** — Moves stake to higher-performing validators automatically  
 - 💧 **Liquid Staking Intelligence** — Compares jitoSOL, mSOL, bSOL, and native staking in real-time
 - 🎯 **Yield Optimization** — Compounds rewards and executes optimal strategies 24/7
@@ -20,7 +20,7 @@ StakePilot uses real-time JIP-31 data, validator MEV earnings, and on-chain anal
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │   ┌──────────┐    ┌──────────┐    ┌──────────┐                 │
-│   │ JIP-31   │    │ Validator│    │ Liquid   │                 │
+│   │   Jito   │    │ Validator│    │ Liquid   │                 │
 │   │ MEV Data │    │ Stats    │    │ Staking  │                 │
 │   └────┬─────┘    └────┬─────┘    └────┬─────┘                 │
 │        │               │               │                        │
@@ -43,7 +43,7 @@ StakePilot uses real-time JIP-31 data, validator MEV earnings, and on-chain anal
 
 | Source | Data |
 |--------|------|
-| [Jito Kobe API](https://kobe.mainnet.jito.network) | JIP-31 MEV rewards, BAM validator data |
+| [Jito Kobe API](https://kobe.mainnet.jito.network) | Jito MEV rewards, BAM validator data |
 | [Helius](https://helius.dev) | Stake account tracking, real-time updates |
 | Solana RPC | Validator stats, epoch info, stake weights |
 | [Jupiter](https://jup.ag) | Liquid staking swaps, price feeds |
@@ -54,7 +54,7 @@ StakePilot uses real-time JIP-31 data, validator MEV earnings, and on-chain anal
 stakepilot/
 ├── src/
 │   ├── data/           # Data fetchers
-│   │   ├── jip31.ts    # JIP-31 MEV rewards
+│   │   ├── jito-mev.ts  # Jito MEV rewards
 │   │   ├── validators.ts
 │   │   └── liquid-staking.ts
 │   ├── analysis/       # Yield analysis
@@ -75,13 +75,13 @@ stakepilot/
 
 ### 1. MEV-Aware Validator Scoring
 
-Unlike traditional staking dashboards that only show commission rates, StakePilot tracks **actual MEV earnings** from JIP-31:
+Unlike traditional staking dashboards that only show commission rates, StakePilot tracks **actual MEV earnings** from Jito:
 
 ```typescript
 interface ValidatorScore {
   address: string;
   baseApy: number;        // Standard staking rewards
-  mevApy: number;         // JIP-31 MEV earnings (the secret sauce)
+  mevApy: number;         // Jito MEV earnings (the secret sauce)
   totalApy: number;       // Combined real yield
   riskScore: number;      // Concentration, uptime, etc.
   recommendation: 'stake' | 'unstake' | 'hold';
@@ -141,7 +141,7 @@ npm run dev
 
 ## Roadmap
 
-- [x] JIP-31 MEV data integration
+- [x] Jito MEV data integration
 - [x] Validator scoring algorithm
 - [ ] Liquid staking comparison engine
 - [ ] Auto-rebalancing logic

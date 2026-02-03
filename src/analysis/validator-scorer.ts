@@ -9,7 +9,7 @@
  * - Historical performance
  */
 
-import { ValidatorMevStats } from '../data/jip31';
+import { ValidatorMevStats } from '../data/jito-mev';
 
 // ============================================
 // Types
