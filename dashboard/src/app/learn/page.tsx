@@ -1,162 +1,197 @@
-import { Header } from "@/components/Header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MevGlossary } from "@/components/MevTooltip";
+import Link from "next/link";
 
 export const metadata = {
   title: "Learn About MEV - StakePilot",
   description: "Educational guide to MEV, staking, and yield optimization on Solana",
 };
 
-const LEARNING_PATHS = [
+const TOPICS = [
   {
-    title: "🎯 Getting Started",
+    title: "Getting Started",
+    icon: "🎯",
     items: [
       {
-        term: "What is Staking?",
-        explanation: "Staking is locking up your SOL to help secure the Solana network. In return, you earn rewards (approximately 6-8% APY). There are two main ways to stake: Native staking (delegate directly to a validator) or Liquid staking (hold tokens like jitoSOL that represent staked SOL).",
+        q: "What is Staking?",
+        a: "Staking is locking up your SOL to help secure the Solana network. In return, you earn rewards (~6-8% APY). You can stake natively to a validator or use liquid staking tokens (LSTs) like jitoSOL.",
       },
       {
-        term: "Why Stake with Liquid Staking Tokens (LSTs)?",
-        explanation: "LSTs like jitoSOL let you earn staking rewards while keeping your assets liquid. You can trade, use in DeFi, or unstake anytime without waiting for the cooldown period that native staking requires.",
+        q: "Why use Liquid Staking Tokens?",
+        a: "LSTs let you earn staking rewards while keeping assets liquid. Trade, use in DeFi, or unstake anytime — no waiting for cooldown periods.",
       },
     ],
   },
   {
-    title: "💰 Understanding MEV",
+    title: "Understanding MEV",
+    icon: "💰",
     items: [
       {
-        term: "What is MEV?",
-        explanation: "MEV (Maximal Extractable Value) is extra profit that can be made by reordering, inserting, or censoring transactions in a block. On Solana, MEV mainly comes from arbitrage trading and liquidations. Jito's infrastructure captures this value and shares it with stakers.",
+        q: "What is MEV?",
+        a: "MEV (Maximal Extractable Value) is extra profit from reordering transactions in a block. On Solana, this comes from arbitrage and liquidations. Jito captures this value and shares it with stakers.",
       },
       {
-        term: "How does MEV affect my yield?",
-        explanation: "If you stake with a MEV-aware protocol like jitoSOL, you get a share of MEV tips on top of base staking rewards. This can add 1-2% extra APY compared to non-MEV staking.",
+        q: "How does MEV affect my yield?",
+        a: "With jitoSOL, you get MEV tips on top of base staking rewards. This can add 1-2% extra APY compared to non-MEV staking.",
       },
       {
-        term: "What is JIP-31 / BAM?",
-        explanation: "JIP-31 introduced BAM (Block Auction Market) in December 2024. Before BAM, validators kept 100% of MEV tips. Now, MEV flows to stakers proportionally. This is why jitoSOL has higher yields than traditional staking.",
+        q: "What is JIP-31 / BAM?",
+        a: "JIP-31 introduced Block Auction Market (BAM) in December 2024. Before BAM, validators kept 100% of MEV. Now, MEV flows to stakers proportionally.",
       },
     ],
   },
   {
-    title: "🏆 Choosing Validators",
+    title: "Choosing Validators",
+    icon: "🏆",
     items: [
       {
-        term: "What makes a good validator?",
-        explanation: "Look for: Low commission (5-10%), high uptime, MEV earnings (shows they run Jito), and consistent performance across epochs. Our MEV Leaderboard helps identify top performers.",
+        q: "What makes a good validator?",
+        a: "Look for: Low commission (5-10%), high uptime, MEV earnings (shows they run Jito), and consistent performance across epochs.",
       },
       {
-        term: "What is 'Rising Stars'?",
-        explanation: "Rising Stars are validators whose MEV earnings are increasing compared to previous epochs. They might be improving their infrastructure or attracting more stake, potentially offering good returns.",
+        q: "What are Rising Stars?",
+        a: "Rising Stars are small validators with increasing MEV earnings. They might be improving infrastructure or attracting stake, offering potential alpha.",
       },
     ],
   },
   {
-    title: "⚖️ Optimization Strategies",
+    title: "Optimization",
+    icon: "⚖️",
     items: [
       {
-        term: "Should I use jitoSOL or mSOL?",
-        explanation: "jitoSOL typically offers higher APY due to MEV sharing, but both are solid choices. jitoSOL: Higher yield, MEV exposure. mSOL: Deep liquidity, well-established. Our Yield Simulator helps you compare.",
+        q: "jitoSOL or mSOL?",
+        a: "jitoSOL typically offers higher APY due to MEV sharing. mSOL has deeper liquidity and is well-established. Both are solid choices.",
       },
       {
-        term: "What is rebalancing?",
-        explanation: "Rebalancing means adjusting your staking allocation to optimize yields. For example, moving from a low-MEV validator to a higher-performing one, or shifting between LST protocols based on current APYs.",
-      },
-      {
-        term: "How often should I compound?",
-        explanation: "It depends on the amount staked and gas costs. For small amounts, monthly compounding is fine. For large stakes, epoch-based compounding (every ~2.5 days) can maximize returns. Our simulator calculates the difference.",
+        q: "How often to compound?",
+        a: "For small stakes, monthly is fine. For large stakes, epoch-based compounding (~2.5 days) maximizes returns.",
       },
     ],
   },
 ];
 
+const KEY_NUMBERS = [
+  { value: "~6.5%", label: "Base Staking APY" },
+  { value: "+1-2%", label: "MEV Bonus (jitoSOL)" },
+  { value: "~2.5 days", label: "Epoch Duration" },
+  { value: "146", label: "Epochs Per Year" },
+];
+
 export default function LearnPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-[var(--bg-primary)] bg-grid">
+      <div className="absolute inset-x-0 top-0 h-[400px] bg-radial pointer-events-none" />
+      
       <Header />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="relative">
         {/* Hero */}
-        <section className="mb-12 text-center">
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Learn About MEV & Staking
-          </h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Everything you need to know to optimize your Solana staking yield.
-            From basics to advanced strategies.
-          </p>
+        <section className="pt-16 pb-12 md:pt-24 md:pb-16 px-6">
+          <div className="container-lg text-center">
+            <Link href="/" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] text-sm mb-8 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Home
+            </Link>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
+              Learn About MEV & Staking
+            </h1>
+            <p className="text-lg text-[var(--text-secondary)] max-w-xl mx-auto">
+              Everything you need to optimize your Solana staking yield.
+            </p>
+          </div>
         </section>
 
-        {/* Learning Paths */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-          {LEARNING_PATHS.map((path) => (
-            <Card key={path.title} className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-blue-900/30 to-purple-900/30">
-                <CardTitle>{path.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-4">
-                  {path.items.map((item, i) => (
-                    <div key={i} className="border-b border-gray-800 pb-4 last:border-0 last:pb-0">
-                      <h4 className="font-semibold text-white mb-2">{item.term}</h4>
-                      <p className="text-sm text-gray-400">{item.explanation}</p>
-                    </div>
-                  ))}
+        {/* Key Numbers */}
+        <section className="pb-16 px-6">
+          <div className="container-lg">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {KEY_NUMBERS.map((stat) => (
+                <div key={stat.label} className="card p-6 text-center">
+                  <div className="stat-value !text-3xl text-[var(--accent)] mb-2">{stat.value}</div>
+                  <div className="stat-label">{stat.label}</div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </section>
-
-        {/* Quick Stats */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6 text-center">Key Numbers to Know</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-800/50 rounded-xl p-6 text-center">
-              <p className="text-3xl font-bold text-blue-400">~6.5%</p>
-              <p className="text-sm text-gray-400 mt-2">Base Staking APY</p>
-            </div>
-            <div className="bg-gray-800/50 rounded-xl p-6 text-center">
-              <p className="text-3xl font-bold text-green-400">+1-2%</p>
-              <p className="text-sm text-gray-400 mt-2">MEV Bonus (jitoSOL)</p>
-            </div>
-            <div className="bg-gray-800/50 rounded-xl p-6 text-center">
-              <p className="text-3xl font-bold text-purple-400">~2.5 days</p>
-              <p className="text-sm text-gray-400 mt-2">Epoch Duration</p>
-            </div>
-            <div className="bg-gray-800/50 rounded-xl p-6 text-center">
-              <p className="text-3xl font-bold text-orange-400">146</p>
-              <p className="text-sm text-gray-400 mt-2">Epochs Per Year</p>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Glossary */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6 text-center">📚 MEV Glossary</h2>
-          <Card>
-            <CardContent className="pt-6">
-              <MevGlossary />
-            </CardContent>
-          </Card>
+        {/* Section Divider */}
+        <div className="section-divider mx-6" />
+
+        {/* Topics */}
+        <section className="py-16 px-6">
+          <div className="container-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {TOPICS.map((topic) => (
+                <div key={topic.title} className="card p-8">
+                  <h2 className="flex items-center gap-3 text-xl font-bold mb-6">
+                    <span className="text-2xl">{topic.icon}</span>
+                    {topic.title}
+                  </h2>
+                  <div className="space-y-6">
+                    {topic.items.map((item) => (
+                      <div key={item.q}>
+                        <h3 className="font-semibold text-[var(--text-primary)] mb-2">{item.q}</h3>
+                        <p className="text-[var(--text-secondary)] leading-relaxed">{item.a}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
+        {/* Section Divider */}
+        <div className="section-divider mx-6" />
+
         {/* CTA */}
-        <section className="text-center py-8">
-          <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-800/50 rounded-xl p-8 max-w-2xl mx-auto">
-            <h3 className="text-2xl font-bold mb-4">Ready to Optimize Your Yield?</h3>
-            <p className="text-gray-400 mb-6">
-              Use our tools to compare strategies, track validators, and maximize your staking returns.
-            </p>
-            <a
-              href="/"
-              className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg font-semibold hover:from-blue-500 hover:to-purple-500 transition-all"
-            >
-              Go to Dashboard →
-            </a>
+        <section className="py-24 px-6">
+          <div className="container-lg">
+            <div className="card p-12 bg-blue-500/5 border-blue-500/20 text-center max-w-2xl mx-auto">
+              <h2 className="text-2xl font-bold mb-3">Ready to Optimize?</h2>
+              <p className="text-[var(--text-secondary)] mb-8">
+                Use our tools to compare strategies and maximize your staking returns.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Link href="/compare" className="btn-primary">
+                  📊 Compare LSTs
+                </Link>
+                <Link href="/route" className="btn-secondary">
+                  🛤️ Route My Stake
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
       </main>
     </div>
+  );
+}
+
+// Header Component
+function Header() {
+  return (
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
+      <div className="container-lg">
+        <div className="flex items-center justify-between h-16 md:h-20">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-2xl">🚀</span>
+            <span className="text-lg font-semibold hidden sm:inline">StakePilot</span>
+          </Link>
+          <nav className="flex items-center gap-1">
+            <Link href="/compare" className="btn-ghost">
+              Compare
+            </Link>
+            <Link href="/discover" className="btn-ghost">
+              Discover
+            </Link>
+            <Link href="/route" className="btn-ghost">
+              Route
+            </Link>
+          </nav>
+        </div>
+      </div>
+    </header>
   );
 }

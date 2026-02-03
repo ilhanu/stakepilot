@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Header } from "@/components/Header";
 
 interface MevEvent {
@@ -12,13 +13,12 @@ interface MevEvent {
   isRisingStar: boolean;
 }
 
-// Simulated real-time MEV events (in production, this would be a websocket)
+// Simulated real-time MEV events
 function generateMockEvent(): MevEvent {
   const names = [
     "Everstake", "Chorus One", "Figment", "Triton", "Laine",
-    "Shinobi Systems", "Solana Beach", "P2P.org", "Coinbase",
-    "Anonymous Validator", "Hidden Gem", "Rising Star ⭐",
-    "Small but Mighty", "Decentralization Hero", null
+    "Shinobi Systems", "P2P.org", "Coinbase",
+    "Hidden Gem", "Rising Star", null
   ];
   
   const isSmall = Math.random() > 0.7;
@@ -36,11 +36,10 @@ function generateMockEvent(): MevEvent {
   };
 }
 
-// Falling number component
 function FallingNumber({ event, onComplete }: { event: MevEvent; onComplete: () => void }) {
-  const startX = Math.random() * 90 + 5; // 5-95%
-  const duration = 8 + Math.random() * 4; // 8-12 seconds
-  const size = Math.min(24, 12 + event.mevSol * 0.8);
+  const startX = Math.random() * 90 + 5;
+  const duration = 8 + Math.random() * 4;
+  const size = Math.min(20, 12 + event.mevSol * 0.5);
   
   useEffect(() => {
     const timer = setTimeout(onComplete, duration * 1000);
@@ -56,98 +55,14 @@ function FallingNumber({ event, onComplete }: { event: MevEvent; onComplete: () 
         fontSize: `${size}px`,
       }}
     >
-      <div className={`flex flex-col items-center ${event.isRisingStar ? "text-yellow-400" : "text-green-400"} font-mono opacity-80`}>
+      <div className={`flex flex-col items-center font-mono opacity-70 ${event.isRisingStar ? "text-[var(--accent-yellow)]" : "text-[var(--accent)]"}`}>
         <span className="whitespace-nowrap">
           {event.mevSol.toFixed(2)} SOL
         </span>
         <span className="text-xs opacity-60 whitespace-nowrap">
-          {event.name || event.voteAccount.slice(0, 8)}
+          {event.name || event.voteAccount.slice(0, 6)}
         </span>
-        {event.isRisingStar && <span className="text-yellow-400">🌟</span>}
-      </div>
-    </div>
-  );
-}
-
-// Stats display
-function LiveStats({ events, totalMev }: { events: MevEvent[]; totalMev: number }) {
-  const eventsPerMinute = events.filter(e => Date.now() - e.timestamp < 60000).length;
-  const risingStarMev = events
-    .filter(e => e.isRisingStar && Date.now() - e.timestamp < 60000)
-    .reduce((sum, e) => sum + e.mevSol, 0);
-  
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div className="bg-gray-900/80 backdrop-blur border border-green-500/30 rounded-xl p-4 text-center">
-        <div className="text-3xl font-bold text-green-400 font-mono">
-          {totalMev.toFixed(2)}
-        </div>
-        <div className="text-xs text-gray-400">Total MEV (session)</div>
-      </div>
-      <div className="bg-gray-900/80 backdrop-blur border border-cyan-500/30 rounded-xl p-4 text-center">
-        <div className="text-3xl font-bold text-cyan-400 font-mono">
-          {eventsPerMinute}
-        </div>
-        <div className="text-xs text-gray-400">Events / min</div>
-      </div>
-      <div className="bg-gray-900/80 backdrop-blur border border-yellow-500/30 rounded-xl p-4 text-center">
-        <div className="text-3xl font-bold text-yellow-400 font-mono">
-          {risingStarMev.toFixed(2)}
-        </div>
-        <div className="text-xs text-gray-400">Rising Star MEV</div>
-      </div>
-      <div className="bg-gray-900/80 backdrop-blur border border-purple-500/30 rounded-xl p-4 text-center">
-        <div className="text-3xl font-bold text-purple-400 font-mono">
-          {events.length}
-        </div>
-        <div className="text-xs text-gray-400">Total events</div>
-      </div>
-    </div>
-  );
-}
-
-// Recent events feed
-function EventFeed({ events }: { events: MevEvent[] }) {
-  const recentEvents = events.slice(-20).reverse();
-  
-  return (
-    <div className="bg-gray-900/80 backdrop-blur border border-gray-700 rounded-xl overflow-hidden">
-      <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-        <h3 className="font-semibold flex items-center gap-2">
-          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-          Live Feed
-        </h3>
-        <span className="text-xs text-gray-500">Last 20 events</span>
-      </div>
-      <div className="max-h-80 overflow-y-auto">
-        {recentEvents.map((event) => (
-          <div
-            key={event.id}
-            className={`px-4 py-2 border-b border-gray-800/50 flex items-center justify-between hover:bg-gray-800/30 transition ${
-              event.isRisingStar ? "bg-yellow-900/10" : ""
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              {event.isRisingStar && <span className="text-yellow-400">🌟</span>}
-              <div>
-                <div className="text-sm font-medium">
-                  {event.name || "Anonymous"}
-                </div>
-                <div className="text-xs text-gray-500 font-mono">
-                  {event.voteAccount.slice(0, 8)}...
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className={`font-mono font-bold ${event.isRisingStar ? "text-yellow-400" : "text-green-400"}`}>
-                +{event.mevSol.toFixed(3)} SOL
-              </div>
-              <div className="text-xs text-gray-500">
-                {new Date(event.timestamp).toLocaleTimeString()}
-              </div>
-            </div>
-          </div>
-        ))}
+        {event.isRisingStar && <span>🌟</span>}
       </div>
     </div>
   );
@@ -159,16 +74,15 @@ export default function LiveMevPage() {
   const [totalMev, setTotalMev] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   
-  // Generate new events
   useEffect(() => {
     if (isPaused) return;
     
     const interval = setInterval(() => {
       const newEvent = generateMockEvent();
-      setEvents(prev => [...prev, newEvent]);
+      setEvents(prev => [...prev.slice(-50), newEvent]);
       setActiveEvents(prev => [...prev, newEvent]);
       setTotalMev(prev => prev + newEvent.mevSol);
-    }, 500 + Math.random() * 1500); // Random interval 0.5-2s
+    }, 500 + Math.random() * 1500);
     
     return () => clearInterval(interval);
   }, [isPaused]);
@@ -177,75 +91,81 @@ export default function LiveMevPage() {
     setActiveEvents(prev => prev.filter(e => e.id !== id));
   };
 
+  const eventsPerMinute = events.filter(e => Date.now() - e.timestamp < 60000).length;
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-primary)] overflow-hidden">
       <Header />
       
-      {/* CSS for falling animation */}
       <style jsx global>{`
         @keyframes fall {
-          0% {
-            transform: translateY(-100px);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 0.8;
-          }
-          100% {
-            transform: translateY(100vh);
-            opacity: 0;
-          }
+          0% { transform: translateY(-100px); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 0.7; }
+          100% { transform: translateY(100vh); opacity: 0; }
         }
-        .animate-fall {
-          animation: fall linear forwards;
-        }
+        .animate-fall { animation: fall linear forwards; }
       `}</style>
       
-      <main className="container mx-auto px-4 py-8 relative">
+      <main className="page-container py-8 md:py-16 relative">
         {/* Header */}
         <section className="mb-8 text-center relative z-10">
-          <div className="text-5xl mb-4">⚡</div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-green-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
-            Live MEV Flow
-          </h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-4">
+          <Link href="/" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] text-sm mb-6 transition-colors">
+            ← Back to Home
+          </Link>
+          <div className="text-4xl mb-4">⚡</div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">Live MEV Flow</h1>
+          <p className="text-[var(--text-secondary)] max-w-xl mx-auto mb-6">
             Watch MEV rewards flow through validators in real-time.
-            <span className="text-yellow-400"> 🌟 Rising Stars</span> highlighted.
+            <span className="text-[var(--accent-yellow)]"> 🌟 Rising Stars</span> highlighted.
           </p>
           
           <button
             onClick={() => setIsPaused(!isPaused)}
-            className={`px-6 py-2 rounded-lg font-medium transition ${
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
               isPaused 
-                ? "bg-green-600 hover:bg-green-500 text-white" 
-                : "bg-gray-800 hover:bg-gray-700 text-gray-300"
+                ? "bg-[var(--accent)] text-black" 
+                : "btn-secondary"
             }`}
           >
-            {isPaused ? "▶️ Resume" : "⏸️ Pause"}
+            {isPaused ? "▶ Resume" : "⏸ Pause"}
           </button>
         </section>
 
         {/* Stats */}
-        <LiveStats events={events} totalMev={totalMev} />
-
-        {/* Main visualization area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Matrix rain area */}
-          <div className="lg:col-span-2 relative h-96 bg-gray-900/30 rounded-xl border border-gray-800 overflow-hidden">
-            {/* Background glow */}
-            <div className="absolute inset-0 bg-gradient-to-b from-green-900/10 via-transparent to-cyan-900/10"></div>
-            
-            {/* Grid lines */}
-            <div className="absolute inset-0 opacity-10">
-              {[...Array(20)].map((_, i) => (
-                <div key={i} className="absolute h-full border-l border-green-500/20" style={{ left: `${i * 5}%` }}></div>
-              ))}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="card-clean p-4 text-center">
+            <div className="text-2xl font-bold text-[var(--accent)] font-mono">
+              {totalMev.toFixed(2)}
             </div>
+            <div className="text-xs text-[var(--text-muted)]">Total MEV (session)</div>
+          </div>
+          <div className="card-clean p-4 text-center">
+            <div className="text-2xl font-bold font-mono">
+              {eventsPerMinute}
+            </div>
+            <div className="text-xs text-[var(--text-muted)]">Events / min</div>
+          </div>
+          <div className="card-clean p-4 text-center">
+            <div className="text-2xl font-bold text-[var(--accent-yellow)] font-mono">
+              {events.filter(e => e.isRisingStar).length}
+            </div>
+            <div className="text-xs text-[var(--text-muted)]">Rising Stars</div>
+          </div>
+          <div className="card-clean p-4 text-center">
+            <div className="text-2xl font-bold font-mono">
+              {events.length}
+            </div>
+            <div className="text-xs text-[var(--text-muted)]">Total events</div>
+          </div>
+        </section>
+
+        {/* Visualization */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Rain area */}
+          <div className="lg:col-span-2 relative h-80 md:h-96 card-clean overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-[var(--accent)]/5 via-transparent to-[var(--accent-purple)]/5"></div>
             
-            {/* Falling numbers */}
             {activeEvents.map((event) => (
               <FallingNumber
                 key={event.id}
@@ -254,73 +174,64 @@ export default function LiveMevPage() {
               />
             ))}
             
-            {/* Center text */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
-                <div className="text-6xl font-bold text-green-400/20 font-mono">
+                <div className="text-5xl font-bold text-[var(--accent)]/20 font-mono">
                   {totalMev.toFixed(2)}
                 </div>
-                <div className="text-lg text-gray-600">Total MEV</div>
+                <div className="text-sm text-[var(--text-muted)]">Total MEV</div>
               </div>
             </div>
             
-            {/* Info tooltip */}
-            <div className="absolute bottom-4 left-4 text-xs text-gray-500 bg-gray-900/80 px-3 py-2 rounded-lg">
-              💡 <span className="text-yellow-400">Yellow = Rising Stars</span> (small validators with momentum)
+            <div className="absolute bottom-4 left-4 text-xs text-[var(--text-muted)] bg-[var(--bg-primary)]/80 px-3 py-2 rounded-lg">
+              <span className="text-[var(--accent-yellow)]">Yellow = Rising Stars</span>
             </div>
           </div>
 
-          {/* Event feed */}
-          <EventFeed events={events} />
-        </div>
-
-        {/* Educational section */}
-        <section className="mt-12 grid md:grid-cols-3 gap-6">
-          <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-            <div className="text-2xl mb-3">💰</div>
-            <h3 className="font-semibold mb-2">What is MEV?</h3>
-            <p className="text-sm text-gray-400">
-              MEV (Maximal Extractable Value) is the profit validators can earn by 
-              ordering transactions in their blocks. It&apos;s a key component of validator revenue.
-            </p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-            <div className="text-2xl mb-3">🌟</div>
-            <h3 className="font-semibold mb-2">Why Rising Stars?</h3>
-            <p className="text-sm text-gray-400">
-              Small validators with improving MEV trends deserve attention. 
-              Supporting them helps decentralize Solana and can yield great returns.
-            </p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-            <div className="text-2xl mb-3">📊</div>
-            <h3 className="font-semibold mb-2">Real Data</h3>
-            <p className="text-sm text-gray-400">
-              This visualization is simulated for demo. In production, it would connect 
-              to real-time Jito block data via WebSocket.
-            </p>
+          {/* Feed */}
+          <div className="card-clean overflow-hidden">
+            <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
+              <h3 className="font-medium flex items-center gap-2">
+                <span className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse"></span>
+                Live Feed
+              </h3>
+              <span className="text-xs text-[var(--text-muted)]">Recent</span>
+            </div>
+            <div className="max-h-64 md:max-h-80 overflow-y-auto">
+              {events.slice(-15).reverse().map((event) => (
+                <div
+                  key={event.id}
+                  className="px-4 py-2 border-b border-[var(--border-color)]/50 flex items-center justify-between text-sm"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {event.isRisingStar && <span>🌟</span>}
+                    <span className="truncate text-[var(--text-secondary)]">
+                      {event.name || "Anonymous"}
+                    </span>
+                  </div>
+                  <span className={`font-mono shrink-0 ${event.isRisingStar ? "text-[var(--accent-yellow)]" : "text-[var(--accent)]"}`}>
+                    +{event.mevSol.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* Call to action */}
-        <section className="mt-12 text-center bg-gradient-to-r from-green-900/30 to-cyan-900/30 border border-green-800/30 rounded-xl p-8">
-          <h2 className="text-2xl font-bold mb-2">Ready to Stake?</h2>
-          <p className="text-gray-400 mb-4">
-            Use our AI-powered routing to find the best validators for your stake.
-          </p>
-          <div className="flex justify-center gap-4">
-            <a
-              href="/rising-stars"
-              className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 rounded-lg transition font-medium"
-            >
-              🌟 View Rising Stars
-            </a>
-            <a
-              href="/"
-              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition"
-            >
-              Back to Dashboard
-            </a>
+        {/* Note */}
+        <section className="mt-8 text-center text-xs text-[var(--text-muted)]">
+          <p>This visualization is simulated. Production would connect to real Jito block data.</p>
+        </section>
+
+        {/* CTA */}
+        <section className="mt-12 text-center">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link href="/discover" className="btn-primary inline-block">
+              🌟 Discover Rising Stars
+            </Link>
+            <Link href="/compare" className="btn-secondary inline-block">
+              📊 Compare LSTs
+            </Link>
           </div>
         </section>
       </main>
