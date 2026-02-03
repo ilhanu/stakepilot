@@ -3,6 +3,18 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+interface BacktestDetail {
+  epoch: number;
+  predicted: number;
+  actual: number;
+  error: number;
+}
+
+interface BacktestData {
+  accuracy: number;
+  details: BacktestDetail[];
+}
+
 interface RisingStar {
   voteAccount: string;
   name: string | null;
@@ -121,21 +133,132 @@ function ValidatorCard({ validator, rank }: { validator: RisingStar; rank: numbe
   );
 }
 
+function AccuracyBadge({ accuracy }: { accuracy: number }) {
+  const color = accuracy >= 80 ? "text-green-400" : accuracy >= 60 ? "text-amber-400" : "text-red-400";
+  return (
+    <span className={`font-bold ${color}`}>{accuracy.toFixed(1)}%</span>
+  );
+}
+
+function BacktestChart({ details }: { details: BacktestDetail[] }) {
+  if (details.length < 2) return null;
+  
+  const maxVal = Math.max(...details.flatMap(d => [d.predicted, d.actual]));
+  const width = 280;
+  const height = 120;
+  const padding = 24;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+  
+  const getX = (i: number) => padding + (i / (details.length - 1)) * chartWidth;
+  const getY = (val: number) => padding + (1 - val / maxVal) * chartHeight;
+  
+  const predictedPoints = details.map((d, i) => `${getX(i)},${getY(d.predicted)}`).join(" ");
+  const actualPoints = details.map((d, i) => `${getX(i)},${getY(d.actual)}`).join(" ");
+  
+  return (
+    <div className="relative">
+      <svg width={width} height={height} className="w-full">
+        {/* Grid lines */}
+        {[0, 0.5, 1].map((y) => (
+          <line
+            key={y}
+            x1={padding}
+            y1={padding + y * chartHeight}
+            x2={width - padding}
+            y2={padding + y * chartHeight}
+            stroke="var(--border)"
+            strokeDasharray="4"
+          />
+        ))}
+        
+        {/* Predicted line (dashed) */}
+        <polyline
+          points={predictedPoints}
+          fill="none"
+          stroke="#8b5cf6"
+          strokeWidth="2"
+          strokeDasharray="6"
+          strokeLinecap="round"
+        />
+        
+        {/* Actual line (solid) */}
+        <polyline
+          points={actualPoints}
+          fill="none"
+          stroke="#14b8a6"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        
+        {/* Points */}
+        {details.map((d, i) => (
+          <g key={d.epoch}>
+            <circle cx={getX(i)} cy={getY(d.actual)} r="4" fill="#14b8a6" />
+            <circle cx={getX(i)} cy={getY(d.predicted)} r="3" fill="#8b5cf6" />
+          </g>
+        ))}
+        
+        {/* Epoch labels */}
+        {details.map((d, i) => (
+          <text
+            key={d.epoch}
+            x={getX(i)}
+            y={height - 4}
+            textAnchor="middle"
+            className="fill-[var(--text-muted)]"
+            fontSize="10"
+          >
+            {d.epoch}
+          </text>
+        ))}
+      </svg>
+      
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 mt-2 text-xs">
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-0.5 bg-teal-500 rounded"></span>
+          Actual MEV
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-0.5 bg-purple-500 rounded" style={{ borderStyle: 'dashed' }}></span>
+          Predicted
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function DiscoverPage() {
   const [validators, setValidators] = useState<RisingStar[]>([]);
   const [currentEpoch, setCurrentEpoch] = useState<number>(0);
+  const [backtest, setBacktest] = useState<BacktestData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("/api/predictions?type=rising-stars&limit=20");
-        if (!res.ok) throw new Error("Failed to fetch");
+        // Fetch both rising stars and backtest data in parallel
+        const [starsRes, backtestRes] = await Promise.all([
+          fetch("/api/predictions?type=rising-stars&limit=20"),
+          fetch("/api/predictions?type=backtest")
+        ]);
         
-        const data = await res.json();
-        setValidators(data.validators || []);
-        setCurrentEpoch(data.currentEpoch || 0);
+        if (!starsRes.ok) throw new Error("Failed to fetch rising stars");
+        
+        const starsData = await starsRes.json();
+        setValidators(starsData.validators || []);
+        setCurrentEpoch(starsData.currentEpoch || 0);
+        
+        if (backtestRes.ok) {
+          const backtestData = await backtestRes.json();
+          setBacktest({
+            accuracy: backtestData.accuracy,
+            details: backtestData.details,
+          });
+        }
       } catch (e) {
         setError(String(e));
       } finally {
@@ -214,6 +337,74 @@ export default function DiscoverPage() {
             </div>
           </div>
         </section>
+
+        {/* Prediction Accuracy Section */}
+        {backtest && (
+          <section className="pb-12 px-6">
+            <div className="container-lg">
+              <div className="card p-8 bg-teal-500/5 border-teal-500/20">
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  {/* Left: Stats */}
+                  <div className="flex-1 text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
+                      <span className="text-2xl">🎯</span>
+                      <h2 className="font-semibold text-lg">Prediction Accuracy</h2>
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)] mb-4">
+                      Our MEV predictions have been backtested against real data.
+                    </p>
+                    <div className="flex items-center justify-center md:justify-start gap-6">
+                      <div>
+                        <div className="text-3xl font-bold">
+                          <AccuracyBadge accuracy={backtest.accuracy} />
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">Overall Accuracy</div>
+                      </div>
+                      <div className="h-10 w-px bg-[var(--border)]"></div>
+                      <div>
+                        <div className="text-lg font-semibold text-[var(--text-primary)]">
+                          {backtest.details.length}
+                        </div>
+                        <div className="text-xs text-[var(--text-muted)]">Epochs Tested</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Right: Chart */}
+                  <div className="flex-1">
+                    <BacktestChart details={backtest.details} />
+                  </div>
+                </div>
+                
+                {/* Detailed breakdown */}
+                <div className="mt-6 pt-6 border-t border-[var(--border)]">
+                  <h3 className="text-sm font-medium mb-4 text-center">Epoch-by-Epoch Results</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {backtest.details.map((d) => (
+                      <div key={d.epoch} className="bg-[var(--bg-primary)]/50 rounded-lg p-3 text-center">
+                        <div className="text-xs text-[var(--text-muted)] mb-1">Epoch {d.epoch}</div>
+                        <div className="text-xs">
+                          <span className="text-purple-400">{d.predicted.toFixed(0)}</span>
+                          {" → "}
+                          <span className="text-teal-400">{d.actual.toFixed(0)}</span>
+                        </div>
+                        <div className="text-xs mt-1">
+                          {d.error < 0.15 ? (
+                            <span className="text-green-400">✓ {((1-d.error)*100).toFixed(0)}%</span>
+                          ) : d.error < 0.3 ? (
+                            <span className="text-amber-400">≈ {((1-d.error)*100).toFixed(0)}%</span>
+                          ) : (
+                            <span className="text-red-400">↓ {((1-d.error)*100).toFixed(0)}%</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Validators List */}
         <section className="pb-16 px-6">
