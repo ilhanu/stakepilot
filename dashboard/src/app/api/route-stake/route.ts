@@ -21,6 +21,10 @@ interface ValidatorAllocation {
   decentralizationScore: number;
   isRisingStar: boolean;
   reason: string;
+  // NEW: Stake-weight context
+  totalStakeSol: number;      // Validator's total stake
+  stakeRank: string;          // "small", "medium", "large", "whale"
+  mevDilution: string;        // Explanation of stake-weight impact
 }
 
 interface RouteResult {
@@ -43,14 +47,29 @@ function scoreValidator(
   riskTolerance: string,
   decentralizationPreference: string
 ): number {
-  let score = 0;
-  
-  // Base score: predicted MEV (normalized)
-  score += validator.predictedMevSol * 10;
+  // CRITICAL: Use NET APY as primary score (already stake-weight adjusted!)
+  // Smaller validators naturally score higher because their APY is higher
+  let score = validator.netTotalApy * 10;
   
   // Confidence factor
   const confidenceMultiplier = 0.5 + (validator.confidence / 100) * 0.5;
   score *= confidenceMultiplier;
+  
+  // Stake-size adjustment (penalize whales, reward small validators)
+  const stakeSol = validator.stakeSol;
+  if (stakeSol > 1000000) {
+    // Whale validator - heavy penalty (MEV very diluted)
+    score *= 0.4;
+  } else if (stakeSol > 500000) {
+    // Large validator
+    score *= 0.6;
+  } else if (stakeSol > 200000) {
+    // Medium-large
+    score *= 0.8;
+  } else if (stakeSol < 50000) {
+    // Small validator - bonus (MEV concentrated)
+    score *= 1.3;
+  }
   
   // Risk adjustment
   if (riskTolerance === "low") {
@@ -58,14 +77,22 @@ function scoreValidator(
     score *= (1 - validator.volatility / 200);
     // Bonus for higher confidence
     score *= (0.8 + (validator.confidence / 100) * 0.4);
+    // Prefer larger, established validators
+    if (stakeSol > 200000) {
+      score *= 1.2;
+    }
   } else if (riskTolerance === "high") {
     // Prefer rising validators even if volatile
     if (validator.trend === "rising") {
       score *= 1.5;
     }
-    // Bonus for rising stars (potential alpha)
+    // BIG bonus for rising stars (potential alpha)
     if (validator.isRisingStar) {
-      score *= 1.3;
+      score *= 2.0; // Doubled - these are the alpha!
+    }
+    // Penalty for whale validators (no alpha there)
+    if (stakeSol > 500000) {
+      score *= 0.5;
     }
   }
   
@@ -77,6 +104,10 @@ function scoreValidator(
     if (validator.isRisingStar) {
       score *= 1.5;
     }
+    // Heavy penalty for whale validators
+    if (stakeSol > 500000) {
+      score *= 0.3;
+    }
   } else if (decentralizationPreference === "moderate") {
     // Moderate bonus
     score *= (0.7 + (validator.decentralizationScore / 100) * 0.6);
@@ -85,6 +116,11 @@ function scoreValidator(
   // Penalty for very low MEV efficiency
   if (validator.mevEfficiency < 0.001) {
     score *= 0.5;
+  }
+  
+  // Viability check - non-viable validators get heavily penalized
+  if (!validator.isViable) {
+    score *= 0.1;
   }
   
   return score;
@@ -175,18 +211,36 @@ export async function POST(request: Request) {
     const allocations: ValidatorAllocation[] = selectedValidators.map((s, i) => {
       const weight = s.score / totalScore;
       const allocationSol = amountSol * weight;
+      const stakeSol = s.validator.stakeSol;
       
       // Use the NET APY from our predictions (what stakers actually earn)
-      // This already accounts for commissions
-      const expectedYield = s.validator.netTotalApy || 7.0; // Default to base APY if not available
+      // This is already STAKE-WEIGHT ADJUSTED - smaller validators have higher APY
+      const expectedYield = s.validator.netTotalApy || 7.0;
       
       // Estimate expected MEV contribution based on allocation
       const epochsPerYear = 73;
-      const expectedMev = s.validator.stakeSol > 0 
-        ? (allocationSol / s.validator.stakeSol) * s.validator.predictedMevSol * epochsPerYear
+      const expectedMev = stakeSol > 0 
+        ? (allocationSol / stakeSol) * s.validator.predictedMevSol * epochsPerYear
         : s.validator.predictedMevSol > 0 
-          ? (allocationSol / 1000) * (s.validator.netMevApy / 100) // Rough estimate based on APY
+          ? (allocationSol / 1000) * (s.validator.netMevApy / 100)
           : 0;
+      
+      // Determine stake rank (for context)
+      let stakeRank: string;
+      let mevDilution: string;
+      if (stakeSol < 50000) {
+        stakeRank = "small";
+        mevDilution = "Low dilution - MEV rewards concentrated among fewer stakers";
+      } else if (stakeSol < 200000) {
+        stakeRank = "medium";
+        mevDilution = "Moderate dilution - balanced MEV distribution";
+      } else if (stakeSol < 1000000) {
+        stakeRank = "large";
+        mevDilution = "Higher dilution - MEV spread across many stakers";
+      } else {
+        stakeRank = "whale";
+        mevDilution = "Maximum dilution - MEV heavily diluted across massive stake";
+      }
       
       return {
         voteAccount: s.validator.voteAccount,
@@ -198,6 +252,9 @@ export async function POST(request: Request) {
         decentralizationScore: s.validator.decentralizationScore,
         isRisingStar: s.validator.isRisingStar,
         reason: getAllocationReason(s.validator, i + 1, decentralizationPreference),
+        totalStakeSol: stakeSol,
+        stakeRank,
+        mevDilution,
       };
     });
 

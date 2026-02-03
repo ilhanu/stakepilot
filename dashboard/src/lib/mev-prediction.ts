@@ -237,12 +237,51 @@ function getCommissionWarning(stakeCommission: number, mevCommission: number): s
 /**
  * Calculate gross MEV APY from MEV revenue
  * Assumes ~73 epochs per year, converts MEV SOL to APY based on stake
+ * 
+ * CRITICAL: This is stake-weight adjusted!
+ * - Same MEV with 2x stake = half the APY (rewards diluted among more stakers)
+ * - Smaller validators can offer higher MEV APY because rewards are less diluted
  */
 function calculateMevApy(mevSolPerEpoch: number, stakeSol: number): number {
   if (stakeSol <= 0) return 0;
   const epochsPerYear = 73; // ~5 days per epoch
   const yearlyMev = mevSolPerEpoch * epochsPerYear;
+  // APY = (MEV earned per year / total stake) * 100
+  // Larger stake = lower APY (same pie split more ways)
   return (yearlyMev / stakeSol) * 100;
+}
+
+// Known large validators that should NEVER be Rising Stars
+// These have millions in stake and are well-established
+const KNOWN_LARGE_VALIDATORS = new Set([
+  'Figment',
+  'Helius', 
+  'Ledger by Figment',
+  'Bitwise',
+  'Kraken',
+  'Coinbase',
+  'Everstake',
+  'Chorus One',
+  'P2P.org',
+  'Jump',
+  'Staked.us',
+  'Binance',
+  'OKX',
+  'Lido',
+  'Jito',
+  'Marinade',
+]);
+
+// Check if validator name matches a known large validator
+function isKnownLargeValidator(name: string | null): boolean {
+  if (!name) return false;
+  const nameLower = name.toLowerCase();
+  for (const large of KNOWN_LARGE_VALIDATORS) {
+    if (nameLower.includes(large.toLowerCase())) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // Generate predictions for all validators
@@ -372,18 +411,43 @@ export async function generatePredictions(
   const medianMev = sortedMevs[Math.floor(sortedMevs.length / 2)] || 0;
   const totalStake = allStakes.reduce((a, b) => a + b, 0);
 
+  // Calculate stake thresholds for Rising Star detection
+  // Small validator = bottom 25% by stake
+  const stakeThresholdSmall = sortedStakes[Math.floor(sortedStakes.length * 0.25)] || medianStake * 0.5;
+  // Large validator = top 10% by stake  
+  const stakeThresholdLarge = sortedStakes[Math.floor(sortedStakes.length * 0.90)] || medianStake * 5;
+
   // Identify rising stars and calculate decentralization scores
   for (const pred of predictions) {
-    // Rising Star criteria - MUST be viable for stakers!
-    const isBelowMedianStake = pred.stakeSol < medianStake;
-    const isRising = pred.trend === 'rising' && pred.trendStrength > 20;
-    const hasDecentMev = pred.currentMevSol > medianMev * 0.5;
-    const hasReasonableCommission = pred.mevCommission < 5000 && pred.stakeCommission < 30;
-    const hasDecentNetYield = pred.netTotalApy >= 5; // At least 5% net APY
+    // Rising Star criteria - STRICT filtering for truly small validators
     
-    // CRITICAL: Only mark as Rising Star if stakers actually benefit!
-    pred.isRisingStar = isBelowMedianStake && isRising && hasDecentMev && 
+    // 1. Must be actually SMALL (bottom 25% by stake OR < 100k SOL)
+    const isActuallySmall = pred.stakeSol < stakeThresholdSmall || pred.stakeSol < 100000;
+    
+    // 2. Must NOT be a known large validator (name check as backup)
+    const isNotKnownLarge = !isKnownLargeValidator(pred.name);
+    
+    // 3. Must be rising with momentum
+    const isRising = pred.trend === 'rising' && pred.trendStrength > 20;
+    
+    // 4. Must have meaningful MEV (shows they're active in MEV)
+    const hasDecentMev = pred.currentMevSol > medianMev * 0.3;
+    
+    // 5. Must have reasonable commission (staker-friendly)
+    const hasReasonableCommission = pred.mevCommission < 5000 && pred.stakeCommission < 30;
+    
+    // 6. Must have decent net yield
+    const hasDecentNetYield = pred.netTotalApy >= 6; // At least 6% net APY
+    
+    // CRITICAL: Only mark as Rising Star if ALL criteria met!
+    pred.isRisingStar = isActuallySmall && isNotKnownLarge && isRising && hasDecentMev && 
                         hasReasonableCommission && hasDecentNetYield && pred.isViable;
+    
+    // Add extra flag for debugging
+    if (isKnownLargeValidator(pred.name) && pred.isRisingStar) {
+      console.warn(`WARNING: ${pred.name} was marked as Rising Star but is known large validator!`);
+      pred.isRisingStar = false;
+    }
     
     // Decentralization score: inverse of stake concentration
     // Higher score = staking here helps decentralization more
