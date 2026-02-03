@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "#rebalance", label: "Rebalance", icon: "⚖️" },
   { href: "#validators", label: "Validators", icon: "🏆" },
   { href: "#compare", label: "Compare LSTs", icon: "📈" },
+  { href: "/learn", label: "Learn", icon: "📚" },
 ];
 
 export function Header() {
