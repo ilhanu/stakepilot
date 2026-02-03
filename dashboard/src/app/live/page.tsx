@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Header } from "@/components/Header";
 
 interface MevEvent {
   id: string;
@@ -55,7 +54,7 @@ function FallingNumber({ event, onComplete }: { event: MevEvent; onComplete: () 
         fontSize: `${size}px`,
       }}
     >
-      <div className={`flex flex-col items-center font-mono opacity-70 ${event.isRisingStar ? "text-[var(--accent-yellow)]" : "text-[var(--accent)]"}`}>
+      <div className={`flex flex-col items-center font-mono opacity-70 ${event.isRisingStar ? "text-amber-400" : "text-[var(--accent)]"}`}>
         <span className="whitespace-nowrap">
           {event.mevSol.toFixed(2)} SOL
         </span>
@@ -94,7 +93,9 @@ export default function LiveMevPage() {
   const eventsPerMinute = events.filter(e => Date.now() - e.timestamp < 60000).length;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-primary)] bg-grid overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-[400px] bg-radial pointer-events-none" />
+      
       <Header />
       
       <style jsx global>{`
@@ -107,134 +108,178 @@ export default function LiveMevPage() {
         .animate-fall { animation: fall linear forwards; }
       `}</style>
       
-      <main className="page-container py-8 md:py-16 relative">
-        {/* Header */}
-        <section className="mb-8 text-center relative z-10">
-          <Link href="/" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] text-sm mb-6 transition-colors">
-            ← Back to Home
-          </Link>
-          <div className="text-4xl mb-4">⚡</div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">Live MEV Flow</h1>
-          <p className="text-[var(--text-secondary)] max-w-xl mx-auto mb-6">
-            Watch MEV rewards flow through validators in real-time.
-            <span className="text-[var(--accent-yellow)]"> 🌟 Rising Stars</span> highlighted.
-          </p>
-          
-          <button
-            onClick={() => setIsPaused(!isPaused)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-              isPaused 
-                ? "bg-[var(--accent)] text-black" 
-                : "btn-secondary"
-            }`}
-          >
-            {isPaused ? "▶ Resume" : "⏸ Pause"}
-          </button>
+      <main className="relative">
+        {/* Hero */}
+        <section className="pt-16 pb-8 md:pt-24 md:pb-12 px-6">
+          <div className="container-lg text-center">
+            <Link href="/" className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] text-sm mb-8 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Home
+            </Link>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
+              Live MEV Flow
+            </h1>
+            <p className="text-lg text-[var(--text-secondary)] max-w-xl mx-auto mb-6">
+              Watch MEV rewards flow through validators in real-time.
+              <span className="text-amber-400"> 🌟 Rising Stars</span> highlighted.
+            </p>
+            
+            <button
+              onClick={() => setIsPaused(!isPaused)}
+              className={isPaused ? "btn-primary" : "btn-secondary"}
+            >
+              {isPaused ? "▶ Resume" : "⏸ Pause"}
+            </button>
+          </div>
         </section>
 
         {/* Stats */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="card-clean p-4 text-center">
-            <div className="text-2xl font-bold text-[var(--accent)] font-mono">
-              {totalMev.toFixed(2)}
+        <section className="pb-8 px-6">
+          <div className="container-lg">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="card p-5 text-center">
+                <div className="stat-value !text-2xl text-[var(--accent)] font-mono">
+                  {totalMev.toFixed(2)}
+                </div>
+                <div className="stat-label">Total MEV (session)</div>
+              </div>
+              <div className="card p-5 text-center">
+                <div className="stat-value !text-2xl font-mono">
+                  {eventsPerMinute}
+                </div>
+                <div className="stat-label">Events / min</div>
+              </div>
+              <div className="card p-5 text-center">
+                <div className="stat-value !text-2xl text-amber-400 font-mono">
+                  {events.filter(e => e.isRisingStar).length}
+                </div>
+                <div className="stat-label">Rising Stars</div>
+              </div>
+              <div className="card p-5 text-center">
+                <div className="stat-value !text-2xl font-mono">
+                  {events.length}
+                </div>
+                <div className="stat-label">Total events</div>
+              </div>
             </div>
-            <div className="text-xs text-[var(--text-muted)]">Total MEV (session)</div>
-          </div>
-          <div className="card-clean p-4 text-center">
-            <div className="text-2xl font-bold font-mono">
-              {eventsPerMinute}
-            </div>
-            <div className="text-xs text-[var(--text-muted)]">Events / min</div>
-          </div>
-          <div className="card-clean p-4 text-center">
-            <div className="text-2xl font-bold text-[var(--accent-yellow)] font-mono">
-              {events.filter(e => e.isRisingStar).length}
-            </div>
-            <div className="text-xs text-[var(--text-muted)]">Rising Stars</div>
-          </div>
-          <div className="card-clean p-4 text-center">
-            <div className="text-2xl font-bold font-mono">
-              {events.length}
-            </div>
-            <div className="text-xs text-[var(--text-muted)]">Total events</div>
           </div>
         </section>
 
         {/* Visualization */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Rain area */}
-          <div className="lg:col-span-2 relative h-80 md:h-96 card-clean overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-[var(--accent)]/5 via-transparent to-[var(--accent-purple)]/5"></div>
-            
-            {activeEvents.map((event) => (
-              <FallingNumber
-                key={event.id}
-                event={event}
-                onComplete={() => removeActiveEvent(event.id)}
-              />
-            ))}
-            
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center">
-                <div className="text-5xl font-bold text-[var(--accent)]/20 font-mono">
-                  {totalMev.toFixed(2)}
-                </div>
-                <div className="text-sm text-[var(--text-muted)]">Total MEV</div>
-              </div>
-            </div>
-            
-            <div className="absolute bottom-4 left-4 text-xs text-[var(--text-muted)] bg-[var(--bg-primary)]/80 px-3 py-2 rounded-lg">
-              <span className="text-[var(--accent-yellow)]">Yellow = Rising Stars</span>
-            </div>
-          </div>
-
-          {/* Feed */}
-          <div className="card-clean overflow-hidden">
-            <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
-              <h3 className="font-medium flex items-center gap-2">
-                <span className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse"></span>
-                Live Feed
-              </h3>
-              <span className="text-xs text-[var(--text-muted)]">Recent</span>
-            </div>
-            <div className="max-h-64 md:max-h-80 overflow-y-auto">
-              {events.slice(-15).reverse().map((event) => (
-                <div
-                  key={event.id}
-                  className="px-4 py-2 border-b border-[var(--border-color)]/50 flex items-center justify-between text-sm"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    {event.isRisingStar && <span>🌟</span>}
-                    <span className="truncate text-[var(--text-secondary)]">
-                      {event.name || "Anonymous"}
-                    </span>
+        <section className="pb-16 px-6">
+          <div className="container-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Rain area */}
+              <div className="lg:col-span-2 relative h-80 md:h-96 card overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-[var(--accent)]/5 via-transparent to-purple-500/5"></div>
+                
+                {activeEvents.map((event) => (
+                  <FallingNumber
+                    key={event.id}
+                    event={event}
+                    onComplete={() => removeActiveEvent(event.id)}
+                  />
+                ))}
+                
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center">
+                    <div className="text-5xl font-bold text-[var(--accent)]/20 font-mono">
+                      {totalMev.toFixed(2)}
+                    </div>
+                    <div className="text-sm text-[var(--text-muted)]">Total MEV</div>
                   </div>
-                  <span className={`font-mono shrink-0 ${event.isRisingStar ? "text-[var(--accent-yellow)]" : "text-[var(--accent)]"}`}>
-                    +{event.mevSol.toFixed(2)}
-                  </span>
                 </div>
-              ))}
+                
+                <div className="absolute bottom-4 left-4 text-xs text-[var(--text-muted)] bg-[var(--bg-primary)]/80 px-3 py-2 rounded-xl">
+                  <span className="text-amber-400">Yellow = Rising Stars</span>
+                </div>
+              </div>
+
+              {/* Feed */}
+              <div className="card overflow-hidden">
+                <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <span className="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse"></span>
+                    Live Feed
+                  </h3>
+                  <span className="text-xs text-[var(--text-muted)]">Recent</span>
+                </div>
+                <div className="max-h-64 md:max-h-80 overflow-y-auto">
+                  {events.slice(-15).reverse().map((event) => (
+                    <div
+                      key={event.id}
+                      className="px-4 py-3 border-b border-[var(--border)]/50 flex items-center justify-between text-sm"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {event.isRisingStar && <span>🌟</span>}
+                        <span className="truncate text-[var(--text-secondary)]">
+                          {event.name || "Anonymous"}
+                        </span>
+                      </div>
+                      <span className={`font-mono shrink-0 ${event.isRisingStar ? "text-amber-400" : "text-[var(--accent)]"}`}>
+                        +{event.mevSol.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Note */}
-        <section className="mt-8 text-center text-xs text-[var(--text-muted)]">
-          <p>This visualization is simulated. Production would connect to real Jito block data.</p>
+        <section className="pb-8 px-6 text-center">
+          <p className="text-xs text-[var(--text-muted)]">
+            This visualization is simulated. Production would connect to real Jito block data.
+          </p>
         </section>
 
+        {/* Section Divider */}
+        <div className="section-divider mx-6" />
+
         {/* CTA */}
-        <section className="mt-12 text-center">
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link href="/discover" className="btn-primary inline-block">
-              🌟 Discover Rising Stars
-            </Link>
-            <Link href="/compare" className="btn-secondary inline-block">
-              📊 Compare LSTs
-            </Link>
+        <section className="py-16 px-6">
+          <div className="container-lg text-center">
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Link href="/discover" className="btn-primary">
+                🌟 Discover Rising Stars
+              </Link>
+              <Link href="/compare" className="btn-secondary">
+                📊 Compare LSTs
+              </Link>
+            </div>
           </div>
         </section>
       </main>
     </div>
+  );
+}
+
+// Header Component
+function Header() {
+  return (
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
+      <div className="container-lg">
+        <div className="flex items-center justify-between h-16 md:h-20">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-2xl">🚀</span>
+            <span className="text-lg font-semibold hidden sm:inline">StakePilot</span>
+          </Link>
+          <nav className="flex items-center gap-1">
+            <Link href="/compare" className="btn-ghost">
+              Compare
+            </Link>
+            <Link href="/discover" className="btn-ghost">
+              Discover
+            </Link>
+            <Link href="/route" className="btn-ghost">
+              Route
+            </Link>
+          </nav>
+        </div>
+      </div>
+    </header>
   );
 }
