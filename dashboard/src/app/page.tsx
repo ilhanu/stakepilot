@@ -88,31 +88,58 @@ export default async function Dashboard() {
   const bestApy = Math.max(...lstComparison.protocols.map((p) => p.apy));
   const jitoApy = lstComparison.protocols.find(p => p.id === "jito")?.apy || 8.0;
   const msolApy = lstComparison.protocols.find(p => p.id === "marinade")?.apy || 7.0;
+  const bestProtocol = lstComparison.protocols.find(p => p.id === lstComparison.bestForYield);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <Header />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Hero Section - NEW VISION */}
+        {/* Hero Section - THREE PILLARS */}
         <section className="mb-12 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-900/30 border border-yellow-700/50 rounded-full text-yellow-400 text-sm mb-6">
-            <span className="animate-pulse">🌟</span>
-            <span>Champion the Underdogs. Decentralize Solana.</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-900/30 border border-blue-700/50 rounded-full text-blue-400 text-sm mb-6">
+            <span className="animate-pulse">📊</span>
+            <span>Complete Staking Intelligence for Solana</span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">
-            Discover Hidden Validators
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            See Real Yields, Not Marketing Numbers
           </h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-6">
-            80% of stake goes to the top 20 validators. We use MEV prediction to find the hidden gems —
-            small validators with explosive growth potential.
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-8">
+            Compare LSTs fairly with base APY + MEV bonus breakdown. Discover rising star validators. 
+            Smart routing that balances yield + decentralization. All transparent.
           </p>
+          
+          {/* Three Pillars */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto mb-8">
+            <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-xl p-4 text-left">
+              <div className="text-2xl mb-2">📊</div>
+              <h3 className="font-bold text-blue-300 mb-1">Yield Truth</h3>
+              <p className="text-xs text-gray-400">Real APY from real APIs. Base yield vs MEV bonus, all broken down.</p>
+            </div>
+            <div className="bg-gradient-to-br from-yellow-900/30 to-orange-800/20 border border-yellow-700/50 rounded-xl p-4 text-left">
+              <div className="text-2xl mb-2">🌟</div>
+              <h3 className="font-bold text-yellow-300 mb-1">Validator Discovery</h3>
+              <p className="text-xs text-gray-400">Find rising stars before everyone else. Support decentralization.</p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-900/30 to-pink-800/20 border border-purple-700/50 rounded-xl p-4 text-left">
+              <div className="text-2xl mb-2">🛤️</div>
+              <h3 className="font-bold text-purple-300 mb-1">Smart Routing</h3>
+              <p className="text-xs text-gray-400">Know where to stake. Optimal allocation with clear reasoning.</p>
+            </div>
+          </div>
+
           <div className="flex justify-center gap-4 flex-wrap">
+            <a 
+              href="#compare"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-lg transition font-medium text-white"
+            >
+              📊 Compare LSTs
+            </a>
             <Link 
               href="/rising-stars"
               className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 rounded-lg transition font-medium text-white"
             >
-              🌟 View Rising Stars
+              🌟 Rising Stars
             </Link>
             <Link 
               href="/live"
@@ -135,22 +162,26 @@ export default async function Dashboard() {
             icon={<span className="text-xl">⏱️</span>}
           />
           <StatsCard
-            title="Total MEV This Epoch"
-            value={`${mevStats.totalMevSol.toLocaleString(undefined, { maximumFractionDigits: 0 })} SOL`}
-            subtitle={`≈ $${(mevStats.totalMevSol * 150).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-            icon={<span className="text-xl">💰</span>}
-            trend={{ value: 12.5, label: "vs last epoch" }}
-          />
-          <StatsCard
-            title="Best Yield (LST)"
+            title="Best LST Yield"
             value={`${bestApy.toFixed(2)}%`}
-            subtitle={`via ${lstComparison.protocols.find(p => p.id === lstComparison.bestForYield)?.token}`}
+            subtitle={
+              <span>
+                via {bestProtocol?.token} <span className="text-gray-500">(Base: {bestProtocol?.baseAPY?.toFixed(1) || bestApy.toFixed(1)}%)</span>
+              </span>
+            }
             icon={<span className="text-xl">📈</span>}
           />
           <StatsCard
-            title="Active Validators"
+            title="MEV Bonus (jitoSOL)"
+            value={`+${lstComparison.protocols.find(p => p.id === "jito")?.mevBonus?.toFixed(2) || "0.93"}%`}
+            subtitle="On top of base yield"
+            icon={<span className="text-xl">⚡</span>}
+            trend={{ value: 0, label: "variable" }}
+          />
+          <StatsCard
+            title="Active MEV Validators"
             value={mevStats.validatorCount.toLocaleString()}
-            subtitle="Earning MEV rewards"
+            subtitle="Earning extra rewards"
             icon={<span className="text-xl">🖥️</span>}
           />
         </section>
@@ -160,16 +191,29 @@ export default async function Dashboard() {
           <MevAlerts />
         </section>
 
-        {/* Rising Stars Preview */}
+        {/* LST Comparison - YIELD TRUTH (Primary Feature) */}
+        <section id="compare" className="mb-8">
+          <LstComparison
+            protocols={lstComparison.protocols}
+            bestForYield={lstComparison.bestForYield}
+            bestForMev={lstComparison.bestForMev}
+            bestForBaseYield={lstComparison.bestForBaseYield}
+            bestForDecentralization={lstComparison.bestForDecentralization}
+            recommendation={lstComparison.recommendation}
+            yieldBreakdown={lstComparison.yieldBreakdown}
+          />
+        </section>
+
+        {/* Rising Stars Preview - VALIDATOR DISCOVERY */}
         {risingStars.length > 0 && (
           <section className="mb-8">
             <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-800/30 rounded-xl p-6">
               <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                 <div>
                   <h3 className="text-xl font-bold flex items-center gap-2">
-                    <span>🌟</span> Rising Stars
+                    <span>🌟</span> Validator Discovery — Rising Stars
                   </h3>
-                  <p className="text-gray-400 text-sm">Small validators with explosive MEV growth</p>
+                  <p className="text-gray-400 text-sm">Small validators with explosive MEV growth • Native staking optimization</p>
                 </div>
                 <Link 
                   href="/rising-stars"
@@ -206,13 +250,22 @@ export default async function Dashboard() {
           </section>
         )}
 
-        {/* Yield Simulator */}
+        {/* Yield Simulator - SMART ROUTING */}
         <section id="simulator" className="mb-8">
-          <YieldSimulator
-            currentJitoApy={jitoApy}
-            currentMsolApy={msolApy}
-            avgMevPerEpoch={mevStats.avgMevPerValidator / 1e9}
-          />
+          <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-800/30 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-2xl">🛤️</span>
+              <h3 className="text-xl font-bold">Smart Routing — Know Where to Stake</h3>
+            </div>
+            <p className="text-gray-400 text-sm mb-4">
+              Simulate your expected yield across different strategies. Input amount, see outcomes.
+            </p>
+            <YieldSimulator
+              currentJitoApy={jitoApy}
+              currentMsolApy={msolApy}
+              avgMevPerEpoch={mevStats.avgMevPerValidator / 1e9}
+            />
+          </div>
         </section>
 
         {/* Auto-Rebalance Preview */}
@@ -239,72 +292,48 @@ export default async function Dashboard() {
           </div>
         </section>
 
-        {/* LST Comparison */}
-        <section id="compare" className="mb-8">
-          <LstComparison
-            protocols={lstComparison.protocols}
-            bestForYield={lstComparison.bestForYield}
-            bestForMev={lstComparison.bestForMev}
-            recommendation={lstComparison.recommendation}
-          />
-        </section>
-
-        {/* Features Section */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-gradient-to-br from-yellow-900/30 to-orange-900/20 border border-yellow-800/50 rounded-xl p-6">
-            <div className="text-3xl mb-4">🔮</div>
-            <h3 className="text-xl font-semibold mb-2">MEV Prediction</h3>
-            <p className="text-gray-400 text-sm">
-              Our AI predicts which validators will earn the most MEV next epoch.
-              Find alpha before the crowd. Backtest accuracy tracked publicly.
-            </p>
+        {/* What We Do Section */}
+        <section className="mb-12">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold mb-2">What Makes StakePilot Different?</h3>
+            <p className="text-gray-400">We're the complete staking brain — not just another yield aggregator</p>
           </div>
-          <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border border-green-800/50 rounded-xl p-6">
-            <div className="text-3xl mb-4">🌟</div>
-            <h3 className="text-xl font-semibold mb-2">Rising Stars</h3>
-            <p className="text-gray-400 text-sm">
-              Discover small validators with explosive growth. Support the underdogs.
-              Help decentralize Solana while earning great yields.
-            </p>
-          </div>
-          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/20 border border-purple-800/50 rounded-xl p-6">
-            <div className="text-3xl mb-4">🌐</div>
-            <h3 className="text-xl font-semibold mb-2">Decentralization Score</h3>
-            <p className="text-gray-400 text-sm">
-              Every validator gets a score based on how much your stake helps network health.
-              Higher scores for small validators — champion decentralization!
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-800/50 rounded-xl p-6">
+              <div className="text-3xl mb-4">📊</div>
+              <h4 className="text-xl font-semibold mb-2 text-blue-300">Yield Truth</h4>
+              <p className="text-gray-400 text-sm">
+                Real APY from real APIs. We fetch directly from Marinade, BlazeStake, and Jito.
+                Base yield vs MEV bonus — you see exactly where your returns come from.
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-yellow-900/30 to-orange-900/20 border border-yellow-800/50 rounded-xl p-6">
+              <div className="text-3xl mb-4">🌟</div>
+              <h4 className="text-xl font-semibold mb-2 text-yellow-300">Validator Discovery</h4>
+              <p className="text-gray-400 text-sm">
+                80% of stake goes to top 20 validators. We find the rising stars —
+                small validators with improving performance. Champion decentralization!
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/20 border border-purple-800/50 rounded-xl p-6">
+              <div className="text-3xl mb-4">🛤️</div>
+              <h4 className="text-xl font-semibold mb-2 text-purple-300">Smart Routing</h4>
+              <p className="text-gray-400 text-sm">
+                Don't know where to stake? We optimize based on your priorities —
+                yield, decentralization, liquidity. Clear reasoning, smart allocation.
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* Additional Features Row */}
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
-          <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border border-blue-800/50 rounded-xl p-4 text-center">
-            <div className="text-2xl mb-2">🔔</div>
-            <h4 className="font-semibold mb-1">Smart Alerts</h4>
-            <p className="text-xs text-gray-400">
-              Get notified about yield opportunities and validator changes
-            </p>
-          </div>
-          <div className="bg-gradient-to-br from-green-900/30 to-blue-900/30 border border-green-800/50 rounded-xl p-4 text-center">
-            <div className="text-2xl mb-2">💼</div>
-            <h4 className="font-semibold mb-1">Portfolio Tracking</h4>
-            <p className="text-xs text-gray-400">
-              Full overview of your staking positions and projected yields
-            </p>
-          </div>
-          <div className="bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border border-yellow-800/50 rounded-xl p-4 text-center">
-            <div className="text-2xl mb-2">🌟</div>
-            <h4 className="font-semibold mb-1">Rising Stars</h4>
-            <p className="text-xs text-gray-400">
-              Discover validators with improving MEV performance
-            </p>
-          </div>
-          <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-800/50 rounded-xl p-4 text-center">
-            <div className="text-2xl mb-2">📊</div>
-            <h4 className="font-semibold mb-1">Historical Data</h4>
-            <p className="text-xs text-gray-400">
-              Track MEV trends over time across epochs
+        {/* Key Insight Banner */}
+        <section className="mb-12">
+          <div className="bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-800/30 rounded-xl p-6 text-center">
+            <h4 className="text-lg font-bold text-green-400 mb-2">💡 Key Insight</h4>
+            <p className="text-gray-300 max-w-2xl mx-auto">
+              <strong>Base staking yield (~6-7%)</strong> is what you can rely on. 
+              <strong className="text-yellow-400"> MEV bonus (+0-2%)</strong> is the variable upside for those using jitoSOL or native staking to MEV validators.
+              We make this distinction crystal clear.
             </p>
           </div>
         </section>
@@ -312,9 +341,10 @@ export default async function Dashboard() {
         {/* Footer */}
         <footer className="text-center text-gray-500 text-sm py-8 border-t border-gray-800">
           <p className="text-lg font-semibold text-white mb-2">🚀 StakePilot</p>
+          <p className="text-blue-400 mb-2">Complete Staking Intelligence</p>
           <p>Built for the Colosseum Agent Hackathon 🏆</p>
           <p className="mt-2">
-            Powered by Jito MEV data • Solana • Next.js
+            Powered by real data from Jito • Marinade • BlazeStake • Solana
           </p>
           <div className="mt-4 flex justify-center gap-4">
             <a

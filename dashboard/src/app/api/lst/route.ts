@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getLstComparison } from "@/lib/lst";
 
-export const revalidate = 300;
+export const revalidate = 300; // 5 minutes - cached for performance
 
 export async function GET() {
   try {
@@ -12,7 +12,10 @@ export async function GET() {
       bestForYield: comparison.bestForYield,
       bestForMev: comparison.bestForMev,
       bestForLiquidity: comparison.bestForLiquidity,
+      bestForBaseYield: comparison.bestForBaseYield,
+      bestForDecentralization: comparison.bestForDecentralization,
       recommendation: comparison.recommendation,
+      yieldBreakdown: comparison.yieldBreakdown,
       updatedAt: comparison.updatedAt,
     });
   } catch (error) {

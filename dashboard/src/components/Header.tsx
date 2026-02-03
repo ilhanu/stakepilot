@@ -30,7 +30,7 @@ export function Header() {
                 StakePilot
               </span>
               <span className="hidden md:block text-xs text-gray-500 -mt-1">
-                MEV-Aware Staking
+                Complete Staking Intelligence
               </span>
             </div>
           </Link>
