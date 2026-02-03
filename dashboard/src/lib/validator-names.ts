@@ -56,12 +56,17 @@ async function fetchFromStakeWiz(voteAccount: string): Promise<ValidatorInfo | n
     
     return {
       name: data.name || null,
+      description: data.description || null,
+      website: data.website || null,
+      image: data.image || null,
       isJito: data.is_jito || false,
       commission: data.commission || 0,
       jitoCommissionBps: data.jito_commission_bps || 0,
       wizScore: data.wiz_score || 0,
       city: data.ip_city || null,
       country: data.ip_country || null,
+      activatedStake: data.activated_stake || 0,
+      skipRate: data.skip_rate || 0,
     };
   } catch {
     return null;
@@ -118,12 +123,17 @@ export async function getValidatorInfo(voteAccount: string): Promise<ValidatorIn
   if (KNOWN_VALIDATORS[voteAccount]) {
     return {
       name: KNOWN_VALIDATORS[voteAccount],
+      description: null,
+      website: null,
+      image: null,
       isJito: false,
       commission: 0,
       jitoCommissionBps: 0,
       wizScore: 0,
       city: null,
       country: null,
+      activatedStake: 0,
+      skipRate: 0,
     };
   }
   

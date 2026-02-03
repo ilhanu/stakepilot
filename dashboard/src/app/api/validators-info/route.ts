@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchAllValidators, ValidatorInfo } from '@/lib/validator-info';
+import { fetchAllValidatorsFromStakeWiz, ValidatorInfo } from '@/lib/validator-names';
 
 export const revalidate = 1800; // 30 minutes
 
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const jitoOnly = searchParams.get('jitoOnly') === 'true';
     
-    const validators = await fetchAllValidators();
+    const validators = await fetchAllValidatorsFromStakeWiz();
     
     // If specific validator requested
     if (voteAccount) {
