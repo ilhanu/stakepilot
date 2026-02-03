@@ -134,22 +134,23 @@ export default async function Home() {
                 </div>
               </Link>
 
-              {/* Route Card */}
-              <Link href="/route" className="card card-interactive p-8 group">
+              {/* Autopilot Card - FEATURED */}
+              <Link href="/autopilot" className="card card-interactive p-8 group border-[var(--accent)]/50 bg-gradient-to-br from-[var(--accent)]/5 to-transparent">
                 <div className="mb-6">
-                  <span className="text-4xl">🛤️</span>
+                  <span className="text-4xl">🤖</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-3 group-hover:text-[var(--accent)] transition-colors">
-                  Route My Stake
+                  Autopilot
                 </h3>
                 <p className="text-[var(--text-secondary)] text-sm mb-6 leading-relaxed">
-                  Get personalized staking recommendations based on your goals
+                  AI-powered autonomous staking. Set your risk, let intelligence optimize your yield 24/7.
                 </p>
                 <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-6">
-                  <span className="badge">AI Powered</span>
+                  <span className="badge bg-[var(--accent)]/20 text-[var(--accent)] border-[var(--accent)]/30">✨ New</span>
+                  <span className="badge">Up to 10% APY</span>
                 </div>
                 <div className="flex items-center text-[var(--accent)] text-sm font-medium">
-                  Get Advice
+                  Activate Now
                   <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -229,8 +230,8 @@ function Header() {
             <Link href="/discover" className="btn-ghost">
               Discover
             </Link>
-            <Link href="/route" className="btn-ghost">
-              Route
+            <Link href="/autopilot" className="btn-ghost text-[var(--accent)]">
+              🤖 Autopilot
             </Link>
           </nav>
         </div>
