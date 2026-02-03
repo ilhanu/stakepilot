@@ -96,12 +96,24 @@ async function fetchJitoData(): Promise<{
     const latestRatio = ratioData.ratios[ratioData.ratios.length - 1]?.data || 1.259;
     const latestValidators = stats.num_validators[stats.num_validators.length - 1]?.data || 780;
 
-    // Jito's APY includes MEV
-    // Base Solana staking is ~6%, Jito adds MEV on top
-    // We estimate: totalAPY = baseAPY + mevBonus
-    const baseApyEstimate = 0.06; // ~6% base Solana staking
+    // Jito's reported APY already includes both base staking AND MEV rewards combined
+    // Their API returns the total effective APY that jitoSOL holders receive
+    // 
+    // To estimate the MEV component:
+    // - Compare to Marinade's pure staking APY (no MEV) as baseline
+    // - Or use inflation rate (~5.5-6%) as conservative base estimate
+    //
+    // For transparency, we show:
+    // - totalAPY: What Jito reports (the actual yield including MEV)
+    // - baseAPY: Estimated staking component (similar to other LSTs)
+    // - mevBonus: Estimated MEV contribution (totalAPY - estimated base, or 0 if negative)
     const totalApy = latestApy;
-    const mevBonus = Math.max(0, totalApy - baseApyEstimate);
+    
+    // Conservative base estimate: typical Solana staking is ~5.5-6%
+    // We use 5.5% to be conservative (ensures MEV bonus shows as positive when it exists)
+    const conservativeBase = 0.055;
+    const mevBonus = Math.max(0, totalApy - conservativeBase);
+    const baseApyEstimate = totalApy - mevBonus;
 
     // Historical data (last 7 days available)
     const historical: LstHistoricalData[] = stats.apy.map((apyPoint, i) => ({
