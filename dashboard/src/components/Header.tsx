@@ -5,9 +5,9 @@ import { WalletButton } from "./WalletButton";
 import Link from "next/link";
 
 const NAV_ITEMS = [
-  { href: "#dashboard", label: "Dashboard", icon: "📊" },
-  { href: "#simulator", label: "Simulator", icon: "🧮" },
-  { href: "#rebalance", label: "Rebalance", icon: "⚖️" },
+  { href: "/", label: "Dashboard", icon: "📊" },
+  { href: "/rising-stars", label: "Rising Stars", icon: "🌟", highlight: true },
+  { href: "/live", label: "Live MEV", icon: "⚡" },
   { href: "#validators", label: "Validators", icon: "🏆" },
   { href: "#compare", label: "Compare LSTs", icon: "📈" },
   { href: "/learn", label: "Learn", icon: "📚" },
@@ -41,7 +41,11 @@ export function Header() {
               <a
                 key={item.href}
                 href={item.href}
-                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors flex items-center gap-1.5"
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  (item as any).highlight
+                    ? "text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/30 border border-yellow-800/50"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                }`}
               >
                 <span className="text-base">{item.icon}</span>
                 {item.label}

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getValidatorRewards, getBamValidators } from "@/lib/jito";
 import { getCurrentEpoch, getEpochInfo } from "@/lib/solana";
+import { generatePredictions, MevPrediction } from "@/lib/mev-prediction";
 import { truncateAddress, formatSol } from "@/lib/utils";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -24,6 +25,15 @@ interface EpochData {
 async function getValidatorDetails(address: string) {
   const currentEpoch = await getCurrentEpoch();
   const epochInfo = await getEpochInfo();
+
+  // Fetch prediction data for this validator
+  let prediction: MevPrediction | null = null;
+  try {
+    const { predictions } = await generatePredictions(currentEpoch, 15);
+    prediction = predictions.find(p => p.voteAccount === address) || null;
+  } catch (e) {
+    console.warn("Failed to get prediction for validator:", e);
+  }
 
   // Fetch data for last 10 epochs
   const epochsToFetch = Array.from(
@@ -93,6 +103,7 @@ async function getValidatorDetails(address: string) {
     currentEpoch,
     epochInfo,
     epochData: epochData.sort((a, b) => b.epoch - a.epoch),
+    prediction,
     stats: {
       totalMev,
       totalMevSol: totalMev / 1e9,
@@ -116,7 +127,7 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
     notFound();
   }
 
-  const { name, stake, epochData, stats, epochInfo } = data;
+  const { name, stake, epochData, stats, epochInfo, prediction } = data;
 
   // Calculate score
   let score = 50; // Base score
@@ -148,16 +159,78 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-3xl">
-              🔷
+              {prediction?.isRisingStar ? "🌟" : "🔷"}
             </div>
             <div>
-              <h1 className="text-3xl font-bold">
-                {name || "Unknown Validator"}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold">
+                  {name || "Unknown Validator"}
+                </h1>
+                {prediction?.isRisingStar && (
+                  <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
+                    🌟 Rising Star
+                  </Badge>
+                )}
+                {prediction && prediction.decentralizationScore > 80 && (
+                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
+                    🌐 Decentralization Hero
+                  </Badge>
+                )}
+              </div>
               <p className="text-gray-400 font-mono">{address}</p>
             </div>
           </div>
         </div>
+
+        {/* Prediction Banner (if available) */}
+        {prediction && (
+          <div className={`mb-8 p-6 rounded-xl border ${
+            prediction.isRisingStar 
+              ? "bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-yellow-700/50" 
+              : "bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50"
+          }`}>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
+                  <span>🔮</span> Next Epoch Prediction
+                </h3>
+                <p className="text-sm text-gray-400">
+                  Based on analysis of {prediction.epochsAnalyzed} epochs
+                </p>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-400">
+                    {prediction.predictedMevSol.toFixed(2)} SOL
+                  </div>
+                  <div className="text-xs text-gray-500">Predicted MEV</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-2xl font-bold ${
+                    prediction.trend === "rising" ? "text-green-400" : 
+                    prediction.trend === "falling" ? "text-red-400" : "text-gray-400"
+                  }`}>
+                    {prediction.trend === "rising" ? "↑" : prediction.trend === "falling" ? "↓" : "→"}
+                    {prediction.momentum.toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-gray-500">Trend</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-400">
+                    {prediction.confidence.toFixed(0)}%
+                  </div>
+                  <div className="text-xs text-gray-500">Confidence</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-400">
+                    {prediction.decentralizationScore.toFixed(0)}
+                  </div>
+                  <div className="text-xs text-gray-500">Decentralization</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -228,6 +301,34 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
             </CardContent>
           </Card>
         </div>
+
+        {/* Support This Validator CTA */}
+        {prediction?.isRisingStar && (
+          <div className="mb-8 p-6 rounded-xl bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-800/50 text-center">
+            <h3 className="text-xl font-bold mb-2">Champion This Rising Star!</h3>
+            <p className="text-gray-400 mb-4">
+              This small validator is showing strong MEV growth. Supporting them helps decentralize Solana.
+            </p>
+            <div className="flex justify-center gap-4">
+              <a
+                href={`https://stakewiz.com/validator/${address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 rounded-lg transition font-medium"
+              >
+                🚀 Stake with This Validator
+              </a>
+              <a
+                href={`https://validators.app/validators/${address}?network=mainnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition"
+              >
+                📊 View on validators.app
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* MEV History Chart */}
         <Card className="mb-8">
@@ -345,10 +446,41 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
                   <p className="text-sm text-gray-400">Vote Account</p>
                   <p className="text-sm font-mono text-gray-300">{address}</p>
                 </div>
+                {prediction && (
+                  <>
+                    <div>
+                      <p className="text-sm text-gray-400">MEV Efficiency</p>
+                      <p className="text-xl font-semibold">
+                        {prediction.mevEfficiency.toFixed(4)}
+                      </p>
+                      <p className="text-xs text-gray-500">MEV per 1000 SOL staked</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Volatility</p>
+                      <p className="text-xl font-semibold">
+                        {prediction.volatility.toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {prediction.volatility < 30 ? "Low - Consistent" : 
+                         prediction.volatility < 60 ? "Medium" : "High - Variable"}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Back to Rising Stars */}
+        <div className="mt-8 text-center">
+          <Link
+            href="/rising-stars"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition"
+          >
+            🌟 Discover More Rising Stars
+          </Link>
+        </div>
       </main>
     </div>
   );
@@ -358,6 +490,6 @@ export async function generateMetadata({ params }: ValidatorPageProps) {
   const { address } = await params;
   return {
     title: `Validator ${truncateAddress(address, 6)} - StakePilot`,
-    description: `View MEV performance and history for Solana validator ${address}`,
+    description: `View MEV performance and predictions for Solana validator ${address}`,
   };
 }
