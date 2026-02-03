@@ -1,64 +1,83 @@
 # 🚀 StakePilot
 
-**Discover Hidden Validators. Predict MEV. Decentralize Solana.**
+**Complete Staking Intelligence for Solana.**
 
-> *80% of stake goes to the top 20 validators. We fix this.*
+> *See real yields, not marketing numbers. Compare fairly. Stake smartly.*
 
-StakePilot uses AI-powered MEV prediction to discover high-performing small validators before the crowd. Champion the underdogs. Decentralize the network.
+StakePilot is the complete staking brain — **Yield Truth**, **Validator Discovery**, and **Smart Routing** in one platform.
 
 🌐 **Live:** [stakepilot-olig.vercel.app](https://stakepilot-olig.vercel.app)
 
-## 🌟 Why StakePilot?
+## 📊 The Three Pillars
 
-| The Problem | Our Solution |
-|-------------|--------------|
-| Top 20 validators get 80% of stake | Discover hidden gems with rising MEV |
-| Users miss better yields | Predict next epoch's top performers |
-| Centralization threatens network | Reward small validators with good performance |
-| Boring dashboards | Engaging, real-time visualizations |
+### 1. Yield Truth
+**Real APY from real APIs. No guessing.**
+
+We fetch directly from Marinade, BlazeStake, and Jito APIs:
+- **Base APY** — The guaranteed staking yield (~6-7%)
+- **MEV Bonus** — The variable upside (0-2%+ for jitoSOL)
+- **Net Yield** — What you actually get after fees
+
+| Protocol | Token | Base APY | MEV Bonus | Total APY | Source |
+|----------|-------|----------|-----------|-----------|--------|
+| Jito | jitoSOL | ~6% | +0.9%+ | ~6.9%+ | kobe.mainnet.jito.network |
+| Marinade | mSOL | ~6.1% | — | ~6.1% | api.marinade.finance |
+| BlazeStake | bSOL | ~6.1% | +BLZE | ~6.1%+ | stake.solblaze.org |
+
+### 2. Validator Discovery
+**Find rising stars before everyone else.**
+
+80% of stake goes to the top 20 validators. We fix this:
+- **Rising Stars** — Small validators with explosive MEV growth
+- **MEV Prediction** — AI predicts next epoch's top performers
+- **Decentralization Score** — Bonus for supporting network health
+
+### 3. Smart Routing
+**Know where to stake. Clear reasoning.**
+
+Input your amount, priorities, and risk tolerance:
+- Optimal allocation across LSTs and validators
+- Balance yield + decentralization + liquidity
+- Clear reasoning for every recommendation
+
+## 💡 Key Insight
+
+**Base staking yield (~6-7%)** is what you can rely on.
+**MEV bonus (+0-2%)** is the variable upside for jitoSOL holders.
+
+We make this distinction **crystal clear**.
 
 ## ✨ Features
 
-### 🔮 MEV Prediction Engine
-Our AI analyzes 15 epochs of historical data to predict which validators will earn the most MEV next epoch:
-- Trend analysis with linear regression
-- Momentum and volatility scoring
-- Confidence levels for every prediction
-- Backtested accuracy tracking
+### 📊 LST Comparison
+- Real APY from real APIs (not made-up numbers)
+- Base vs MEV breakdown
+- Fees, liquidity, DeFi integrations
+- Historical 30-day performance
 
 ### 🌟 Rising Stars
-Small validators with explosive MEV growth:
-- Below median stake + rising trends
-- Above-average performance despite size
-- Decentralization score bonus
-- One-click staking support
+- Small validators with rising MEV trends
+- Momentum and performance scoring
+- Easy native staking support
+- Champion decentralization!
+
+### 🛤️ Smart Routing
+- Multi-factor optimization engine
+- Risk tolerance adjustment
+- Decentralization weighting
+- Visual output with reasoning
 
 ### ⚡ Live MEV Feed
-Watch MEV flow through the network in real-time:
-- Matrix-style falling numbers
-- Rising Stars highlighted in gold
+- Real-time MEV data from Jito
+- Matrix-style visualization
 - Educational tooltips
-- Cyberpunk aesthetic
-
-### 🌐 Decentralization-Aware Routing
-Smart stake routing that maximizes yield AND network health:
-- Penalizes over-concentrated validators (>1% of network)
-- Bonus for small validators
-- Risk tolerance customization
-- Visual Jupiter-style output
-
-### 📊 Validator Profiles
-Deep dive into any validator:
-- MEV history charts
-- Next epoch predictions
-- Decentralization score
-- "I support small validators" badges
+- Rising Stars highlighted
 
 ## 🛠️ Tech Stack
 
 - **Framework:** Next.js 15 (App Router)
 - **Styling:** Tailwind CSS
-- **Data:** Jito Kobe API (MEV & validator data)
+- **Data:** Jito Kobe API, Marinade API, BlazeStake API
 - **Blockchain:** Solana Web3.js
 - **Deployment:** Vercel
 
@@ -80,35 +99,42 @@ Visit [localhost:3000](http://localhost:3000)
 
 ## 📡 API Endpoints
 
-### GET `/api/predictions`
-Get MEV predictions for all validators.
-- `?type=rising-stars` - Only rising stars
-- `?type=backtest` - Prediction accuracy
-- `?limit=50` - Number of results
-
-### POST `/api/route-stake`
-Get optimal stake allocation.
+### GET `/api/lst`
+Get LST comparison with real data.
 ```json
 {
-  "amountSol": 100,
-  "riskTolerance": "medium",
-  "decentralizationPreference": "strong",
-  "maxValidators": 5
+  "protocols": [...],
+  "bestForYield": "jito",
+  "recommendation": "...",
+  "yieldBreakdown": "Base: 6.1% | jitoSOL MEV: +0.9%"
 }
 ```
 
-### GET `/api/mev`
-Current epoch MEV stats and top validators.
+### GET `/api/lst-compare`
+Enhanced comparison with smart routing support.
+
+### POST `/api/lst-compare`
+Get smart stake routing.
+```json
+{
+  "amount": 100,
+  "riskTolerance": "medium",
+  "decentralizationPriority": "high",
+  "liquidityNeed": "medium"
+}
+```
+
+### GET `/api/predictions?type=rising-stars`
+Get rising star validators.
 
 ## 🎯 The Vision
 
-We're not just another yield dashboard. We're a movement for decentralization.
+**Staking shouldn't be guesswork.**
 
-**The goal:** Make it easy to discover and support small validators that deserve more stake.
-
-**The method:** Use data and prediction to find hidden gems before the crowd.
-
-**The spirit:** Champion the underdogs. Strengthen Solana.
+- See real yields, not marketing numbers
+- Discover validators before everyone else
+- Support decentralization while maximizing returns
+- One platform, complete intelligence
 
 ## 🏆 Hackathon
 
@@ -120,4 +146,4 @@ MIT
 
 ---
 
-*StakePilot: Discover. Predict. Decentralize.* 🌟
+*StakePilot: Yield Truth. Validator Discovery. Smart Routing.* 🚀
