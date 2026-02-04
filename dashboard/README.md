@@ -1,20 +1,38 @@
-# StakePilot Dashboard
+# StakePilot Dashboard — Agent Stake Vaults
 
-The web dashboard for StakePilot - MEV-Aware Staking Autopilot for Solana.
+The web interface for StakePilot Agent Vaults — autonomous staking controlled by AI agents.
+
+## What Is This?
+
+StakePilot lets you create a **vault** that holds your SOL. You set your staking strategy, and an **AI agent** executes optimal staking decisions on your behalf.
+
+**Key guarantee:** The agent can stake your funds to validators, but can **NEVER** withdraw to itself. Only you can withdraw.
 
 ## Features
 
-- 🏆 **MEV Leaderboard** - Real-time ranking of validators by MEV earnings
-- 📊 **Validator Detail Pages** - Historical MEV performance with charts
-- 🔄 **LST Comparison** - Compare jitoSOL, mSOL, bSOL yields
-- 👛 **Wallet Connect** - View your stake positions with Phantom, Solflare, Coinbase
-- 🌙 **Dark Mode UI** - Beautiful, modern interface
+- 🏦 **Vault Management** — Create vault, deposit, withdraw, configure strategy
+- 🤖 **Agent Dashboard** — View agent status, decisions, activity log
+- 📊 **Stake Positions** — Track your active stakes with APY and performance
+- 🔍 **Validator Discovery** — Browse 1,500+ validators with scores and metrics
+- 📈 **Projected Earnings** — See estimated yields based on your positions
 
-## Data Sources
+## Pages
 
-- **Jito Kobe API** - MEV rewards, BAM validators, stake pool stats
-- **Solana RPC** - Epoch info, stake accounts, token balances
-- **Marinade API** - mSOL TVL and APY
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page — explains Agent Vault concept |
+| `/vault` | Create vault, deposit SOL, configure strategy |
+| `/dashboard` | View vault status, positions, agent activity |
+| `/discover` | Browse and filter validators |
+| `/docs` | Documentation |
+
+## API Routes
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/vault/status?owner=<pubkey>` | Get vault state from chain |
+| `GET /api/agent/recommend?strategy=<params>` | AI staking recommendation |
+| `GET /api/validators` | List validators with metrics |
 
 ## Getting Started
 
@@ -24,74 +42,65 @@ npm install
 
 # Run development server
 npm run dev
+
+# Build for production
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the dashboard.
+Open [http://localhost:3000](http://localhost:3000)
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.local`:
-
 ```bash
-cp .env.example .env.local
+# .env.local
+NEXT_PUBLIC_RPC_URL=https://api.mainnet-beta.solana.com
+HELIUS_API_KEY=your-key  # Optional, for better RPC
 ```
 
-For better performance, use a dedicated RPC endpoint (Helius, QuickNode, etc).
+## Smart Contract
 
-## API Routes
+The Agent Vault smart contract is in `/programs/agent-vault/`.
 
-- `GET /api/validators` - Scored validators with MEV metrics
-- `GET /api/mev?epoch=N` - MEV stats and history
-- `GET /api/lst` - Liquid staking token comparison
+**Program ID (Devnet):** `66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b`
 
 ## Deploy
 
 ### Vercel (Recommended)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ilhanu/stakepilot/tree/main/dashboard)
-
-Or via CLI:
 ```bash
-npm i -g vercel
 vercel --prod
 ```
 
-### Netlify
+### Or push to GitHub
 
-```bash
-npm i -g netlify-cli
-netlify deploy --prod --dir=.next
-```
+Connected to Vercel? Just push to `main` and it auto-deploys.
 
 ## Architecture
 
 ```
-src/
-├── app/
-│   ├── api/           # API routes
-│   │   ├── validators/
-│   │   ├── mev/
-│   │   └── lst/
-│   ├── validator/     # Validator detail pages
-│   └── page.tsx       # Main dashboard
-├── components/
-│   ├── Header.tsx
-│   ├── MevLeaderboard.tsx
-│   ├── LstComparison.tsx
-│   ├── StakePositions.tsx
-│   ├── WalletProvider.tsx
-│   └── ui/            # Reusable UI components
-└── lib/
-    ├── jito.ts        # Jito Kobe API client
-    ├── lst.ts         # LST comparison logic
-    ├── solana.ts      # Solana RPC utilities
-    └── utils.ts       # Helper functions
+dashboard/
+├── src/
+│   ├── app/
+│   │   ├── page.tsx           # Landing
+│   │   ├── vault/             # Vault management
+│   │   ├── dashboard/         # User dashboard
+│   │   ├── discover/          # Validator browser
+│   │   ├── docs/              # Documentation
+│   │   └── api/               # API routes
+│   ├── components/
+│   │   ├── Header.tsx
+│   │   ├── WalletProvider.tsx
+│   │   └── ...
+│   └── lib/
+│       ├── agent-vault-sdk.ts # SDK for smart contract
+│       └── ...
+└── ...
 ```
 
 ## Built For
 
-🏆 [Colosseum Agent Hackathon](https://agents.colosseum.com)
+🏆 **Colosseum Agent Hackathon**
 
-## License
+---
 
-MIT
+*StakePilot: Your SOL. Your strategy. Agent execution.*
