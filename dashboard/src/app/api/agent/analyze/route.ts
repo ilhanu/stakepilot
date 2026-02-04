@@ -219,12 +219,12 @@ export async function GET(request: NextRequest) {
           issues.push(`High commission: ${validator.commission}%`);
           if (status !== "critical") status = "warning";
         }
-        if (validator.total_score < 5) {
-          issues.push(`Low quality score: ${validator.total_score}/10`);
+        if ((validator.total_score || 0) < 5) {
+          issues.push(`Low quality score: ${validator.total_score || 0}/10`);
           if (status !== "critical") status = "warning";
         }
-        if (parseFloat(validator.skipped_slot_percent) > 2) {
-          issues.push(`High skip rate: ${validator.skipped_slot_percent}%`);
+        if (parseFloat(validator.skipped_slot_percent || "0") > 2) {
+          issues.push(`High skip rate: ${validator.skipped_slot_percent || 0}%`);
           if (status !== "critical") status = "warning";
         }
       } else {
@@ -250,13 +250,13 @@ export async function GET(request: NextRequest) {
 
     // Find best available validators for comparison
     const bestValidators = enriched
-      .filter(v => !v.delinquent && v.total_score >= 6)
+      .filter(v => !v.delinquent && (v.total_score || 0) >= 6)
       .map(v => {
         const mev = mevLookup.get(v.vote_account);
         let netApy = BASE_APY * (1 - v.commission / 100);
         if (mev && v.stakeSol > 0) {
           const mevPerEpoch = mev.mev_revenue * (1 - mev.mev_commission / 100);
-          netApy += (mevPerEpoch * EPOCHS_PER_YEAR / v.active_stake) * 100;
+          netApy += (mevPerEpoch * EPOCHS_PER_YEAR / (v.active_stake || 1)) * 100;
         }
         return { ...v, netApy };
       })
@@ -277,7 +277,7 @@ export async function GET(request: NextRequest) {
           description: `URGENT: Switch from ${pos.name || pos.voteAccount.slice(0, 8)} (${pos.issues.join(", ")})`,
           currentValidator: pos.voteAccount,
           suggestedValidator: best.vote_account,
-          suggestedValidatorName: best.name,
+          suggestedValidatorName: best.name || null,
           expectedApyGain: Math.round((best.netApy - pos.currentNetApy) * 100) / 100,
           affectedSol: pos.stakedSol,
         });
@@ -291,7 +291,7 @@ export async function GET(request: NextRequest) {
             description: `Switch from ${pos.name || pos.voteAccount.slice(0, 8)} to gain +${apyGain.toFixed(2)}% APY`,
             currentValidator: pos.voteAccount,
             suggestedValidator: best.vote_account,
-            suggestedValidatorName: best.name,
+            suggestedValidatorName: best.name || null,
             expectedApyGain: Math.round(apyGain * 100) / 100,
             affectedSol: pos.stakedSol,
           });

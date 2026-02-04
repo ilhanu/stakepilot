@@ -1,335 +1,374 @@
 /**
- * validators.app API Integration
+ * validators.app API Client
  * 
- * Rich validator data: uptime, location, age, quality scores
- * Docs: https://www.validators.app/api-documentation
+ * Fetches validator data including names, commission, location, uptime
+ * API Token: uawTM1ynsnonDJ9z8YUun59F
  */
 
-const VALIDATORS_APP_BASE = "https://www.validators.app/api/v1";
+const VALIDATORS_APP_API = "https://www.validators.app/api/v1";
+const API_TOKEN = process.env.VALIDATORS_APP_TOKEN || "uawTM1ynsnonDJ9z8YUun59F";
 
-// Get API token from env (optional - some endpoints work without)
-const API_TOKEN = process.env.VALIDATORS_APP_TOKEN || "";
+// ============================================
+// TYPES
+// ============================================
 
-async function fetchValidatorsApp(endpoint: string, params?: Record<string, string>) {
-  const url = new URL(`${VALIDATORS_APP_BASE}${endpoint}`);
-  if (params) {
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  }
-
-  const headers: Record<string, string> = {
-    "Accept": "application/json",
-  };
-  if (API_TOKEN) {
-    headers["Token"] = API_TOKEN;
-  }
-
-  const response = await fetch(url.toString(), { headers });
-  if (!response.ok) {
-    throw new Error(`validators.app API error: ${response.status}`);
-  }
-  return response.json();
+export interface ValidatorFilters {
+  minUptimePercent?: number;
+  maxSkippedSlotPercent?: number;
+  countries?: string[];
+  excludeCountries?: string[];
+  minAgeDays?: number;
+  maxCommission?: number;
+  requireJito?: boolean;
+  maxJitoCommission?: number;
+  minScore?: number;
+  maxStakeSol?: number;
+  minStakeSol?: number;
+  excludeDelinquent?: boolean;
+  maxDatacenterConcentration?: number;
 }
 
-export interface ValidatorAppData {
-  account: string;           // Identity pubkey
-  vote_account: string;      // Vote account
-  name: string | null;
-  
-  // Performance
-  total_score: number;       // 0-10 quality score
-  epoch_credits: number;
-  skipped_slots: number;
-  skipped_slot_percent: string;  // e.g., "0.5155"
-  delinquent: boolean;
-  is_active: boolean;
-  
-  // Location
-  data_center_key: string;   // e.g., "24940-FI-Helsinki"
-  latitude: string;
-  longitude: string;
-  ip: string;
-  autonomous_system_number: number;
-  
-  // Age & History
-  created_at: string;        // ISO date
-  software_version: string;
-  software_client: string;   // "Agave", "Jito", etc.
-  
-  // Commission
-  commission: number;        // Stake commission (0-100)
-  jito: boolean;             // Running Jito?
-  jito_commission: number;   // MEV commission in bps (0-10000)
-  
-  // Stake
-  active_stake: number;      // In lamports
-  stake_pools_list: string[]; // ["Jito", "Marinade", etc.]
-  
-  // Scores breakdown
-  skipped_slot_score: number;
-  vote_distance_score: number;
-  root_distance_score: number;
-  stake_concentration_score: number;
-  data_center_concentration_score: number;
-  security_report_score: number;
-  
-  // Other
-  www_url: string | null;
-  details: string | null;
-  avatar_url: string | null;
-  ping_time: string | null;  // Network latency in ms
+export interface ValidatorMetrics {
+  netBaseApy: number;
+  netMevApy: number;
+  netTotalApy: number;
+  qualityTier: "S" | "A" | "B" | "C" | "D";
+  uptimePercent: number;
+  ageInDays: number;
+  stakeSol: number;
+  location: string;
 }
 
-/**
- * Get all mainnet validators from validators.app
- */
-export async function getAllValidators(options?: {
-  limit?: number;
-  order?: "score" | "name" | "stake";
-  activeOnly?: boolean;
-}): Promise<ValidatorAppData[]> {
-  const params: Record<string, string> = {
-    order: options?.order || "score",
-    limit: String(options?.limit || 1000),
-    active_only: String(options?.activeOnly ?? true),
-  };
-
-  const data = await fetchValidatorsApp("/validators/mainnet.json", params);
-  return data as ValidatorAppData[];
-}
-
-/**
- * Get detailed info for a single validator
- */
-export async function getValidatorDetails(
-  voteAccountOrIdentity: string,
-  withHistory = false
-): Promise<ValidatorAppData & { history?: any }> {
-  const params: Record<string, string> = {};
-  if (withHistory) {
-    params.with_history = "true";
-  }
-
-  return fetchValidatorsApp(
-    `/validators/mainnet/${voteAccountOrIdentity}.json`,
-    params
-  );
-}
-
-/**
- * Get block production history for a validator
- */
-export async function getValidatorBlockHistory(
-  account: string,
-  limit = 50
-): Promise<{
-  epoch: number;
-  leader_slots: number;
-  blocks_produced: number;
-  skipped_slots: number;
-  skipped_slot_percent: string;
-}[]> {
-  return fetchValidatorsApp(
-    `/validator-block-history/mainnet/${account}.json`,
-    { limit: String(limit) }
-  );
-}
-
-/**
- * Get commission changes (useful for detecting rug-pull validators)
- */
-export async function getCommissionChanges(options?: {
-  dateFrom?: string;  // ISO date
-  dateTo?: string;
-  limit?: number;
-}): Promise<{
+export interface RawValidator {
+  vote_account: string;
   account: string;
-  name: string;
-  commission_before: number;
-  commission_after: number;
-  epoch: number;
-  created_at: string;
-}[]> {
-  const params: Record<string, string> = {
-    per: String(options?.limit || 100),
-  };
-  if (options?.dateFrom) params.date_from = options.dateFrom;
-  if (options?.dateTo) params.date_to = options.dateTo;
-
-  return fetchValidatorsApp("/commission-changes/mainnet.json", params);
+  name?: string;
+  keybase_username?: string;
+  www_url?: string;
+  avatar_url?: string;
+  details?: string;
+  commission: number;
+  active_stake: number;
+  delinquent: boolean;
+  data_center_key?: string;
+  data_center_concentration?: number;
+  city?: string;
+  country?: string;
+  latitude?: string;
+  longitude?: string;
+  root_distance_score?: number;
+  vote_distance_score?: number;
+  skipped_slot_percent?: string;
+  skipped_slots?: number;
+  skipped_slot_percent_moving_average?: string;
+  epoch_credits?: number;
+  total_score?: number;
+  ping_time?: string;
+  software_version?: string;
+  software_client?: string;
+  stake_pools_list?: string[];
+  jito?: boolean;
+  jito_commission?: number;
+  created_at?: string;
+  apy?: number;
 }
 
-// =========== DERIVED METRICS ===========
-
-export interface ValidatorMetrics extends ValidatorAppData {
-  // Derived
-  uptimePercent: number;           // 100 - skipped_slot_percent
-  ageInDays: number;               // Days since created
-  location: {                       // Parsed location
-    country: string;
-    city: string;
-    provider: string;
-  };
-  qualityTier: "excellent" | "good" | "fair" | "poor";
-  stakeSol: number;                // Active stake in SOL
+export interface EnrichedValidator extends RawValidator {
+  qualityTier: "S" | "A" | "B" | "C" | "D";
+  uptimePercent: number;
+  ageInDays: number;
+  stakeSol: number;
+  location: string;
+  netBaseApy: number;
+  netMevApy: number;
+  netTotalApy: number;
 }
+
+interface GetAllValidatorsOptions {
+  limit?: number;
+  order?: "score" | "stake" | "name";
+  activeOnly?: boolean;
+}
+
+// ============================================
+// CACHE
+// ============================================
+
+let validatorsCache: RawValidator[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// ============================================
+// API FUNCTIONS
+// ============================================
 
 /**
- * Parse data center key into location components
+ * Fetch all validators from validators.app
  */
-function parseDataCenterKey(key: string): { country: string; city: string; provider: string } {
-  // Format: "ASN-COUNTRY-City" e.g., "24940-FI-Helsinki"
-  const parts = key?.split("-") || [];
-  if (parts.length >= 3) {
-    return {
-      provider: parts[0],
-      country: parts[1],
-      city: parts.slice(2).join("-"),
-    };
+export async function getAllValidators(options: GetAllValidatorsOptions = {}): Promise<RawValidator[]> {
+  const { limit = 1500, activeOnly = true } = options;
+
+  // Return cache if valid
+  if (validatorsCache && Date.now() - cacheTimestamp < CACHE_TTL) {
+    let result = validatorsCache;
+    if (activeOnly) {
+      result = result.filter(v => !v.delinquent);
+    }
+    return result.slice(0, limit);
   }
-  return { provider: "Unknown", country: "??", city: "Unknown" };
+
+  try {
+    const res = await fetch(`${VALIDATORS_APP_API}/validators/mainnet.json`, {
+      headers: {
+        "Token": API_TOKEN,
+      },
+      next: { revalidate: 300 },
+    });
+
+    if (!res.ok) {
+      throw new Error(`validators.app API error: ${res.status}`);
+    }
+
+    const data: RawValidator[] = await res.json();
+
+    // Update cache
+    validatorsCache = data;
+    cacheTimestamp = Date.now();
+
+    let result = data;
+    if (activeOnly) {
+      result = result.filter(v => !v.delinquent);
+    }
+    return result.slice(0, limit);
+  } catch (error) {
+    console.error("Failed to fetch from validators.app:", error);
+    return validatorsCache || [];
+  }
 }
 
 /**
- * Calculate quality tier from score
+ * Fetch validators for the agent recommendation API (simpler interface)
  */
-function getQualityTier(score: number): "excellent" | "good" | "fair" | "poor" {
-  if (score >= 8) return "excellent";
-  if (score >= 6) return "good";
-  if (score >= 4) return "fair";
-  return "poor";
+export async function fetchAllValidators(): Promise<EnrichedValidator[]> {
+  const raw = await getAllValidators({ activeOnly: true });
+  return enrichValidators(raw);
 }
 
 /**
  * Enrich validators with derived metrics
  */
-export function enrichValidators(validators: ValidatorAppData[]): ValidatorMetrics[] {
+export function enrichValidators(validators: RawValidator[]): EnrichedValidator[] {
+  const BASE_APY = 6.5;
+  
   return validators.map((v) => {
-    const skippedPct = parseFloat(v.skipped_slot_percent) || 0;
-    const createdDate = new Date(v.created_at);
-    const now = new Date();
-    const ageMs = now.getTime() - createdDate.getTime();
+    // Calculate quality tier based on score
+    let qualityTier: "S" | "A" | "B" | "C" | "D" = "C";
+    const score = v.total_score || 0;
+    if (score >= 9) qualityTier = "S";
+    else if (score >= 7) qualityTier = "A";
+    else if (score >= 5) qualityTier = "B";
+    else if (score >= 3) qualityTier = "C";
+    else qualityTier = "D";
+
+    // Calculate uptime from skip rate
+    const skipRate = parseFloat(v.skipped_slot_percent || "0");
+    const uptimePercent = Math.max(0, 100 - skipRate);
+
+    // Calculate age in days
+    const createdAt = v.created_at ? new Date(v.created_at) : new Date();
+    const ageInDays = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Convert stake to SOL
+    const stakeSol = (v.active_stake || 0) / 1e9;
+
+    // Build location string
+    const location = [v.city, v.country].filter(Boolean).join(", ") || "Unknown";
+
+    // Calculate NET APY
+    const commission = v.commission || 0;
+    const netBaseApy = BASE_APY * (1 - commission / 100);
     
+    // MEV APY (if Jito enabled)
+    const jitoCommission = v.jito_commission || 100;
+    const mevGross = v.jito ? 1.5 : 0; // Estimate ~1.5% MEV APY for Jito validators
+    const netMevApy = mevGross * (1 - jitoCommission / 100);
+    
+    const netTotalApy = netBaseApy + netMevApy;
+
     return {
       ...v,
-      uptimePercent: Math.max(0, 100 - skippedPct),
-      ageInDays: Math.floor(ageMs / (1000 * 60 * 60 * 24)),
-      location: parseDataCenterKey(v.data_center_key),
-      qualityTier: getQualityTier(v.total_score),
-      stakeSol: v.active_stake / 1_000_000_000,
+      qualityTier,
+      uptimePercent,
+      ageInDays,
+      stakeSol,
+      location,
+      netBaseApy,
+      netMevApy,
+      netTotalApy,
     };
   });
 }
 
-// =========== FILTER HELPERS ===========
-
-export interface ValidatorFilters {
-  minUptimePercent?: number;      // e.g., 99
-  maxSkippedSlotPercent?: number; // e.g., 1
-  countries?: string[];           // e.g., ["US", "DE", "FI"]
-  excludeCountries?: string[];    // e.g., ["CN", "RU"]
-  minAgeDays?: number;            // e.g., 90
-  maxCommission?: number;         // e.g., 10
-  requireJito?: boolean;          // Must run Jito client
-  maxJitoCommission?: number;     // e.g., 1000 (10%)
-  minScore?: number;              // e.g., 6
-  maxStakeSol?: number;           // Prefer smaller validators
-  minStakeSol?: number;           // Avoid too small
-}
-
 /**
- * Filter validators by criteria
+ * Filter validators based on criteria
  */
 export function filterValidators(
-  validators: ValidatorMetrics[],
+  validators: EnrichedValidator[],
   filters: ValidatorFilters
-): ValidatorMetrics[] {
+): EnrichedValidator[] {
   return validators.filter((v) => {
-    // Uptime
-    if (filters.minUptimePercent && v.uptimePercent < filters.minUptimePercent) {
-      return false;
-    }
+    if (filters.excludeDelinquent && v.delinquent) return false;
+    
+    if (filters.minUptimePercent && v.uptimePercent < filters.minUptimePercent) return false;
+    
     if (filters.maxSkippedSlotPercent) {
-      const skipped = parseFloat(v.skipped_slot_percent) || 0;
-      if (skipped > filters.maxSkippedSlotPercent) return false;
+      const skipRate = parseFloat(v.skipped_slot_percent || "0");
+      if (skipRate > filters.maxSkippedSlotPercent) return false;
     }
-
-    // Location
+    
     if (filters.countries && filters.countries.length > 0) {
-      if (!filters.countries.includes(v.location.country)) return false;
+      if (!v.country || !filters.countries.includes(v.country)) return false;
     }
+    
     if (filters.excludeCountries && filters.excludeCountries.length > 0) {
-      if (filters.excludeCountries.includes(v.location.country)) return false;
+      if (v.country && filters.excludeCountries.includes(v.country)) return false;
     }
-
-    // Age
-    if (filters.minAgeDays && v.ageInDays < filters.minAgeDays) {
-      return false;
-    }
-
-    // Commission
-    if (filters.maxCommission && v.commission > filters.maxCommission) {
-      return false;
-    }
-
-    // Jito
-    if (filters.requireJito && !v.jito) {
-      return false;
-    }
-    if (filters.maxJitoCommission && v.jito_commission > filters.maxJitoCommission) {
-      return false;
-    }
-
-    // Score
-    if (filters.minScore && v.total_score < filters.minScore) {
-      return false;
-    }
-
-    // Stake size
-    if (filters.maxStakeSol && v.stakeSol > filters.maxStakeSol) {
-      return false;
-    }
-    if (filters.minStakeSol && v.stakeSol < filters.minStakeSol) {
-      return false;
-    }
+    
+    if (filters.minAgeDays && v.ageInDays < filters.minAgeDays) return false;
+    
+    if (filters.maxCommission && v.commission > filters.maxCommission) return false;
+    
+    if (filters.requireJito && !v.jito) return false;
+    
+    if (filters.maxJitoCommission && v.jito_commission && v.jito_commission > filters.maxJitoCommission) return false;
+    
+    if (filters.minScore && (v.total_score || 0) < filters.minScore) return false;
+    
+    if (filters.maxStakeSol && v.stakeSol > filters.maxStakeSol) return false;
+    
+    if (filters.minStakeSol && v.stakeSol < filters.minStakeSol) return false;
+    
+    if (filters.maxDatacenterConcentration && v.data_center_concentration && 
+        v.data_center_concentration > filters.maxDatacenterConcentration) return false;
 
     return true;
   });
 }
 
-// =========== LOCATION AGGREGATES ===========
-
-export interface LocationStats {
+/**
+ * Get location statistics
+ */
+export function getLocationStats(validators: EnrichedValidator[]): Array<{
+  location: string;
   country: string;
-  city: string;
-  validatorCount: number;
-  totalStakeSol: number;
+  count: number;
+  totalStake: number;
   avgScore: number;
+}> {
+  const stats = new Map<string, {
+    location: string;
+    country: string;
+    count: number;
+    totalStake: number;
+    scores: number[];
+  }>();
+
+  for (const v of validators) {
+    const key = v.location || "Unknown";
+    const existing = stats.get(key) || {
+      location: key,
+      country: v.country || "Unknown",
+      count: 0,
+      totalStake: 0,
+      scores: [],
+    };
+    
+    existing.count++;
+    existing.totalStake += v.stakeSol;
+    if (v.total_score) existing.scores.push(v.total_score);
+    
+    stats.set(key, existing);
+  }
+
+  return Array.from(stats.values())
+    .map((s) => ({
+      location: s.location,
+      country: s.country,
+      count: s.count,
+      totalStake: s.totalStake,
+      avgScore: s.scores.length > 0 
+        ? s.scores.reduce((a, b) => a + b, 0) / s.scores.length 
+        : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
 }
 
 /**
- * Get validator distribution by location
+ * Get validator info by vote account
  */
-export function getLocationStats(validators: ValidatorMetrics[]): LocationStats[] {
-  const byLocation = new Map<string, ValidatorMetrics[]>();
+export async function getValidatorInfo(voteAccount: string): Promise<EnrichedValidator | null> {
+  const validators = await fetchAllValidators();
+  return validators.find((v) => v.vote_account === voteAccount) || null;
+}
 
+/**
+ * Get multiple validators by vote accounts
+ */
+export async function getValidatorsInfo(voteAccounts: string[]): Promise<Map<string, EnrichedValidator>> {
+  const validators = await fetchAllValidators();
+  const map = new Map<string, EnrichedValidator>();
+  
   for (const v of validators) {
-    const key = `${v.location.country}-${v.location.city}`;
-    if (!byLocation.has(key)) {
-      byLocation.set(key, []);
+    if (voteAccounts.includes(v.vote_account)) {
+      map.set(v.vote_account, v);
     }
-    byLocation.get(key)!.push(v);
   }
+  
+  return map;
+}
 
-  return Array.from(byLocation.entries())
-    .map(([key, vals]) => {
-      const [country, city] = key.split("-");
-      return {
-        country,
-        city,
-        validatorCount: vals.length,
-        totalStakeSol: vals.reduce((sum, v) => sum + v.stakeSol, 0),
-        avgScore: vals.reduce((sum, v) => sum + v.total_score, 0) / vals.length,
-      };
-    })
-    .sort((a, b) => b.validatorCount - a.validatorCount);
+/**
+ * Search validators by name
+ */
+export async function searchValidators(query: string, limit = 20): Promise<EnrichedValidator[]> {
+  const validators = await fetchAllValidators();
+  const lowerQuery = query.toLowerCase();
+  
+  return validators
+    .filter((v) => 
+      (v.name || "").toLowerCase().includes(lowerQuery) ||
+      v.vote_account.toLowerCase().includes(lowerQuery)
+    )
+    .slice(0, limit);
+}
+
+/**
+ * Get top validators by stake
+ */
+export async function getTopValidators(limit = 100): Promise<EnrichedValidator[]> {
+  const validators = await fetchAllValidators();
+  
+  return validators
+    .filter((v) => !v.delinquent)
+    .sort((a, b) => b.stakeSol - a.stakeSol)
+    .slice(0, limit);
+}
+
+/**
+ * Get validators filtered by criteria (for agent algorithm)
+ */
+export async function getFilteredValidators(options: {
+  minStake?: number;
+  maxCommission?: number;
+  maxDatacenterConcentration?: number;
+  excludeDelinquent?: boolean;
+}): Promise<EnrichedValidator[]> {
+  const validators = await fetchAllValidators();
+  
+  return filterValidators(validators, {
+    minStakeSol: options.minStake,
+    maxCommission: options.maxCommission,
+    maxDatacenterConcentration: options.maxDatacenterConcentration,
+    excludeDelinquent: options.excludeDelinquent,
+  });
 }

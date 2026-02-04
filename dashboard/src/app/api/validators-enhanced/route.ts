@@ -76,40 +76,40 @@ export async function GET(request: NextRequest) {
         // Core identity
         voteAccount: v.vote_account,
         identity: v.account,
-        name: v.name,
+        name: v.name || null,
         
         // Performance
-        score: v.total_score,
+        score: v.total_score || 0,
         qualityTier: v.qualityTier,
         uptimePercent: v.uptimePercent,
-        skippedSlotPercent: parseFloat(v.skipped_slot_percent),
-        epochCredits: v.epoch_credits,
+        skippedSlotPercent: parseFloat(v.skipped_slot_percent || "0"),
+        epochCredits: v.epoch_credits || 0,
         delinquent: v.delinquent,
         
         // Location
         location: v.location,
-        datacenter: v.data_center_key,
+        datacenter: v.data_center_key || null,
         coordinates: {
-          lat: parseFloat(v.latitude),
-          lng: parseFloat(v.longitude),
+          lat: parseFloat(v.latitude || "0"),
+          lng: parseFloat(v.longitude || "0"),
         },
         
         // Age
         ageInDays: v.ageInDays,
-        createdAt: v.created_at,
+        createdAt: v.created_at || null,
         
         // Commission
         stakeCommission: v.commission,
-        jitoEnabled: v.jito,
-        jitoCommission: v.jito_commission,
+        jitoEnabled: v.jito || false,
+        jitoCommission: v.jito_commission || null,
         
         // Stake
         stakeSol: v.stakeSol,
-        stakePools: v.stake_pools_list,
+        stakePools: v.stake_pools_list || [],
         
         // Software
-        version: v.software_version,
-        client: v.software_client,
+        version: v.software_version || null,
+        client: v.software_client || null,
         
         // Network
         pingTime: v.ping_time ? parseFloat(v.ping_time) : null,
