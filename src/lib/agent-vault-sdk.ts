@@ -13,9 +13,9 @@ import {
 } from '@solana/web3.js';
 import * as borsh from 'borsh';
 
-// Program ID - will be updated after deployment
+// Program ID
 export const AGENT_VAULT_PROGRAM_ID = new PublicKey(
-  'AgentVau1t11111111111111111111111111111111111'
+  '66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b'
 );
 
 // ============================================
