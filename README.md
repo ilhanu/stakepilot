@@ -1,196 +1,168 @@
-# 🚀 StakePilot
+# StakePilot — Agent Vault
 
-**Complete Staking Intelligence for Solana.**
+**Autonomous staking vault controlled by AI agents**
 
-> *See real yields, not marketing numbers. Compare fairly. Stake smartly.*
+---
 
-StakePilot is the complete staking brain — **Yield Truth**, **Validator Discovery**, and **Smart Routing** in one platform.
+## What Is This?
 
-🌐 **Live:** [stakepilot-olig.vercel.app](https://stakepilot-olig.vercel.app)
+StakePilot lets you deposit SOL into a smart contract vault. You set your staking strategy (risk tolerance, target APY, preferences), and an AI agent executes optimal staking operations on your behalf.
 
-## ⚡ Commission-Aware Yields — Industry First!
+**Key guarantee:** The agent can stake your funds to validators, but can NEVER withdraw to itself. Only you can withdraw.
 
-**Most staking tools show validator earnings. We show what YOU earn.**
+---
 
-A validator earning 10 SOL MEV with 100% commission = **0 for you**.
-A validator earning 1 SOL MEV with 0% commission = **1 SOL for you**.
+## How It Works
 
-StakePilot is the **ONLY** tool that calculates true staker returns after ALL commissions:
-- ✅ **Net APY** = Base yield × (1 - stake commission) + MEV yield × (1 - MEV commission)
-- ✅ Automatic filtering of 100% commission validators from Rising Stars
-- ✅ Commission warnings and viability checks
-- ✅ Sort by what stakers actually earn, not validator revenue
+1. **Create Vault** — Connect wallet, create your personal vault
+2. **Set Strategy** — Choose risk level, target APY, preferences
+3. **Deposit SOL** — Add funds to your vault
+4. **Agent Works** — AI analyzes validators, executes optimal staking
+5. **Withdraw Anytime** — Full control, exit whenever you want
 
-## 📊 The Three Pillars
+---
 
-### 1. Yield Truth
-**Real APY from real APIs. No guessing.**
+## Strategy Options
 
-We fetch directly from Marinade, BlazeStake, and Jito APIs:
-- **Base APY** — The guaranteed staking yield (~6-7%)
-- **MEV Bonus** — The variable upside (0-2%+ for jitoSOL)
-- **Net Yield** — What you actually get after commissions
+| Parameter | Options | Description |
+|-----------|---------|-------------|
+| Risk Tolerance | Low / Medium / High | How much variance you accept |
+| Target APY | 6-12% | Your yield goal |
+| Max Validators | 1-10 | Diversification level |
+| Decentralization | On / Off | Prefer validators that help network health |
 
-| Protocol | Token | Base APY | MEV Bonus | Total APY | Source |
-|----------|-------|----------|-----------|-----------|--------|
-| Jito | jitoSOL | ~6% | +0.9%+ | ~6.9%+ | kobe.mainnet.jito.network |
-| Marinade | mSOL | ~6.1% | — | ~6.1% | api.marinade.finance |
-| BlazeStake | bSOL | ~6.1% | +BLZE | ~6.1%+ | stake.solblaze.org |
+### Risk Levels
 
-### 2. Validator Discovery
-**Find rising stars before everyone else — with fair commissions.**
+- **Low**: Only established validators (>1M SOL stake)
+- **Medium**: Mix of established and growing validators
+- **High**: Maximize APY, accept more variance
 
-80% of stake goes to the top 20 validators. We fix this:
-- **Rising Stars** — Small validators with explosive MEV growth **AND** fair commissions
-- **MEV Prediction** — AI predicts next epoch's top performers
-- **Net APY Ranking** — Sorted by what stakers actually earn
-- **Commission Transparency** — See stake & MEV commission rates
-- **Decentralization Score** — Bonus for supporting network health
+---
 
-### 3. Smart Routing
-**Know where to stake. Clear reasoning.**
+## Security
 
-Input your amount, priorities, and risk tolerance:
-- Optimal allocation across LSTs and validators
-- Balance yield + decentralization + liquidity
-- Clear reasoning for every recommendation
+✅ **You always control your funds**
+- Only you can withdraw
+- Agent can only stake TO validators
+- You can change agent anytime
+- All operations are transparent (on-chain events)
 
-## 💡 Key Insight
+❌ **What the agent CANNOT do**
+- Withdraw your funds
+- Change your strategy
+- Lock your funds
 
-**Base staking yield (~6-7%)** is what you can rely on.
-**MEV bonus (+0-2%)** is the variable upside for jitoSOL holders.
+---
 
-We make this distinction **crystal clear**.
+## Architecture
 
-## ✨ Features
+```
+User → Agent Vault (Smart Contract) → Validators
+              ↑
+         AI Agent
+```
 
-### 📊 LST Comparison
-- Real APY from real APIs (not made-up numbers)
-- Base vs MEV breakdown
-- Fees, liquidity, DeFi integrations
-- Historical 30-day performance
+The AI agent reads your strategy from the chain, fetches validator performance data, and submits staking transactions that align with your preferences.
 
-### 🌟 Rising Stars
-- Small validators with rising MEV trends
-- Momentum and performance scoring
-- Easy native staking support
-- Champion decentralization!
+---
 
-### 🛤️ Smart Routing
-- Multi-factor optimization engine
-- Risk tolerance adjustment
-- Decentralization weighting
-- Visual output with reasoning
+## Quick Start
 
-### ⚡ Live MEV Feed
-- Real-time MEV data from Jito
-- Matrix-style visualization
-- Educational tooltips
-- Rising Stars highlighted
-
-## 🛠️ Tech Stack
-
-- **Framework:** Next.js 15 (App Router)
-- **Styling:** Tailwind CSS
-- **Data:** Jito Kobe API, Marinade API, BlazeStake API
-- **Blockchain:** Solana Web3.js
-- **Deployment:** Vercel
-
-## 🚀 Getting Started
-
+### 1. Install Dependencies
 ```bash
-# Clone
-git clone https://github.com/ilhanu/stakepilot
-cd stakepilot/dashboard
-
-# Install
 npm install
+```
 
-# Run
+### 2. Run Frontend
+```bash
+cd dashboard
 npm run dev
 ```
 
-Visit [localhost:3000](http://localhost:3000)
-
-## 🎯 Backtest Accuracy
-
-**Our MEV predictions are verified against real data:**
-
-| Metric | Value |
-|--------|-------|
-| Overall Accuracy | **76.5%** |
-| Epochs Tested | 5 |
-| Methodology | Compare predicted vs actual MEV per epoch |
-
-We don't just predict — we show receipts.
-
-## 📡 API Endpoints
-
-### GET `/api/lst`
-Get LST comparison with real data.
-```json
-{
-  "protocols": [...],
-  "bestForYield": "jito",
-  "recommendation": "...",
-  "yieldBreakdown": "Base: 6.1% | jitoSOL MEV: +0.9%"
-}
+### 3. Build Smart Contract
+```bash
+anchor build
 ```
 
-### GET `/api/lst-compare`
-Enhanced comparison with smart routing support.
-
-### POST `/api/lst-compare`
-Get smart stake routing.
-```json
-{
-  "amount": 100,
-  "riskTolerance": "medium",
-  "decentralizationPriority": "high",
-  "liquidityNeed": "medium"
-}
+### 4. Deploy (Devnet)
+```bash
+anchor deploy --provider.cluster devnet
 ```
 
-### GET `/api/predictions?type=rising-stars`
-Get rising star validators (commission-filtered).
-```json
-{
-  "validators": [{
-    "voteAccount": "...",
-    "name": "Validator Name",
-    "stakeCommission": 5,       // % on base rewards
-    "mevCommission": 700,       // bps on MEV (7%)
-    "netBaseApy": 6.65,         // After stake commission
-    "netMevApy": 1.86,          // After MEV commission  
-    "netTotalApy": 8.51,        // What YOU earn
-    "isViable": true,
-    "commissionWarning": null
-  }],
-  "avgNetApy": 8.2,
-  "note": "Filtered for staker viability"
-}
+---
+
+## Project Structure
+
+```
+stakepilot/
+├── programs/
+│   └── agent-vault/          # Anchor smart contract
+│       └── src/
+│           └── lib.rs        # Main program logic
+├── src/
+│   └── lib/
+│       └── agent-vault-sdk.ts # TypeScript SDK
+├── dashboard/                 # Next.js frontend
+├── Anchor.toml               # Anchor config
+└── README.md
 ```
 
-### GET `/api/predictions?hideHighCommission=true&minNetApy=7`
-Get all predictions with commission filters.
+---
 
-## 🎯 The Vision
+## Smart Contract
 
-**Staking shouldn't be guesswork.**
+### Program ID
+```
+AgentVau1t11111111111111111111111111111111111
+```
+(Will be updated after deployment)
 
-- See real yields, not marketing numbers
-- Discover validators before everyone else
-- Support decentralization while maximizing returns
-- One platform, complete intelligence
+### Instructions
 
-## 🏆 Hackathon
+| Instruction | Caller | Description |
+|-------------|--------|-------------|
+| `initialize_vault` | User | Create vault |
+| `deposit` | User | Add SOL |
+| `withdraw` | User | Remove SOL |
+| `update_strategy` | User | Change preferences |
+| `execute_stake` | Agent | Stake to validator |
+| `execute_unstake` | Agent | Unstake |
+| `change_agent` | User | Replace agent |
 
-Built for the **Colosseum Agent Hackathon**.
+---
 
-## 📜 License
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/vault/status` | GET | Get vault status |
+| `/api/agent/recommend` | GET | Get staking recommendation |
+| `/api/agent/execute` | POST | Execute staking decision |
+
+---
+
+## Hackathon
+
+**Colosseum Agent Hackathon**  
+**Deadline:** Feb 12, 2026
+
+### What Makes This Different
+
+1. **Real smart contract** — Not just an API, actual on-chain program
+2. **User control** — You set strategy, agent executes
+3. **Security-first** — Agent can't steal funds
+4. **Transparent** — All operations visible on-chain
+
+---
+
+## License
 
 MIT
 
 ---
 
-*StakePilot: Yield Truth. Validator Discovery. Smart Routing.* 🚀
+## Contact
+
+Built by Staker Space  
+Website: [staker.space](https://staker.space)  
+Twitter: [@StakerSpace](https://twitter.com/StakerSpace)
