@@ -4,24 +4,23 @@ import { WalletProvider } from "@/components/WalletProvider";
 import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "StakePilot - MEV-Aware Staking Autopilot for Solana",
+  title: "StakePilot - Autonomous Staking Vault",
   description:
-    "Optimize your Solana staking yield with real-time MEV data, validator scoring, and liquid staking comparison.",
+    "Deposit SOL, set your strategy, let AI optimize your staking. You're always in control.",
   keywords: [
     "Solana",
     "staking",
-    "MEV",
-    "Jito",
-    "JIP-31",
-    "jitoSOL",
-    "mSOL",
+    "AI",
+    "autonomous",
+    "vault",
     "yield",
     "DeFi",
+    "agent",
   ],
   openGraph: {
-    title: "StakePilot - MEV-Aware Staking Autopilot",
+    title: "StakePilot - Autonomous Staking Vault",
     description:
-      "Real-time MEV tracking and yield optimization for Solana stakers",
+      "AI-powered staking optimization for Solana. Set your strategy, agent executes.",
     type: "website",
   },
 };

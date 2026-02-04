@@ -3,13 +3,13 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-agent_vault = "AgentVau1t11111111111111111111111111111111111"
+agent_vault = "66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b"
 
 [programs.devnet]
-agent_vault = "AgentVau1t11111111111111111111111111111111111"
+agent_vault = "66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b"
 
 [programs.mainnet]
-agent_vault = "AgentVau1t11111111111111111111111111111111111"
+agent_vault = "66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b"
 
 [registry]
 url = "https://api.apr.dev"

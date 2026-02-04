@@ -111,11 +111,10 @@ stakepilot/
 
 ## Smart Contract
 
-### Program ID
+### Program ID (Devnet)
 ```
-AgentVau1t11111111111111111111111111111111111
+66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b
 ```
-(Will be updated after deployment)
 
 ### Instructions
 

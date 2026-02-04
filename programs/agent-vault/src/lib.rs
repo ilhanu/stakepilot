@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 
 #[program]
 pub mod agent_vault {
@@ -14,7 +14,7 @@ pub mod agent_vault {
         vault.agent = ctx.accounts.agent.key();
         vault.balance = 0;
         vault.total_staked = 0;
-        vault.bump = ctx.bumps.vault;
+        vault.bump = *ctx.bumps.get("vault").unwrap();
         
         let strategy = &mut ctx.accounts.strategy;
         strategy.vault = vault.key();
@@ -22,7 +22,7 @@ pub mod agent_vault {
         strategy.target_apy = 800; // 8.00% in basis points
         strategy.max_validators = 5;
         strategy.prefer_decentralization = true;
-        strategy.bump = ctx.bumps.strategy;
+        strategy.bump = *ctx.bumps.get("strategy").unwrap();
         
         emit!(VaultCreated {
             vault: vault.key(),
@@ -70,7 +70,7 @@ pub mod agent_vault {
         require!(amount <= vault.balance, AgentVaultError::InsufficientBalance);
         
         // Transfer SOL from vault to user
-        let bump = ctx.bumps.vault_sol;
+        let bump = *ctx.bumps.get("vault_sol").unwrap();
         let seeds = &[
             b"vault_sol".as_ref(),
             vault_key.as_ref(),
