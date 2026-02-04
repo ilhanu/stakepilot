@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
-declare_id!("AgentVau1t11111111111111111111111111111111111");
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]
 pub mod agent_vault {
@@ -64,15 +64,17 @@ pub mod agent_vault {
     /// Withdraw SOL from the vault (only owner can call)
     pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
         let vault = &mut ctx.accounts.vault;
+        let vault_key = vault.key();
         
         require!(amount > 0, AgentVaultError::ZeroAmount);
         require!(amount <= vault.balance, AgentVaultError::InsufficientBalance);
         
         // Transfer SOL from vault to user
+        let bump = ctx.bumps.vault_sol;
         let seeds = &[
-            b"vault_sol",
-            vault.key().as_ref(),
-            &[ctx.bumps.vault_sol],
+            b"vault_sol".as_ref(),
+            vault_key.as_ref(),
+            &[bump],
         ];
         let signer = &[&seeds[..]];
         
