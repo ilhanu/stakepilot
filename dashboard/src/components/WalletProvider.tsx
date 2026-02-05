@@ -16,8 +16,8 @@ import {
 // Import wallet adapter CSS
 import "@solana/wallet-adapter-react-ui/styles.css";
 
-const RPC_URL =
-  process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
+// Using devnet for vault operations (program deployed to devnet)
+const RPC_URL = "https://api.devnet.solana.com";
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const wallets = useMemo(

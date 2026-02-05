@@ -2,8 +2,8 @@
  * Solana RPC utilities
  */
 
-const RPC_URL =
-  process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
+// Using devnet for vault operations
+const RPC_URL = "https://api.devnet.solana.com";
 
 export interface EpochInfo {
   epoch: number;
