@@ -259,89 +259,68 @@ export default function VaultPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center font-bold">
-              S
-            </div>
-            <span className="font-semibold text-lg">Staker Space</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/discover" className="text-gray-400 hover:text-white transition">
-              Discover
-            </Link>
-            <Link href="/docs" className="text-gray-400 hover:text-white transition">
-              Docs
-            </Link>
-            <WalletMultiButton className="!bg-emerald-600 hover:!bg-emerald-700 !rounded-lg" />
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[var(--bg-primary)]">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Title */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Staker Space Vault</h1>
-          <p className="text-gray-400">
+          <p className="text-[var(--text-secondary)]">
             Deposit SOL and let our agent stake to quality decentralized validators
           </p>
         </div>
 
         {!connected ? (
-          <div className="bg-gray-900 rounded-xl p-12 text-center border border-gray-800">
-            <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-[var(--bg-card)] rounded-2xl p-12 text-center border border-[var(--border)]">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--bg-elevated)] flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
             <h2 className="text-xl font-semibold mb-2">Connect Your Wallet</h2>
-            <p className="text-gray-400 mb-6">Connect your wallet to deposit and earn staking rewards</p>
-            <WalletMultiButton className="!bg-emerald-600 hover:!bg-emerald-700 !rounded-lg" />
+            <p className="text-[var(--text-secondary)] mb-6">Connect your wallet to deposit and earn staking rewards</p>
+            <WalletMultiButton className="!bg-[var(--accent)] hover:!bg-[var(--accent-hover)] !text-black !rounded-xl !font-semibold" />
           </div>
         ) : loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-[var(--accent)] border-t-transparent"></div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Vault Stats */}
             <div className="lg:col-span-2 space-y-6">
               {/* Vault Overview */}
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
                 <h2 className="text-lg font-semibold mb-4">Vault Overview</h2>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <div className="text-gray-400 text-sm">Total Deposits</div>
+                    <div className="text-[var(--text-secondary)] text-sm">Total Deposits</div>
                     <div className="text-2xl font-bold">{vaultStatus?.totalDeposits.toFixed(2) || "0"} SOL</div>
                   </div>
                   <div>
-                    <div className="text-gray-400 text-sm">Total Staked</div>
-                    <div className="text-2xl font-bold text-emerald-400">{vaultStatus?.totalStaked.toFixed(2) || "0"} SOL</div>
+                    <div className="text-[var(--text-secondary)] text-sm">Total Staked</div>
+                    <div className="text-2xl font-bold text-[var(--accent)]">{vaultStatus?.totalStaked.toFixed(2) || "0"} SOL</div>
                   </div>
                   <div>
-                    <div className="text-gray-400 text-sm">Depositors</div>
+                    <div className="text-[var(--text-secondary)] text-sm">Depositors</div>
                     <div className="text-2xl font-bold">{vaultStatus?.totalUsers || 0}</div>
                   </div>
                 </div>
               </div>
 
               {/* Your Position */}
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
                 <h2 className="text-lg font-semibold mb-4">Your Position</h2>
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div>
-                    <div className="text-gray-400 text-sm">Wallet Balance</div>
+                    <div className="text-[var(--text-secondary)] text-sm">Wallet Balance</div>
                     <div className="text-xl font-bold">{walletBalance.toFixed(4)} SOL</div>
                   </div>
                   <div>
-                    <div className="text-gray-400 text-sm">Your Deposit</div>
-                    <div className="text-xl font-bold text-emerald-400">{vaultStatus?.userDeposit.toFixed(4) || "0"} SOL</div>
+                    <div className="text-[var(--text-secondary)] text-sm">Your Deposit</div>
+                    <div className="text-xl font-bold text-[var(--accent)]">{vaultStatus?.userDeposit.toFixed(4) || "0"} SOL</div>
                   </div>
                   <div>
-                    <div className="text-gray-400 text-sm">Pending Unstake</div>
+                    <div className="text-[var(--text-secondary)] text-sm">Pending Unstake</div>
                     <div className="text-xl font-bold text-yellow-400">{vaultStatus?.userPendingUnstake.toFixed(4) || "0"} SOL</div>
                   </div>
                 </div>
@@ -353,7 +332,7 @@ export default function VaultPage() {
                   </div>
                 )}
                 {success && (
-                  <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm">
+                  <div className="mb-4 p-3 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-lg text-[var(--accent)] text-sm">
                     {success}
                   </div>
                 )}
@@ -361,40 +340,40 @@ export default function VaultPage() {
                 {/* Deposit/Withdraw Forms */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">Deposit SOL</label>
+                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Deposit SOL</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
                         value={depositAmount}
                         onChange={(e) => setDepositAmount(e.target.value)}
                         placeholder="0.00"
-                        className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-emerald-500"
+                        className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--accent)]"
                         disabled={txPending}
                       />
                       <button
                         onClick={handleDeposit}
                         disabled={txPending || !depositAmount}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition"
+                        className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition"
                       >
                         {txPending ? "..." : "Deposit"}
                       </button>
                     </div>
                     <button
                       onClick={() => setDepositAmount(walletBalance.toFixed(4))}
-                      className="mt-1 text-xs text-emerald-400 hover:text-emerald-300"
+                      className="mt-1 text-xs text-[var(--accent)] hover:text-emerald-300"
                     >
                       Max: {walletBalance.toFixed(4)} SOL
                     </button>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">Request Unstake</label>
+                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Request Unstake</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
                         value={withdrawAmount}
                         onChange={(e) => setWithdrawAmount(e.target.value)}
                         placeholder="0.00"
-                        className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-yellow-500"
+                        className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-2 focus:outline-none focus:border-yellow-500"
                         disabled={txPending}
                       />
                       <button
@@ -419,28 +398,28 @@ export default function VaultPage() {
               <AgentActivity />
 
               {/* Validator Targets */}
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
                 <h2 className="text-lg font-semibold mb-4">Validator Targets</h2>
-                <p className="text-gray-400 text-sm mb-4">
+                <p className="text-[var(--text-secondary)] text-sm mb-4">
                   The agent stakes to these quality decentralized validators
                 </p>
                 <div className="space-y-3">
                   {recommendations.map((rec, i) => (
-                    <div key={rec.validator} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                    <div key={rec.validator} className="flex items-center justify-between p-3 bg-[var(--bg-elevated)] rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-sm font-bold">
                           {i + 1}
                         </div>
                         <div>
                           <div className="font-medium">{rec.validatorName}</div>
-                          <div className="text-xs text-gray-400 font-mono">
+                          <div className="text-xs text-[var(--text-secondary)] font-mono">
                             {rec.validator.slice(0, 8)}...{rec.validator.slice(-4)}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-emerald-400 font-medium">{rec.expectedApy.toFixed(2)}% APY</div>
-                        <div className="text-xs text-gray-400">Score: {rec.wizScore.toFixed(0)}</div>
+                        <div className="text-[var(--accent)] font-medium">{rec.expectedApy.toFixed(2)}% APY</div>
+                        <div className="text-xs text-[var(--text-secondary)]">Score: {rec.wizScore.toFixed(0)}</div>
                       </div>
                     </div>
                   ))}
@@ -451,88 +430,88 @@ export default function VaultPage() {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* How it Works */}
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
                 <h2 className="text-lg font-semibold mb-4">How it Works</h2>
                 <div className="space-y-4 text-sm">
                   <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">1</div>
+                    <div className="w-6 h-6 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center flex-shrink-0">1</div>
                     <div>
                       <div className="font-medium">Deposit SOL</div>
-                      <div className="text-gray-400">Transfer SOL to the vault</div>
+                      <div className="text-[var(--text-secondary)]">Transfer SOL to the vault</div>
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">2</div>
+                    <div className="w-6 h-6 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center flex-shrink-0">2</div>
                     <div>
                       <div className="font-medium">Agent Stakes</div>
-                      <div className="text-gray-400">AI agent stakes to quality validators</div>
+                      <div className="text-[var(--text-secondary)]">AI agent stakes to quality validators</div>
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">3</div>
+                    <div className="w-6 h-6 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center flex-shrink-0">3</div>
                     <div>
                       <div className="font-medium">Earn Rewards</div>
-                      <div className="text-gray-400">Get staking + MEV rewards</div>
+                      <div className="text-[var(--text-secondary)]">Get staking + MEV rewards</div>
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <div className="w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center flex-shrink-0">4</div>
                     <div>
                       <div className="font-medium">Unstake Anytime</div>
-                      <div className="text-gray-400">~2 day cooldown period</div>
+                      <div className="text-[var(--text-secondary)]">~2 day cooldown period</div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Validator Criteria */}
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
                 <h2 className="text-lg font-semibold mb-4">Validator Criteria</h2>
-                <ul className="space-y-2 text-sm text-gray-400">
+                <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-400">✓</span> Stake &lt; 1M SOL (decentralization)
+                    <span className="text-[var(--accent)]">✓</span> Stake &lt; 1M SOL (decentralization)
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-400">✓</span> Commission ≤ 5%
+                    <span className="text-[var(--accent)]">✓</span> Commission ≤ 5%
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-400">✓</span> MEV Commission ≤ 10%
+                    <span className="text-[var(--accent)]">✓</span> MEV Commission ≤ 10%
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-400">✓</span> Uptime &gt; 95%
+                    <span className="text-[var(--accent)]">✓</span> Uptime &gt; 95%
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-emerald-400">✓</span> Always includes Staker Space
+                    <span className="text-[var(--accent)]">✓</span> Always includes Staker Space
                   </li>
                 </ul>
               </div>
 
               {/* Vault Address */}
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
                 <h2 className="text-lg font-semibold mb-4">Vault Info</h2>
                 <div className="space-y-2 text-sm">
                   <div>
-                    <div className="text-gray-400">Network</div>
+                    <div className="text-[var(--text-secondary)]">Network</div>
                     <div className="font-mono text-yellow-400">Devnet</div>
                   </div>
                   <div>
-                    <div className="text-gray-400">Vault Address</div>
+                    <div className="text-[var(--text-secondary)]">Vault Address</div>
                     <a
                       href={`https://explorer.solana.com/address/${VAULT_PDA.toBase58()}?cluster=devnet`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-emerald-400 hover:underline break-all"
+                      className="font-mono text-[var(--accent)] hover:underline break-all"
                     >
                       {VAULT_PDA.toBase58().slice(0, 16)}...
                     </a>
                   </div>
                   <div>
-                    <div className="text-gray-400">Program</div>
+                    <div className="text-[var(--text-secondary)]">Program</div>
                     <a
                       href={`https://explorer.solana.com/address/${PROGRAM_ID.toBase58()}?cluster=devnet`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-emerald-400 hover:underline break-all"
+                      className="font-mono text-[var(--accent)] hover:underline break-all"
                     >
                       {PROGRAM_ID.toBase58().slice(0, 16)}...
                     </a>

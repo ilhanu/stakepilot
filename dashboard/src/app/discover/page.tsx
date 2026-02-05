@@ -4,32 +4,25 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface Validator {
-  voteAccount: string;
-  name: string | null;
+  name: string;
+  vote_identity: string;
+  activated_stake: number;
+  total_apy: number;
+  wiz_score: number;
   commission: number;
-  stakeSol: number;
-  location: string;
-  datacenter: string | null;
-  qualityTier: "S" | "A" | "B" | "C" | "D";
-  uptimePercent: number;
-  ageInDays: number;
-  jito: boolean;
-  jitoCommission: number | null;
-  netBaseApy: number;
-  netMevApy: number;
-  netTotalApy: number;
-  delinquent: boolean;
+  jito_commission_bps?: number;
+  uptime: number;
 }
 
-type FilterType = "all" | "low-risk" | "high-apy" | "small" | "jito";
-type SortType = "netTotalApy" | "stakeSol" | "commission" | "qualityTier";
+type FilterType = "all" | "quality" | "small" | "jito";
+type SortType = "total_apy" | "wiz_score" | "activated_stake" | "commission";
 
 export default function DiscoverPage() {
   const [validators, setValidators] = useState<Validator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
-  const [sortBy, setSortBy] = useState<SortType>("netTotalApy");
+  const [sortBy, setSortBy] = useState<SortType>("wiz_score");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -40,11 +33,16 @@ export default function DiscoverPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/validators-full?limit=200&excludeDelinquent=true");
+      // Use StakeWiz API via our recommend endpoint for consistent data
+      const res = await fetch("/api/agent/recommend?balance=1000000&maxValidators=100");
       if (!res.ok) throw new Error("Failed to fetch validators");
       
       const data = await res.json();
-      setValidators(data.validators || []);
+      if (data.success && data.validators) {
+        setValidators(data.validators);
+      } else {
+        throw new Error("Invalid response format");
+      }
     } catch (err) {
       console.error("Failed to fetch validators:", err);
       setError("Failed to load validators. Please try again.");
@@ -59,46 +57,59 @@ export default function DiscoverPage() {
       if (search) {
         const searchLower = search.toLowerCase();
         if (!(v.name || "").toLowerCase().includes(searchLower) && 
-            !v.voteAccount.toLowerCase().includes(searchLower)) {
+            !v.vote_identity.toLowerCase().includes(searchLower)) {
           return false;
         }
       }
       
       // Category filter
-      if (filter === "low-risk") return v.stakeSol > 1000000 && v.qualityTier <= "B";
-      if (filter === "high-apy") return v.netTotalApy >= 7.5;
-      if (filter === "small") return v.stakeSol < 500000;
-      if (filter === "jito") return v.jito;
+      if (filter === "quality") return v.wiz_score >= 90;
+      if (filter === "small") return v.activated_stake < 500000;
+      if (filter === "jito") return v.jito_commission_bps !== undefined;
       return true;
     })
     .sort((a, b) => {
-      if (sortBy === "netTotalApy") return b.netTotalApy - a.netTotalApy;
-      if (sortBy === "stakeSol") return b.stakeSol - a.stakeSol;
+      if (sortBy === "total_apy") return b.total_apy - a.total_apy;
+      if (sortBy === "wiz_score") return b.wiz_score - a.wiz_score;
+      if (sortBy === "activated_stake") return a.activated_stake - b.activated_stake;
       if (sortBy === "commission") return a.commission - b.commission;
-      if (sortBy === "qualityTier") {
-        const tierOrder = { S: 0, A: 1, B: 2, C: 3, D: 4 };
-        return tierOrder[a.qualityTier] - tierOrder[b.qualityTier];
-      }
       return 0;
     });
 
-  const tierColors: Record<string, string> = {
-    S: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",
-    A: "text-[var(--accent)] bg-[var(--accent)]/10 border-[var(--accent)]/30",
-    B: "text-blue-400 bg-blue-400/10 border-blue-400/30",
-    C: "text-[var(--text-secondary)] bg-[var(--text-muted)]/10 border-[var(--border)]",
-    D: "text-red-400 bg-red-400/10 border-red-400/30",
+  const formatStake = (stake: number) => {
+    if (stake >= 1e6) return `${(stake / 1e6).toFixed(1)}M`;
+    if (stake >= 1e3) return `${(stake / 1e3).toFixed(0)}K`;
+    return stake.toFixed(0);
   };
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      <div className="container-lg py-8">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+        {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-2">Discover Validators</h1>
+          <h1 className="text-3xl font-bold mb-2">Discover Validators</h1>
           <p className="text-[var(--text-secondary)]">
-            Browse {validators.length.toLocaleString()} Solana validators. The agent selects from these based on your strategy.
+            Browse quality Solana validators that meet our criteria. The agent selects from these for optimal staking.
           </p>
+        </div>
+
+        {/* Criteria Banner */}
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-[var(--accent)]/10 to-transparent border border-[var(--accent)]/20">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="text-[var(--accent)] font-semibold">Agent Criteria:</span>
+            <span className="px-2 py-1 rounded-md bg-[var(--bg-card)] text-[var(--text-secondary)]">
+              Stake &lt; 1M SOL
+            </span>
+            <span className="px-2 py-1 rounded-md bg-[var(--bg-card)] text-[var(--text-secondary)]">
+              Commission ≤ 5%
+            </span>
+            <span className="px-2 py-1 rounded-md bg-[var(--bg-card)] text-[var(--text-secondary)]">
+              MEV Fee ≤ 10%
+            </span>
+            <span className="px-2 py-1 rounded-md bg-[var(--bg-card)] text-[var(--text-secondary)]">
+              Uptime &gt; 95%
+            </span>
+          </div>
         </div>
 
         {/* Search & Filters */}
@@ -110,28 +121,28 @@ export default function DiscoverPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name or vote account..."
-              className="w-full px-4 py-3 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm"
+              className="w-full px-4 py-3 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/20 outline-none text-sm transition-colors"
             />
           </div>
 
           {/* Filter pills */}
           <div className="flex items-center gap-2 flex-wrap">
             {[
-              { value: "all", label: "All" },
-              { value: "low-risk", label: "Low Risk" },
-              { value: "high-apy", label: "High APY" },
-              { value: "small", label: "Small" },
-              { value: "jito", label: "Jito MEV" },
+              { value: "all", label: "All", count: validators.length },
+              { value: "quality", label: "High Quality", emoji: "⭐" },
+              { value: "small", label: "Small Validators", emoji: "🌱" },
+              { value: "jito", label: "Jito MEV", emoji: "⚡" },
             ].map(f => (
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value as FilterType)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   filter === f.value 
-                    ? "bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/30" 
-                    : "bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--border-hover)]"
+                    ? "bg-[var(--accent)] text-black shadow-lg shadow-[var(--accent)]/20" 
+                    : "bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--accent)]/50 hover:text-[var(--text-primary)]"
                 }`}
               >
+                {f.emoji && <span className="mr-1">{f.emoji}</span>}
                 {f.label}
               </button>
             ))}
@@ -141,26 +152,18 @@ export default function DiscoverPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortType)}
-            className="px-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-sm focus:border-[var(--accent)] outline-none"
+            className="px-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-sm focus:border-[var(--accent)] outline-none cursor-pointer"
           >
-            <option value="netTotalApy">APY (High → Low)</option>
-            <option value="stakeSol">Stake (High → Low)</option>
-            <option value="commission">Commission (Low → High)</option>
-            <option value="qualityTier">Quality (S → D)</option>
+            <option value="wiz_score">Quality Score ↓</option>
+            <option value="total_apy">APY ↓</option>
+            <option value="activated_stake">Stake ↑</option>
+            <option value="commission">Commission ↑</option>
           </select>
-        </div>
-
-        {/* Info Box */}
-        <div className="bg-[var(--accent)]/5 border border-[var(--accent)]/20 rounded-xl p-4 mb-6">
-          <p className="text-sm text-[var(--text-secondary)]">
-            <span className="text-[var(--accent)] font-medium">💡 All APYs shown are NET</span> — what you actually earn after validator commission and MEV fees. 
-            Quality tiers (S-D) are based on uptime, skip rate, and overall performance.
-          </p>
         </div>
 
         {/* Error State */}
         {error && (
-          <div className="card p-8 text-center mb-6">
+          <div className="rounded-xl p-8 text-center mb-6 bg-red-500/10 border border-red-500/20">
             <p className="text-red-400 mb-4">{error}</p>
             <button onClick={fetchValidators} className="btn-secondary">
               Try Again
@@ -172,131 +175,117 @@ export default function DiscoverPage() {
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="flex flex-col items-center gap-4">
-              <div className="w-10 h-10 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-              <p className="text-[var(--text-secondary)]">Loading validators...</p>
+              <div className="w-12 h-12 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+              <p className="text-[var(--text-secondary)]">Loading validators from StakeWiz...</p>
             </div>
           </div>
         )}
 
-        {/* Validators Table */}
+        {/* Validators Grid */}
         {!loading && !error && (
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[var(--border)]">
-                    <th className="text-left px-6 py-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Validator</th>
-                    <th className="text-center px-4 py-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Tier</th>
-                    <th className="text-right px-4 py-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Net APY</th>
-                    <th className="text-right px-4 py-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden md:table-cell">Commission</th>
-                    <th className="text-right px-4 py-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden md:table-cell">Stake</th>
-                    <th className="text-right px-4 py-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden lg:table-cell">Location</th>
-                    <th className="text-right px-6 py-4 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden lg:table-cell">Features</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredValidators.map((v) => (
-                    <tr 
-                      key={v.voteAccount}
-                      className="border-b border-[var(--border)] hover:bg-[var(--bg-card-hover)] transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-[var(--accent)]/10 rounded-full flex items-center justify-center text-[var(--accent)] text-sm font-bold shrink-0">
-                            {(v.name || "?").charAt(0).toUpperCase()}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{v.name || "Unknown"}</p>
-                            <p className="text-xs text-[var(--text-muted)] font-mono truncate">
-                              {v.voteAccount.slice(0, 8)}...{v.voteAccount.slice(-4)}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <span className={`inline-block px-2 py-1 text-xs font-bold rounded border ${tierColors[v.qualityTier]}`}>
-                          {v.qualityTier}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        <span className="text-lg font-bold text-[var(--accent)]">
-                          {v.netTotalApy.toFixed(1)}%
-                        </span>
-                        {v.jito && v.netMevApy > 0 && (
-                          <p className="text-xs text-[var(--text-muted)]">
-                            +{v.netMevApy.toFixed(1)}% MEV
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-right hidden md:table-cell">
-                        <span className={v.commission <= 5 ? "text-[var(--accent)]" : "text-[var(--text-secondary)]"}>
-                          {v.commission}%
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-right hidden md:table-cell">
-                        <span className="text-[var(--text-secondary)]">
-                          {v.stakeSol >= 1e6 
-                            ? `${(v.stakeSol / 1e6).toFixed(1)}M`
-                            : v.stakeSol >= 1e3 
-                            ? `${(v.stakeSol / 1e3).toFixed(0)}K`
-                            : v.stakeSol.toFixed(0)
-                          }
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-right hidden lg:table-cell">
-                        <span className="text-[var(--text-muted)] text-sm truncate">
-                          {v.location || "Unknown"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right hidden lg:table-cell">
-                        <div className="flex items-center justify-end gap-2">
-                          {v.jito && (
-                            <span className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-400 rounded">
-                              Jito
-                            </span>
-                          )}
-                          {v.uptimePercent >= 99.5 && (
-                            <span className="px-2 py-0.5 text-xs bg-[var(--accent)]/10 text-[var(--accent)] rounded">
-                              99.5%+
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {filteredValidators.length === 0 && !loading && (
-              <div className="p-12 text-center text-[var(--text-muted)]">
-                <p>No validators match your filters</p>
-                <button 
-                  onClick={() => { setFilter("all"); setSearch(""); }}
-                  className="text-[var(--accent)] text-sm mt-2 hover:underline"
-                >
-                  Clear filters
-                </button>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredValidators.map((v) => (
+              <div 
+                key={v.vote_identity}
+                className="group p-5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all hover:shadow-lg hover:shadow-[var(--accent)]/5"
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent)]/5 flex items-center justify-center text-[var(--accent)] font-bold shrink-0">
+                      {(v.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold truncate group-hover:text-[var(--accent)] transition-colors">
+                        {v.name || "Unknown"}
+                      </h3>
+                      <p className="text-xs text-[var(--text-muted)] font-mono">
+                        {v.vote_identity.slice(0, 8)}...
+                      </p>
+                    </div>
+                  </div>
+                  {/* Quality Score */}
+                  <div className={`px-2 py-1 rounded-lg text-xs font-bold ${
+                    v.wiz_score >= 95 ? "bg-yellow-500/20 text-yellow-400" :
+                    v.wiz_score >= 90 ? "bg-[var(--accent)]/20 text-[var(--accent)]" :
+                    v.wiz_score >= 80 ? "bg-blue-500/20 text-blue-400" :
+                    "bg-gray-500/20 text-gray-400"
+                  }`}>
+                    {v.wiz_score.toFixed(0)}
+                  </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
+                    <p className="text-xs text-[var(--text-muted)] mb-1">APY</p>
+                    <p className="text-lg font-bold text-[var(--accent)]">{v.total_apy.toFixed(2)}%</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
+                    <p className="text-xs text-[var(--text-muted)] mb-1">Commission</p>
+                    <p className="text-lg font-bold">{v.commission}%</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
+                    <p className="text-xs text-[var(--text-muted)] mb-1">Stake</p>
+                    <p className="text-lg font-bold">{formatStake(v.activated_stake)}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
+                    <p className="text-xs text-[var(--text-muted)] mb-1">Uptime</p>
+                    <p className="text-lg font-bold">{v.uptime?.toFixed(1) || "99"}%</p>
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="flex items-center gap-2 mt-4">
+                  {v.jito_commission_bps !== undefined && (
+                    <span className="px-2 py-1 text-xs rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                      ⚡ Jito {(v.jito_commission_bps / 100).toFixed(0)}%
+                    </span>
+                  )}
+                  {v.activated_stake < 100000 && (
+                    <span className="px-2 py-1 text-xs rounded-md bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20">
+                      🌱 Small
+                    </span>
+                  )}
+                  {v.name === "Staker Space" && (
+                    <span className="px-2 py-1 text-xs rounded-md bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                      ⭐ Our Validator
+                    </span>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && filteredValidators.length === 0 && (
+          <div className="rounded-xl p-12 text-center bg-[var(--bg-card)] border border-[var(--border)]">
+            <p className="text-[var(--text-muted)] mb-4">No validators match your filters</p>
+            <button 
+              onClick={() => { setFilter("all"); setSearch(""); }}
+              className="text-[var(--accent)] text-sm hover:underline"
+            >
+              Clear filters
+            </button>
           </div>
         )}
 
         {/* Results count */}
-        {!loading && (
-          <p className="text-sm text-[var(--text-muted)] mt-4 text-center">
-            Showing {filteredValidators.length} of {validators.length} validators
+        {!loading && !error && (
+          <p className="text-sm text-[var(--text-muted)] mt-6 text-center">
+            Showing {filteredValidators.length} of {validators.length} qualified validators
           </p>
         )}
 
         {/* CTA */}
-        <div className="mt-12 card p-8 text-center bg-gradient-to-r from-[var(--accent)]/5 to-transparent">
-          <h3 className="text-xl font-bold mb-2">Let the Agent Choose for You</h3>
-          <p className="text-[var(--text-secondary)] mb-6">
-            Set your strategy and the AI will automatically select the best validators.
+        <div className="mt-12 p-8 rounded-2xl text-center bg-gradient-to-br from-[var(--accent)]/10 via-[var(--bg-card)] to-[var(--bg-card)] border border-[var(--accent)]/20">
+          <h3 className="text-2xl font-bold mb-3">Let the Agent Choose</h3>
+          <p className="text-[var(--text-secondary)] mb-6 max-w-md mx-auto">
+            Deposit to the vault and let our AI agent automatically select the best validators for optimal yield.
           </p>
           <Link href="/vault" className="btn-primary">
-            Configure Vault Strategy →
+            Open Vault →
           </Link>
         </div>
       </div>

@@ -103,7 +103,7 @@ export function AgentActivity() {
           </div>
           <div>
             <h2 className="text-lg font-semibold">Agent Analyzing...</h2>
-            <p className="text-sm text-gray-400">Evaluating validators</p>
+            <p className="text-sm text-[var(--text-secondary)]">Evaluating validators</p>
           </div>
         </div>
       </div>
@@ -117,7 +117,7 @@ export function AgentActivity() {
   const statusColors = {
     pending: "text-yellow-400 bg-yellow-500/20",
     executing: "text-blue-400 bg-blue-500/20",
-    completed: "text-emerald-400 bg-emerald-500/20",
+    completed: "text-[var(--accent)] bg-emerald-500/20",
     simulated: "text-purple-400 bg-purple-500/20",
   };
 
@@ -138,7 +138,7 @@ export function AgentActivity() {
             </div>
             <div>
               <h2 className="text-lg font-semibold">Agent Decision</h2>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-[var(--text-secondary)]">
                 Last analysis: {new Date(decision.timestamp).toLocaleTimeString()}
               </p>
             </div>
@@ -151,29 +151,29 @@ export function AgentActivity() {
         {/* Key Metrics */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-black/20 rounded-lg p-3">
-            <div className="text-gray-400 text-xs">Vault Balance</div>
+            <div className="text-[var(--text-secondary)] text-xs">Vault Balance</div>
             <div className="text-xl font-bold">{decision.vaultBalance.toFixed(2)} SOL</div>
           </div>
           <div className="bg-black/20 rounded-lg p-3">
-            <div className="text-gray-400 text-xs">Available to Stake</div>
-            <div className="text-xl font-bold text-emerald-400">{decision.availableToStake.toFixed(2)} SOL</div>
+            <div className="text-[var(--text-secondary)] text-xs">Available to Stake</div>
+            <div className="text-xl font-bold text-[var(--accent)]">{decision.availableToStake.toFixed(2)} SOL</div>
           </div>
           <div className="bg-black/20 rounded-lg p-3">
-            <div className="text-gray-400 text-xs">Action</div>
+            <div className="text-[var(--text-secondary)] text-xs">Action</div>
             <div className="text-lg font-bold">{actionLabels[decision.action]}</div>
           </div>
         </div>
 
         {/* Agent Reasoning */}
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-2 flex items-center gap-2">
             <span>💭</span> Agent Reasoning
           </h3>
           <div className="bg-black/20 rounded-lg p-4 space-y-2">
             {decision.reasoning.map((reason, i) => (
               <div key={i} className="flex items-start gap-2 text-sm">
                 <span className="text-purple-400 mt-0.5">→</span>
-                <span className="text-gray-300">{reason}</span>
+                <span className="text-[var(--text-secondary)]">{reason}</span>
               </div>
             ))}
           </div>
@@ -184,12 +184,12 @@ export function AgentActivity() {
           <div>
             <button 
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center justify-between w-full text-sm font-semibold text-gray-300 mb-2 hover:text-white transition"
+              className="flex items-center justify-between w-full text-sm font-semibold text-[var(--text-secondary)] mb-2 hover:text-white transition"
             >
               <span className="flex items-center gap-2">
                 <span>📊</span> Staking Plan ({decision.analysis.length} validators)
               </span>
-              <span className="text-gray-500">{expanded ? "▼" : "▶"}</span>
+              <span className="text-[var(--text-muted)]">{expanded ? "▼" : "▶"}</span>
             </button>
             
             {expanded && (
@@ -206,16 +206,16 @@ export function AgentActivity() {
                         </div>
                         <div>
                           <div className="font-medium">{validator.name}</div>
-                          <div className="text-xs text-gray-400 font-mono">
+                          <div className="text-xs text-[var(--text-secondary)] font-mono">
                             {validator.voteAccount.slice(0, 8)}...
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-emerald-400 font-bold">
+                        <div className="text-[var(--accent)] font-bold">
                           {validator.allocation.toFixed(2)} SOL
                         </div>
-                        <div className="text-xs text-gray-400">
+                        <div className="text-xs text-[var(--text-secondary)]">
                           {validator.totalApy.toFixed(2)}% APY
                         </div>
                       </div>
@@ -224,21 +224,21 @@ export function AgentActivity() {
                     {/* Validator Metrics */}
                     <div className="grid grid-cols-4 gap-2 text-xs mb-2">
                       <div className="bg-black/20 rounded px-2 py-1">
-                        <span className="text-gray-500">Score:</span> {validator.wizScore.toFixed(0)}
+                        <span className="text-[var(--text-muted)]">Score:</span> {validator.wizScore.toFixed(0)}
                       </div>
                       <div className="bg-black/20 rounded px-2 py-1">
-                        <span className="text-gray-500">Comm:</span> {validator.commission}%
+                        <span className="text-[var(--text-muted)]">Comm:</span> {validator.commission}%
                       </div>
                       <div className="bg-black/20 rounded px-2 py-1">
-                        <span className="text-gray-500">MEV:</span> {validator.mevCommission}%
+                        <span className="text-[var(--text-muted)]">MEV:</span> {validator.mevCommission}%
                       </div>
                       <div className="bg-black/20 rounded px-2 py-1">
-                        <span className="text-gray-500">Uptime:</span> {validator.uptime}%
+                        <span className="text-[var(--text-muted)]">Uptime:</span> {validator.uptime}%
                       </div>
                     </div>
                     
                     {/* Selection Reasons */}
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-[var(--text-secondary)]">
                       {validator.reasons.map((reason, i) => (
                         <span key={i}>
                           {i > 0 && " • "}
@@ -259,7 +259,7 @@ export function AgentActivity() {
         <div className="px-6 pb-4">
           <div className="bg-black/40 rounded-lg p-4 font-mono text-xs max-h-48 overflow-y-auto">
             {executionLog.map((log, i) => (
-              <div key={i} className={`${log.includes("✅") ? "text-emerald-400" : log.includes("⚠️") ? "text-yellow-400" : "text-gray-300"}`}>
+              <div key={i} className={`${log.includes("✅") ? "text-[var(--accent)]" : log.includes("⚠️") ? "text-yellow-400" : "text-[var(--text-secondary)]"}`}>
                 {log}
               </div>
             ))}
@@ -272,7 +272,7 @@ export function AgentActivity() {
 
       {/* Footer */}
       <div className="bg-black/30 px-6 py-3 flex items-center justify-between text-sm">
-        <span className="text-gray-400">
+        <span className="text-[var(--text-secondary)]">
           {executing ? "Executing..." : "Next analysis in ~30 seconds"}
         </span>
         <div className="flex items-center gap-3">
@@ -280,7 +280,7 @@ export function AgentActivity() {
             <button 
               onClick={simulateExecution}
               disabled={executing}
-              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-700 rounded-lg font-medium transition flex items-center gap-1"
+              className="px-3 py-1 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:bg-gray-700 rounded-lg font-medium transition flex items-center gap-1"
             >
               {executing ? (
                 <>
@@ -296,7 +296,7 @@ export function AgentActivity() {
           <button 
             onClick={fetchAgentDecision}
             disabled={executing}
-            className="text-purple-400 hover:text-purple-300 disabled:text-gray-600 transition flex items-center gap-1"
+            className="text-purple-400 hover:text-purple-300 disabled:text-[var(--text-muted)] transition flex items-center gap-1"
           >
             <span>🔄</span> Refresh
           </button>
