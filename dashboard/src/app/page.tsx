@@ -6,35 +6,57 @@ import { useState, useEffect } from "react";
 interface VaultStats {
   totalDeposits: number;
   totalStaked: number;
-  totalUsers: number;
-  topValidators: Array<{
-    name: string;
-    totalApy: number;
-    wizScore: number;
-  }>;
+  stakePositions: number;
+}
+
+interface StakePosition {
+  stakeAccount: string;
+  validatorVote: string;
+  stakedAmount: number;
+  status: string;
 }
 
 export default function Home() {
   const [vaultStats, setVaultStats] = useState<VaultStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/agent/execute")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.vault) {
-          setVaultStats({
-            totalDeposits: data.vault.totalDeposits,
-            totalStaked: data.vault.totalStaked,
-            totalUsers: data.vault.totalUsers,
-            topValidators: data.topValidators?.slice(0, 3) || [],
-          });
-        }
+    Promise.all([
+      fetch("/api/agent/vault").then(res => res.json()),
+      fetch("/api/agent/positions").then(res => res.json()),
+    ])
+      .then(([vaultData, positionsData]) => {
+        const positions = positionsData.positions || [];
+        setVaultStats({
+          totalDeposits: (vaultData.vault?.totalDeposits || 0) + positionsData.totalStaked,
+          totalStaked: positionsData.totalStaked || 0,
+          stakePositions: positions.length,
+        });
+        setLoading(false);
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
+      {/* Testnet Banner */}
+      <div className="bg-[var(--accent)]/10 border-b border-[var(--accent)]/20 py-2 px-4 text-center">
+        <span className="text-[var(--accent)] text-sm font-medium">
+          🧪 Running on Solana Testnet — 
+          <a 
+            href="https://faucet.solana.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="underline hover:no-underline ml-1"
+          >
+            Get testnet SOL
+          </a>
+        </span>
+      </div>
+
       {/* Hero */}
       <section className="py-12 md:py-20 lg:py-28 relative overflow-hidden">
         {/* Background gradient */}
@@ -74,15 +96,15 @@ export default function Home() {
           <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 max-w-2xl mx-auto">
             <div className="p-3 sm:p-4 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
               <div className="text-xl sm:text-2xl md:text-4xl font-bold text-[var(--accent)]">
-                {vaultStats?.totalDeposits.toFixed(1) || "0"}
+                {loading ? "..." : (vaultStats?.totalStaked.toFixed(2) || "0")}
               </div>
-              <div className="text-[10px] sm:text-xs md:text-sm text-[var(--text-muted)] mt-1">SOL Deposited</div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-[var(--text-muted)] mt-1">SOL Staked</div>
             </div>
             <div className="p-3 sm:p-4 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
               <div className="text-xl sm:text-2xl md:text-4xl font-bold text-white">
-                {vaultStats?.totalUsers || 0}
+                {loading ? "..." : (vaultStats?.stakePositions || 0)}
               </div>
-              <div className="text-[10px] sm:text-xs md:text-sm text-[var(--text-muted)] mt-1">Depositors</div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-[var(--text-muted)] mt-1">Validators</div>
             </div>
             <div className="p-3 sm:p-4 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
               <div className="text-xl sm:text-2xl md:text-4xl font-bold text-[var(--accent-secondary)]">
@@ -120,7 +142,7 @@ export default function Home() {
               </div>
               <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-3">2. Agent Stakes</h3>
               <p className="text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">
-                Our AI agent analyzes validators using StakeWiz data and stakes 
+                Our AI agent analyzes validators using validators.app data and stakes 
                 to quality decentralized validators.
               </p>
             </div>
@@ -170,7 +192,7 @@ export default function Home() {
             </div>
             
             <div className="p-5 md:p-8 rounded-xl md:rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-transparent border border-[var(--accent)]/20">
-              <div className="text-xs md:text-sm text-[var(--accent)] font-medium mb-3 md:mb-4">⭐ Featured Validator</div>
+              <div className="text-xs md:text-sm text-[var(--accent)] font-medium mb-3 md:mb-4">⭐ Featured Validator (Testnet)</div>
               <h3 className="text-xl md:text-2xl font-bold mb-2">Staker Space</h3>
               <p className="text-sm md:text-base text-[var(--text-secondary)] mb-4 md:mb-6">
                 Our team's validator is always part of the staking set, 
@@ -179,21 +201,29 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-2 md:gap-4 text-sm">
                 <div className="p-2.5 md:p-3 rounded-lg bg-[var(--bg-primary)]">
                   <div className="text-[var(--text-muted)] text-xs md:text-sm">Commission</div>
-                  <div className="font-bold text-[var(--accent)]">0%</div>
+                  <div className="font-bold text-[var(--accent)]">10%</div>
                 </div>
                 <div className="p-2.5 md:p-3 rounded-lg bg-[var(--bg-primary)]">
-                  <div className="text-[var(--text-muted)] text-xs md:text-sm">MEV Fee</div>
-                  <div className="font-bold text-[var(--accent)]">4%</div>
+                  <div className="text-[var(--text-muted)] text-xs md:text-sm">Client</div>
+                  <div className="font-bold text-[var(--accent)]">Agave</div>
                 </div>
                 <div className="p-2.5 md:p-3 rounded-lg bg-[var(--bg-primary)]">
-                  <div className="text-[var(--text-muted)] text-xs md:text-sm">Quality Score</div>
-                  <div className="font-bold">93</div>
+                  <div className="text-[var(--text-muted)] text-xs md:text-sm">Score</div>
+                  <div className="font-bold">8/10</div>
                 </div>
                 <div className="p-2.5 md:p-3 rounded-lg bg-[var(--bg-primary)]">
-                  <div className="text-[var(--text-muted)] text-xs md:text-sm">APY</div>
-                  <div className="font-bold text-[var(--accent-secondary)]">~6.3%</div>
+                  <div className="text-[var(--text-muted)] text-xs md:text-sm">Location</div>
+                  <div className="font-bold">🇳🇱 NL</div>
                 </div>
               </div>
+              <a 
+                href="https://www.validators.app/validators/testnet/33LfdA2yKS6m7E8pSanrKTKYMhpYHEGaSWtNNB5s7xnm"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center gap-2 text-xs text-[var(--accent)] hover:underline"
+              >
+                View on validators.app →
+              </a>
             </div>
           </div>
         </div>

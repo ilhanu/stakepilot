@@ -16,8 +16,7 @@ export function Header() {
   
   const navLinks = [
     { href: "/vault", label: "Vault" },
-    { href: "/discover", label: "Discover" },
-    { href: "/agent-docs", label: "Agent API" },
+    { href: "/discover", label: "Validators" },
     { href: "/docs", label: "Docs" },
   ];
 
@@ -54,10 +53,10 @@ export function Header() {
 
           {/* Right side */}
           <div className="flex items-center gap-2 md:gap-3">
-            {/* Network badge - hidden on small mobile */}
-            <div className="hidden sm:flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-[var(--coral)]/10 border border-[var(--coral)]/20">
-              <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[var(--coral)] animate-pulse" />
-              <span className="text-[10px] md:text-xs font-medium text-[var(--coral)]">Devnet</span>
+            {/* Network badge - Testnet */}
+            <div className="hidden sm:flex items-center gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20">
+              <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+              <span className="text-[10px] md:text-xs font-medium text-[var(--accent)]">Testnet</span>
             </div>
             
             {/* Wallet button */}

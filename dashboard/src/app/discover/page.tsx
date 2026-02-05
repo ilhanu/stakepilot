@@ -1,56 +1,57 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 
 interface Validator {
+  voteAccount: string;
+  identity: string;
   name: string;
-  vote_identity: string;
-  activated_stake: number;
-  total_apy: number;
-  wiz_score: number;
   commission: number;
-  jito_commission_bps?: number;
+  mevCommission: number | null;
+  activatedStake: number;
+  stakeFormatted: string;
+  estimatedApy: number;
+  delinquent: boolean;
+  isJito: boolean;
+  isDz: boolean;
   uptime: number;
+  totalScore: number;
+  location: {
+    city: string | null;
+    country: string | null;
+    datacenter: string;
+  };
+  avatarUrl: string | null;
+  website: string | null;
 }
 
-type FilterType = "all" | "quality" | "small" | "jito";
-type SortType = "total_apy" | "wiz_score" | "activated_stake" | "commission";
+type FilterType = "qualified" | "all" | "top";
+type SortType = "totalScore" | "estimatedApy" | "activatedStake" | "commission";
+
+const STAKER_SPACE_VALIDATOR = "3S4jVg5p1rw7t8MS5UtjhnChmo6ABdmh3nyXTVzAyP9f";
 
 export default function DiscoverPage() {
   const [validators, setValidators] = useState<Validator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>("all");
-  const [sortBy, setSortBy] = useState<SortType>("wiz_score");
+  const [filter, setFilter] = useState<FilterType>("qualified");
+  const [sortBy, setSortBy] = useState<SortType>("totalScore");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchValidators();
-  }, []);
+  }, [filter]);
 
   const fetchValidators = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Use StakeWiz API via our recommend endpoint for consistent data
-      const res = await fetch("/api/agent/recommend?balance=10000000&maxValidators=100");
+      const res = await fetch(`/api/validators?filter=${filter}&limit=50`);
       if (!res.ok) throw new Error("Failed to fetch validators");
       
       const data = await res.json();
-      if (data.success && data.decision?.recommendations) {
-        // Map recommendations to our validator format
-        const mapped = data.decision.recommendations.map((r: any) => ({
-          name: r.validatorName,
-          vote_identity: r.validator,
-          activated_stake: r.stake,
-          total_apy: r.expectedApy,
-          wiz_score: r.wizScore,
-          commission: r.commission || 0,
-          jito_commission_bps: r.mevCommission ? r.mevCommission * 100 : undefined,
-          uptime: 99.5, // Default high uptime since they passed filters
-        }));
-        setValidators(mapped);
+      if (data.success && data.validators) {
+        setValidators(data.validators);
       } else {
         throw new Error("Invalid response format");
       }
@@ -62,237 +63,210 @@ export default function DiscoverPage() {
     }
   };
 
-  const filteredValidators = validators
+  const sortedValidators = [...validators]
     .filter(v => {
-      // Search filter
-      if (search) {
-        const searchLower = search.toLowerCase();
-        if (!(v.name || "").toLowerCase().includes(searchLower) && 
-            !v.vote_identity.toLowerCase().includes(searchLower)) {
-          return false;
-        }
-      }
-      
-      // Category filter
-      if (filter === "quality") return v.wiz_score >= 90;
-      if (filter === "small") return v.activated_stake < 500000;
-      if (filter === "jito") return v.jito_commission_bps !== undefined;
-      return true;
+      if (!search) return true;
+      const searchLower = search.toLowerCase();
+      return v.name.toLowerCase().includes(searchLower) || 
+             v.voteAccount.toLowerCase().includes(searchLower);
     })
     .sort((a, b) => {
-      if (sortBy === "total_apy") return b.total_apy - a.total_apy;
-      if (sortBy === "wiz_score") return b.wiz_score - a.wiz_score;
-      if (sortBy === "activated_stake") return a.activated_stake - b.activated_stake;
-      if (sortBy === "commission") return a.commission - b.commission;
-      return 0;
+      const aIsStakerSpace = a.voteAccount === STAKER_SPACE_VALIDATOR;
+      const bIsStakerSpace = b.voteAccount === STAKER_SPACE_VALIDATOR;
+      
+      // Always put Staker Space first
+      if (aIsStakerSpace) return -1;
+      if (bIsStakerSpace) return 1;
+      
+      switch (sortBy) {
+        case "totalScore": return b.totalScore - a.totalScore;
+        case "estimatedApy": return b.estimatedApy - a.estimatedApy;
+        case "activatedStake": return b.activatedStake - a.activatedStake;
+        case "commission": return a.commission - b.commission;
+        default: return 0;
+      }
     });
-
-  const formatStake = (stake: number) => {
-    if (stake >= 1e6) return `${(stake / 1e6).toFixed(1)}M`;
-    if (stake >= 1e3) return `${(stake / 1e3).toFixed(0)}K`;
-    return stake.toFixed(0);
-  };
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
-        {/* Page Header */}
+      {/* Testnet Banner */}
+      <div className="bg-[var(--accent)]/10 border-b border-[var(--accent)]/20 py-2 px-4 text-center">
+        <span className="text-[var(--accent)] text-sm font-medium">
+          🧪 Testnet Validators — Data from validators.app
+        </span>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+        {/* Header */}
         <div className="mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Discover Validators</h1>
-          <p className="text-sm md:text-base text-[var(--text-secondary)]">
-            Browse quality validators that meet our criteria.
+          <p className="text-[var(--text-secondary)] text-sm md:text-base">
+            Browse testnet validators that match StakePilot's quality criteria
           </p>
         </div>
 
-        {/* Criteria Banner - Hidden on mobile, shown on md+ */}
-        <div className="hidden md:block mb-6 p-4 rounded-xl bg-gradient-to-r from-[var(--accent)]/10 to-transparent border border-[var(--accent)]/20">
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="text-[var(--accent)] font-semibold">Agent Criteria:</span>
-            <span className="px-2 py-1 rounded-md bg-[var(--bg-card)] text-[var(--text-secondary)]">
-              Stake &lt; 1M SOL
-            </span>
-            <span className="px-2 py-1 rounded-md bg-[var(--bg-card)] text-[var(--text-secondary)]">
-              Commission ≤ 5%
-            </span>
-            <span className="px-2 py-1 rounded-md bg-[var(--bg-card)] text-[var(--text-secondary)]">
-              MEV Fee ≤ 10%
-            </span>
-            <span className="px-2 py-1 rounded-md bg-[var(--bg-card)] text-[var(--text-secondary)]">
-              Uptime &gt; 95%
-            </span>
-          </div>
-        </div>
-
-        {/* Search & Filters */}
-        <div className="space-y-3 mb-6">
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-6">
           {/* Search */}
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search validators..."
-            className="w-full px-3 py-2.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm"
-          />
-
-          {/* Filter pills + Sort */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search by name or address..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+          
+          {/* Filter */}
+          <div className="flex gap-2">
             {[
+              { value: "qualified", label: "Qualified" },
+              { value: "top", label: "Top 20" },
               { value: "all", label: "All" },
-              { value: "quality", label: "⭐ Quality" },
-              { value: "small", label: "🌱 Small" },
-              { value: "jito", label: "⚡ Jito" },
-            ].map(f => (
+            ].map((f) => (
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value as FilterType)}
-                className={`px-3 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
-                  filter === f.value 
-                    ? "bg-[var(--accent)] text-black" 
-                    : "bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border)]"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  filter === f.value
+                    ? "bg-[var(--accent)] text-black"
+                    : "bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-white border border-[var(--border)]"
                 }`}
               >
                 {f.label}
               </button>
             ))}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortType)}
-              className="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-xs md:text-sm focus:border-[var(--accent)] outline-none whitespace-nowrap"
-            >
-              <option value="wiz_score">Quality ↓</option>
-              <option value="total_apy">APY ↓</option>
-              <option value="activated_stake">Stake ↑</option>
-              <option value="commission">Comm ↑</option>
-            </select>
+          </div>
+
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortType)}
+            className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--accent)]"
+          >
+            <option value="totalScore">Sort by Score</option>
+            <option value="estimatedApy">Sort by APY</option>
+            <option value="activatedStake">Sort by Stake</option>
+            <option value="commission">Sort by Commission</option>
+          </select>
+        </div>
+
+        {/* Criteria Info */}
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-4 mb-6">
+          <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm">
+            <span className="text-[var(--text-secondary)]">StakePilot Criteria:</span>
+            <span className="text-[var(--accent)]">✓ Stake &lt; 1M SOL</span>
+            <span className="text-[var(--accent)]">✓ Commission ≤ 5%</span>
+            <span className="text-[var(--accent)]">✓ MEV ≤ 10%</span>
+            <span className="text-[var(--accent)]">✓ Uptime &gt; 95%</span>
           </div>
         </div>
 
-        {/* Error State */}
+        {/* Error */}
         {error && (
-          <div className="rounded-xl p-8 text-center mb-6 bg-red-500/10 border border-red-500/20">
-            <p className="text-red-400 mb-4">{error}</p>
-            <button onClick={fetchValidators} className="btn-secondary">
-              Try Again
-            </button>
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+            {error}
+            <button onClick={fetchValidators} className="ml-2 underline">Retry</button>
           </div>
         )}
 
-        {/* Loading State */}
+        {/* Loading */}
         {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-              <p className="text-[var(--text-secondary)]">Loading validators from StakeWiz...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Validators Grid */}
-        {!loading && !error && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredValidators.map((v) => (
-              <div 
-                key={v.vote_identity}
-                className="group p-3 md:p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent)]/5 flex items-center justify-center text-[var(--accent)] font-bold text-sm shrink-0">
-                      {(v.name || "?").charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-sm truncate">
-                        {v.name || "Unknown"}
-                      </h3>
-                      <p className="text-[10px] text-[var(--text-muted)] font-mono">
-                        {v.vote_identity.slice(0, 6)}...
-                      </p>
-                    </div>
-                  </div>
-                  {/* Quality Score */}
-                  <div className={`px-2 py-0.5 rounded text-xs font-bold ${
-                    v.wiz_score >= 95 ? "bg-yellow-500/20 text-yellow-400" :
-                    v.wiz_score >= 90 ? "bg-[var(--accent)]/20 text-[var(--accent)]" :
-                    "bg-gray-500/20 text-gray-400"
-                  }`}>
-                    {v.wiz_score.toFixed(0)}
-                  </div>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-4 gap-1.5 md:gap-2">
-                  <div className="p-2 rounded-lg bg-[var(--bg-primary)] text-center">
-                    <p className="text-[10px] text-[var(--text-muted)]">APY</p>
-                    <p className="text-sm font-bold text-[var(--accent)]">{v.total_apy.toFixed(1)}%</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-[var(--bg-primary)] text-center">
-                    <p className="text-[10px] text-[var(--text-muted)]">Comm</p>
-                    <p className="text-sm font-bold">{v.commission}%</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-[var(--bg-primary)] text-center">
-                    <p className="text-[10px] text-[var(--text-muted)]">Stake</p>
-                    <p className="text-sm font-bold">{formatStake(v.activated_stake)}</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-[var(--bg-primary)] text-center">
-                    <p className="text-[10px] text-[var(--text-muted)]">Up</p>
-                    <p className="text-sm font-bold">{v.uptime?.toFixed(0) || "99"}%</p>
-                  </div>
-                </div>
-
-                {/* Tags */}
-                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                  {v.jito_commission_bps !== undefined && (
-                    <span className="px-1.5 py-0.5 text-[10px] rounded bg-purple-500/10 text-purple-400">
-                      ⚡ Jito
-                    </span>
-                  )}
-                  {v.activated_stake < 100000 && (
-                    <span className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--accent)]/10 text-[var(--accent)]">
-                      🌱 Small
-                    </span>
-                  )}
-                  {v.name === "Staker Space" && (
-                    <span className="px-1.5 py-0.5 text-[10px] rounded bg-yellow-500/10 text-yellow-400">
-                      ⭐ Ours
-                    </span>
-                  )}
-                </div>
-              </div>
+          <div className="grid gap-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-24 bg-[var(--bg-card)] rounded-xl animate-pulse" />
             ))}
           </div>
         )}
 
-        {/* Empty State */}
-        {!loading && !error && filteredValidators.length === 0 && (
-          <div className="rounded-xl p-12 text-center bg-[var(--bg-card)] border border-[var(--border)]">
-            <p className="text-[var(--text-muted)] mb-4">No validators match your filters</p>
-            <button 
-              onClick={() => { setFilter("all"); setSearch(""); }}
-              className="text-[var(--accent)] text-sm hover:underline"
-            >
-              Clear filters
-            </button>
+        {/* Validators List */}
+        {!loading && (
+          <div className="space-y-3">
+            {sortedValidators.map((v) => {
+              const isStakerSpace = v.voteAccount === STAKER_SPACE_VALIDATOR;
+              
+              return (
+                <div
+                  key={v.voteAccount}
+                  className={`p-4 rounded-xl border transition-colors ${
+                    isStakerSpace
+                      ? "bg-[var(--accent)]/5 border-[var(--accent)]/30"
+                      : "bg-[var(--bg-card)] border-[var(--border)] hover:border-[var(--accent)]/30"
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    {/* Avatar & Name */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {v.avatarUrl ? (
+                          <img src={v.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-black font-bold text-sm">{v.name.slice(0, 2).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">{v.name}</span>
+                          {isStakerSpace && <span className="text-xs bg-[var(--accent)]/20 text-[var(--accent)] px-1.5 py-0.5 rounded">Our Validator</span>}
+                          {v.isDz && <span className="text-xs text-blue-400">DZ</span>}
+                          {v.isJito && <span className="text-xs text-orange-400">Jito</span>}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                          <span className="font-mono">{v.voteAccount.slice(0, 8)}...</span>
+                          {v.location.country && <span>{v.location.country === "NL" ? "🇳🇱" : v.location.country === "US" ? "🇺🇸" : v.location.country === "DE" ? "🇩🇪" : v.location.country}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Stats */}
+                    <div className="grid grid-cols-4 gap-4 text-center sm:text-right">
+                      <div>
+                        <div className="text-lg font-bold text-[var(--accent)]">{v.estimatedApy.toFixed(1)}%</div>
+                        <div className="text-xs text-[var(--text-secondary)]">Est. APY</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold">{v.commission}%</div>
+                        <div className="text-xs text-[var(--text-secondary)]">Commission</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold">{v.totalScore}</div>
+                        <div className="text-xs text-[var(--text-secondary)]">Score</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold">{v.stakeFormatted}</div>
+                        <div className="text-xs text-[var(--text-secondary)]">Stake</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--border)]">
+                    <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
+                      <span>Uptime: {v.uptime.toFixed(1)}%</span>
+                      {v.mevCommission !== null && <span>MEV: {v.mevCommission}%</span>}
+                    </div>
+                    <a
+                      href={`https://www.validators.app/validators/testnet/${v.identity}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[var(--accent)] hover:underline"
+                    >
+                      View on validators.app →
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* Results count */}
-        {!loading && !error && (
-          <p className="text-sm text-[var(--text-muted)] mt-6 text-center">
-            Showing {filteredValidators.length} of {validators.length} qualified validators
-          </p>
+        {!loading && sortedValidators.length === 0 && (
+          <div className="text-center py-12 text-[var(--text-secondary)]">
+            <div className="text-4xl mb-4">🔍</div>
+            <div>No validators found matching your criteria</div>
+          </div>
         )}
-
-        {/* CTA */}
-        <div className="mt-8 md:mt-12 p-5 md:p-8 rounded-xl md:rounded-2xl text-center bg-gradient-to-br from-[var(--accent)]/10 via-[var(--bg-card)] to-[var(--bg-card)] border border-[var(--accent)]/20">
-          <h3 className="text-xl md:text-2xl font-bold mb-2 md:mb-3">Let the Agent Choose</h3>
-          <p className="text-sm md:text-base text-[var(--text-secondary)] mb-4 md:mb-6 max-w-md mx-auto">
-            Deposit to the vault and let our AI agent automatically select the best validators for optimal yield.
-          </p>
-          <Link href="/vault" className="btn-primary text-sm md:text-base px-6 md:px-8 py-2.5 md:py-3">
-            Open Vault →
-          </Link>
-        </div>
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ import {
 } from "@solana/web3.js";
 import Link from "next/link";
 import { AgentActivity } from "@/components/AgentActivity";
+import { VaultPositions } from "@/components/VaultPositions";
 
 const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 
@@ -265,6 +266,21 @@ export default function VaultPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
+      {/* Testnet Banner */}
+      <div className="bg-[var(--accent)]/10 border-b border-[var(--accent)]/20 py-2 px-4 text-center">
+        <span className="text-[var(--accent)] text-sm font-medium">
+          🧪 Running on Solana Testnet — 
+          <a 
+            href="https://faucet.solana.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="underline hover:no-underline ml-1"
+          >
+            Get testnet SOL
+          </a>
+        </span>
+      </div>
+      
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Title */}
         <div className="mb-8">
@@ -399,6 +415,9 @@ export default function VaultPage() {
                 </div>
               </div>
 
+              {/* Stake Positions */}
+              <VaultPositions />
+
               {/* Agent Activity */}
               <AgentActivity />
 
@@ -497,7 +516,7 @@ export default function VaultPage() {
                 <div className="space-y-2 text-xs md:text-sm">
                   <div>
                     <div className="text-[var(--text-secondary)]">Network</div>
-                    <div className="font-mono text-[var(--coral)]">Devnet</div>
+                    <div className="font-mono text-[var(--accent)]">Testnet</div>
                   </div>
                   <div>
                     <div className="text-[var(--text-secondary)]">Vault Address</div>
