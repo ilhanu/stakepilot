@@ -321,7 +321,7 @@ export default function VaultPage() {
                   </div>
                   <div>
                     <div className="text-[var(--text-secondary)] text-sm">Pending Unstake</div>
-                    <div className="text-xl font-bold text-yellow-400">{vaultStatus?.userPendingUnstake.toFixed(4) || "0"} SOL</div>
+                    <div className="text-xl font-bold text-[var(--coral)]">{vaultStatus?.userPendingUnstake.toFixed(4) || "0"} SOL</div>
                   </div>
                 </div>
 
@@ -360,7 +360,7 @@ export default function VaultPage() {
                     </div>
                     <button
                       onClick={() => setDepositAmount(walletBalance.toFixed(4))}
-                      className="mt-1 text-xs text-[var(--accent)] hover:text-emerald-300"
+                      className="mt-1 text-xs text-[var(--accent)] hover:text-[var(--accent-hover)]"
                     >
                       Max: {walletBalance.toFixed(4)} SOL
                     </button>
@@ -373,20 +373,20 @@ export default function VaultPage() {
                         value={withdrawAmount}
                         onChange={(e) => setWithdrawAmount(e.target.value)}
                         placeholder="0.00"
-                        className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-2 focus:outline-none focus:border-yellow-500"
+                        className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--coral)]"
                         disabled={txPending}
                       />
                       <button
                         onClick={handleRequestUnstake}
                         disabled={txPending || !withdrawAmount}
-                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition"
+                        className="px-4 py-2 bg-[var(--coral)] hover:bg-[var(--coral)] disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition"
                       >
                         {txPending ? "..." : "Unstake"}
                       </button>
                     </div>
                     <button
                       onClick={() => setWithdrawAmount(vaultStatus?.userDeposit.toFixed(4) || "0")}
-                      className="mt-1 text-xs text-yellow-400 hover:text-yellow-300"
+                      className="mt-1 text-xs text-[var(--coral)] hover:text-yellow-300"
                     >
                       Max: {vaultStatus?.userDeposit.toFixed(4) || "0"} SOL
                     </button>
@@ -407,7 +407,7 @@ export default function VaultPage() {
                   {recommendations.map((rec, i) => (
                     <div key={rec.validator} className="flex items-center justify-between p-3 bg-[var(--bg-elevated)] rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-sm font-bold">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center text-sm font-bold">
                           {i + 1}
                         </div>
                         <div>
@@ -455,7 +455,7 @@ export default function VaultPage() {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center flex-shrink-0">4</div>
+                    <div className="w-6 h-6 rounded-full bg-[var(--coral)]/20 text-[var(--coral)] flex items-center justify-center flex-shrink-0">4</div>
                     <div>
                       <div className="font-medium">Unstake Anytime</div>
                       <div className="text-[var(--text-secondary)]">~2 day cooldown period</div>
@@ -492,7 +492,7 @@ export default function VaultPage() {
                 <div className="space-y-2 text-sm">
                   <div>
                     <div className="text-[var(--text-secondary)]">Network</div>
-                    <div className="font-mono text-yellow-400">Devnet</div>
+                    <div className="font-mono text-[var(--coral)]">Devnet</div>
                   </div>
                   <div>
                     <div className="text-[var(--text-secondary)]">Vault Address</div>
