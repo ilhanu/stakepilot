@@ -403,28 +403,28 @@ export default function VaultPage() {
               <AgentActivity />
 
               {/* Validator Targets */}
-              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
-                <h2 className="text-lg font-semibold mb-4">Validator Targets</h2>
-                <p className="text-[var(--text-secondary)] text-sm mb-4">
+              <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
+                <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Validator Targets</h2>
+                <p className="text-[var(--text-secondary)] text-xs md:text-sm mb-3 md:mb-4">
                   The agent stakes to these quality decentralized validators
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3">
                   {recommendations.map((rec, i) => (
-                    <div key={rec.validator} className="flex items-center justify-between p-3 bg-[var(--bg-elevated)] rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center text-sm font-bold">
+                    <div key={rec.validator} className="flex items-center justify-between p-2.5 md:p-3 bg-[var(--bg-elevated)] rounded-lg">
+                      <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center text-xs md:text-sm font-bold shrink-0">
                           {i + 1}
                         </div>
-                        <div>
-                          <div className="font-medium">{rec.validatorName}</div>
-                          <div className="text-xs text-[var(--text-secondary)] font-mono">
-                            {rec.validator.slice(0, 8)}...{rec.validator.slice(-4)}
+                        <div className="min-w-0">
+                          <div className="font-medium text-sm md:text-base truncate">{rec.validatorName}</div>
+                          <div className="text-[10px] md:text-xs text-[var(--text-secondary)] font-mono">
+                            {rec.validator.slice(0, 6)}...
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-[var(--accent)] font-medium">{rec.expectedApy.toFixed(2)}% APY</div>
-                        <div className="text-xs text-[var(--text-secondary)]">Score: {rec.wizScore.toFixed(0)}</div>
+                      <div className="text-right shrink-0 ml-2">
+                        <div className="text-[var(--accent)] font-medium text-sm md:text-base">{rec.expectedApy.toFixed(1)}%</div>
+                        <div className="text-[10px] md:text-xs text-[var(--text-secondary)]">Score: {rec.wizScore.toFixed(0)}</div>
                       </div>
                     </div>
                   ))}
@@ -433,46 +433,46 @@ export default function VaultPage() {
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-6">
-              {/* How it Works */}
-              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
-                <h2 className="text-lg font-semibold mb-4">How it Works</h2>
-                <div className="space-y-4 text-sm">
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center flex-shrink-0">1</div>
+            <div className="space-y-4 md:space-y-6">
+              {/* How it Works - Collapsed on mobile */}
+              <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
+                <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4">How it Works</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-1 gap-3 md:gap-4 text-xs md:text-sm">
+                  <div className="flex gap-2 md:gap-3">
+                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center flex-shrink-0 text-xs">1</div>
                     <div>
                       <div className="font-medium">Deposit SOL</div>
-                      <div className="text-[var(--text-secondary)]">Transfer SOL to the vault</div>
+                      <div className="text-[var(--text-secondary)] hidden sm:block">Transfer SOL to the vault</div>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center flex-shrink-0">2</div>
+                  <div className="flex gap-2 md:gap-3">
+                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center flex-shrink-0 text-xs">2</div>
                     <div>
                       <div className="font-medium">Agent Stakes</div>
-                      <div className="text-[var(--text-secondary)]">AI agent stakes to quality validators</div>
+                      <div className="text-[var(--text-secondary)] hidden sm:block">AI agent stakes to quality validators</div>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center flex-shrink-0">3</div>
+                  <div className="flex gap-2 md:gap-3">
+                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-[var(--accent)]/20 text-[var(--accent)] flex items-center justify-center flex-shrink-0 text-xs">3</div>
                     <div>
                       <div className="font-medium">Earn Rewards</div>
-                      <div className="text-[var(--text-secondary)]">Get staking + MEV rewards</div>
+                      <div className="text-[var(--text-secondary)] hidden sm:block">Get staking + MEV rewards</div>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[var(--coral)]/20 text-[var(--coral)] flex items-center justify-center flex-shrink-0">4</div>
+                  <div className="flex gap-2 md:gap-3">
+                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-[var(--coral)]/20 text-[var(--coral)] flex items-center justify-center flex-shrink-0 text-xs">4</div>
                     <div>
                       <div className="font-medium">Unstake Anytime</div>
-                      <div className="text-[var(--text-secondary)]">~2 day cooldown period</div>
+                      <div className="text-[var(--text-secondary)] hidden sm:block">~2 day cooldown period</div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Validator Criteria */}
-              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
-                <h2 className="text-lg font-semibold mb-4">Validator Criteria</h2>
-                <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
+              <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
+                <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Validator Criteria</h2>
+                <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-[var(--text-secondary)]">
                   <li className="flex items-center gap-2">
                     <span className="text-[var(--accent)]">✓</span> Stake &lt; 1M SOL (decentralization)
                   </li>
@@ -492,9 +492,9 @@ export default function VaultPage() {
               </div>
 
               {/* Vault Address */}
-              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
-                <h2 className="text-lg font-semibold mb-4">Vault Info</h2>
-                <div className="space-y-2 text-sm">
+              <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
+                <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Vault Info</h2>
+                <div className="space-y-2 text-xs md:text-sm">
                   <div>
                     <div className="text-[var(--text-secondary)]">Network</div>
                     <div className="font-mono text-[var(--coral)]">Devnet</div>
@@ -505,7 +505,7 @@ export default function VaultPage() {
                       href={`https://explorer.solana.com/address/${VAULT_PDA.toBase58()}?cluster=devnet`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-[var(--accent)] hover:underline break-all"
+                      className="font-mono text-[var(--accent)] hover:underline break-all text-[11px] md:text-xs"
                     >
                       {VAULT_PDA.toBase58().slice(0, 16)}...
                     </a>
@@ -516,7 +516,7 @@ export default function VaultPage() {
                       href={`https://explorer.solana.com/address/${PROGRAM_ID.toBase58()}?cluster=devnet`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-[var(--accent)] hover:underline break-all"
+                      className="font-mono text-[var(--accent)] hover:underline break-all text-[11px] md:text-xs"
                     >
                       {PROGRAM_ID.toBase58().slice(0, 16)}...
                     </a>

@@ -103,34 +103,34 @@ export default function Home() {
           </p>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-            <div className="p-8 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/30 transition-colors">
-              <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-6 text-2xl">
+            <div className="p-5 md:p-8 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/30 transition-colors">
+              <div className="w-11 h-11 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-4 md:mb-6 text-xl md:text-2xl">
                 💰
               </div>
-              <h3 className="text-xl font-semibold mb-3">1. Deposit SOL</h3>
-              <p className="text-[var(--text-secondary)] leading-relaxed">
+              <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-3">1. Deposit SOL</h3>
+              <p className="text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">
                 Connect your wallet and deposit SOL to the vault. 
                 Your funds are tracked on-chain with full transparency.
               </p>
             </div>
 
-            <div className="p-8 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/30 transition-colors">
-              <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-6 text-2xl">
+            <div className="p-5 md:p-8 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/30 transition-colors">
+              <div className="w-11 h-11 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-4 md:mb-6 text-xl md:text-2xl">
                 🤖
               </div>
-              <h3 className="text-xl font-semibold mb-3">2. Agent Stakes</h3>
-              <p className="text-[var(--text-secondary)] leading-relaxed">
+              <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-3">2. Agent Stakes</h3>
+              <p className="text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">
                 Our AI agent analyzes validators using StakeWiz data and stakes 
                 to quality decentralized validators.
               </p>
             </div>
 
-            <div className="p-8 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/30 transition-colors">
-              <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-6 text-2xl">
+            <div className="p-5 md:p-8 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/30 transition-colors">
+              <div className="w-11 h-11 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-4 md:mb-6 text-xl md:text-2xl">
                 📈
               </div>
-              <h3 className="text-xl font-semibold mb-3">3. Earn Rewards</h3>
-              <p className="text-[var(--text-secondary)] leading-relaxed">
+              <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-3">3. Earn Rewards</h3>
+              <p className="text-sm md:text-base text-[var(--text-secondary)] leading-relaxed">
                 Earn staking + MEV rewards automatically. 
                 Unstake anytime with a ~2 day cooldown period.
               </p>
@@ -140,57 +140,57 @@ export default function Home() {
       </section>
 
       {/* Validator Criteria */}
-      <section className="py-20 border-t border-[var(--border)]">
+      <section className="py-12 md:py-20 border-t border-[var(--border)]">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold mb-4">Agent Selection Criteria</h2>
-              <p className="text-[var(--text-secondary)] mb-8 leading-relaxed">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">Agent Selection Criteria</h2>
+              <p className="text-sm md:text-base text-[var(--text-secondary)] mb-6 md:mb-8 leading-relaxed">
                 The agent only stakes to validators that meet strict quality and decentralization requirements.
               </p>
               
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {[
                   { icon: "🎯", title: "Stake < 1M SOL", desc: "Supporting network decentralization" },
                   { icon: "💎", title: "Commission ≤ 5%", desc: "Low fees for maximum returns" },
                   { icon: "⚡", title: "MEV Fee ≤ 10%", desc: "Fair MEV reward sharing" },
                   { icon: "✅", title: "Uptime > 95%", desc: "Reliable, consistent performance" },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]">
-                    <div className="w-10 h-10 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+                  <div key={i} className="flex items-start gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center shrink-0 text-sm md:text-base">
                       {item.icon}
                     </div>
                     <div>
-                      <div className="font-semibold">{item.title}</div>
-                      <div className="text-sm text-[var(--text-muted)]">{item.desc}</div>
+                      <div className="font-semibold text-sm md:text-base">{item.title}</div>
+                      <div className="text-xs md:text-sm text-[var(--text-muted)]">{item.desc}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
             
-            <div className="p-8 rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-transparent border border-[var(--accent)]/20">
-              <div className="text-sm text-[var(--accent)] font-medium mb-4">⭐ Always Included</div>
-              <h3 className="text-2xl font-bold mb-2">Staker Space</h3>
-              <p className="text-[var(--text-secondary)] mb-6">
+            <div className="p-5 md:p-8 rounded-xl md:rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-transparent border border-[var(--accent)]/20">
+              <div className="text-xs md:text-sm text-[var(--accent)] font-medium mb-3 md:mb-4">⭐ Always Included</div>
+              <h3 className="text-xl md:text-2xl font-bold mb-2">Staker Space</h3>
+              <p className="text-sm md:text-base text-[var(--text-secondary)] mb-4 md:mb-6">
                 Our own validator is always part of the staking set, 
                 ensuring alignment between the team and users.
               </p>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
-                  <div className="text-[var(--text-muted)]">Commission</div>
+              <div className="grid grid-cols-2 gap-2 md:gap-4 text-sm">
+                <div className="p-2.5 md:p-3 rounded-lg bg-[var(--bg-primary)]">
+                  <div className="text-[var(--text-muted)] text-xs md:text-sm">Commission</div>
                   <div className="font-bold text-[var(--accent)]">0%</div>
                 </div>
-                <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
-                  <div className="text-[var(--text-muted)]">MEV Fee</div>
+                <div className="p-2.5 md:p-3 rounded-lg bg-[var(--bg-primary)]">
+                  <div className="text-[var(--text-muted)] text-xs md:text-sm">MEV Fee</div>
                   <div className="font-bold text-[var(--accent)]">4%</div>
                 </div>
-                <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
-                  <div className="text-[var(--text-muted)]">Quality Score</div>
+                <div className="p-2.5 md:p-3 rounded-lg bg-[var(--bg-primary)]">
+                  <div className="text-[var(--text-muted)] text-xs md:text-sm">Quality Score</div>
                   <div className="font-bold">93</div>
                 </div>
-                <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
-                  <div className="text-[var(--text-muted)]">APY</div>
+                <div className="p-2.5 md:p-3 rounded-lg bg-[var(--bg-primary)]">
+                  <div className="text-[var(--text-muted)] text-xs md:text-sm">APY</div>
                   <div className="font-bold text-[var(--accent-secondary)]">~6.3%</div>
                 </div>
               </div>
@@ -200,33 +200,33 @@ export default function Home() {
       </section>
 
       {/* Security */}
-      <section className="py-20 border-t border-[var(--border)]">
+      <section className="py-12 md:py-20 border-t border-[var(--border)]">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">You're Always in Control</h2>
-          <p className="text-[var(--text-secondary)] mb-12 max-w-2xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">You're Always in Control</h2>
+          <p className="text-sm md:text-base text-[var(--text-secondary)] mb-8 md:mb-12 max-w-2xl mx-auto">
             The agent can stake your funds to validators, but can <span className="text-[var(--coral)] font-semibold">never withdraw</span> to itself. 
             Only you control your SOL.
           </p>
           
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <div className="p-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="text-3xl mb-4">🔒</div>
-              <h3 className="font-semibold mb-2">Agent Can't Withdraw</h3>
-              <p className="text-sm text-[var(--text-muted)]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 max-w-4xl mx-auto">
+            <div className="p-5 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
+              <div className="text-2xl md:text-3xl mb-3 md:mb-4">🔒</div>
+              <h3 className="font-semibold mb-1 md:mb-2 text-sm md:text-base">Agent Can't Withdraw</h3>
+              <p className="text-xs md:text-sm text-[var(--text-muted)]">
                 Smart contract enforced - agent can only stake, never transfer out
               </p>
             </div>
-            <div className="p-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="text-3xl mb-4">⏱️</div>
-              <h3 className="font-semibold mb-2">Unstake Anytime</h3>
-              <p className="text-sm text-[var(--text-muted)]">
+            <div className="p-5 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
+              <div className="text-2xl md:text-3xl mb-3 md:mb-4">⏱️</div>
+              <h3 className="font-semibold mb-1 md:mb-2 text-sm md:text-base">Unstake Anytime</h3>
+              <p className="text-xs md:text-sm text-[var(--text-muted)]">
                 Request unstake whenever you want, ~2 day cooldown period
               </p>
             </div>
-            <div className="p-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="text-3xl mb-4">📊</div>
-              <h3 className="font-semibold mb-2">Full Transparency</h3>
-              <p className="text-sm text-[var(--text-muted)]">
+            <div className="p-5 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
+              <div className="text-2xl md:text-3xl mb-3 md:mb-4">📊</div>
+              <h3 className="font-semibold mb-1 md:mb-2 text-sm md:text-base">Full Transparency</h3>
+              <p className="text-xs md:text-sm text-[var(--text-muted)]">
                 All operations on-chain, verify everything on Solana Explorer
               </p>
             </div>
@@ -235,18 +235,18 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 border-t border-[var(--border)]">
+      <section className="py-12 md:py-20 border-t border-[var(--border)]">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <div className="p-12 rounded-3xl bg-gradient-to-br from-[var(--accent)]/10 via-[var(--bg-card)] to-[var(--coral)]/5 border border-[var(--accent)]/20">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Stake Smarter?</h2>
-            <p className="text-[var(--text-secondary)] mb-8 text-lg">
+          <div className="p-6 sm:p-8 md:p-12 rounded-2xl md:rounded-3xl bg-gradient-to-br from-[var(--accent)]/10 via-[var(--bg-card)] to-[var(--coral)]/5 border border-[var(--accent)]/20">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4">Ready to Stake Smarter?</h2>
+            <p className="text-sm md:text-lg text-[var(--text-secondary)] mb-6 md:mb-8">
               Join the vault and let the agent optimize your staking yield.
             </p>
-            <div className="flex items-center justify-center gap-4">
-              <Link href="/vault" className="btn-primary text-lg px-10 py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
+              <Link href="/vault" className="btn-primary text-base md:text-lg px-8 md:px-10 py-3 md:py-4 w-full sm:w-auto">
                 Open Vault →
               </Link>
-              <Link href="/discover" className="btn-secondary text-lg px-8 py-4">
+              <Link href="/discover" className="btn-secondary text-base md:text-lg px-6 md:px-8 py-3 md:py-4 w-full sm:w-auto">
                 Browse Validators
               </Link>
             </div>
@@ -255,8 +255,8 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-[var(--border)]">
-        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between text-sm text-[var(--text-muted)]">
+      <footer className="py-6 md:py-8 border-t border-[var(--border)]">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[var(--text-muted)]">
           <div>© 2026 Staker Space</div>
           <div className="flex items-center gap-6">
             <Link href="/docs" className="hover:text-[var(--text-primary)] transition">Docs</Link>

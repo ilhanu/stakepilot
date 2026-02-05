@@ -289,3 +289,36 @@ body {
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* Hide scrollbar utility (for horizontal overflow filters) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 640px) {
+  button, a, input, select {
+    min-height: 44px;
+  }
+  
+  .card {
+    border-radius: 12px;
+  }
+}
+
+/* Better mobile touch feedback */
+@media (hover: none) {
+  .btn-primary:active {
+    transform: scale(0.98);
+    background: var(--accent-hover);
+  }
+  
+  .btn-secondary:active {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
