@@ -127,51 +127,51 @@ export function AgentActivity() {
   };
 
   return (
-    <div className="rounded-2xl border border-[var(--accent)]/20 bg-gradient-to-br from-[var(--accent)]/5 via-[var(--bg-card)] to-[var(--bg-card)] overflow-hidden">
+    <div className="rounded-xl sm:rounded-2xl border border-[var(--accent)]/20 bg-gradient-to-br from-[var(--accent)]/5 via-[var(--bg-card)] to-[var(--bg-card)] overflow-hidden">
       {/* Header */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center shadow-lg">
-              <span className="text-xl">🤖</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center shadow-lg">
+              <span className="text-lg sm:text-xl">🤖</span>
             </div>
             <div>
-              <h2 className="text-lg font-semibold">Agent Decision</h2>
-              <p className="text-sm text-[var(--text-muted)]">
-                Last analysis: {new Date(decision.timestamp).toLocaleTimeString()}
+              <h2 className="text-base sm:text-lg font-semibold">Agent Decision</h2>
+              <p className="text-xs sm:text-sm text-[var(--text-muted)]">
+                {new Date(decision.timestamp).toLocaleTimeString()}
               </p>
             </div>
           </div>
-          <div className={`px-3 py-1.5 rounded-lg text-sm font-medium ${statusColors[decision.status]}`}>
+          <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium ${statusColors[decision.status]}`}>
             {decision.status.charAt(0).toUpperCase() + decision.status.slice(1)}
           </div>
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="p-4 rounded-xl bg-[var(--bg-primary)]">
-            <div className="text-[var(--text-muted)] text-xs mb-1">Vault Balance</div>
-            <div className="text-xl font-bold">{decision.vaultBalance.toFixed(2)} <span className="text-sm text-[var(--text-muted)]">SOL</span></div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div className="p-2 sm:p-4 rounded-lg sm:rounded-xl bg-[var(--bg-primary)]">
+            <div className="text-[var(--text-muted)] text-[10px] sm:text-xs mb-0.5 sm:mb-1">Balance</div>
+            <div className="text-sm sm:text-xl font-bold">{decision.vaultBalance.toFixed(2)}</div>
           </div>
-          <div className="p-4 rounded-xl bg-[var(--bg-primary)]">
-            <div className="text-[var(--text-muted)] text-xs mb-1">Available to Stake</div>
-            <div className="text-xl font-bold text-[var(--accent)]">{decision.availableToStake.toFixed(2)} <span className="text-sm opacity-70">SOL</span></div>
+          <div className="p-2 sm:p-4 rounded-lg sm:rounded-xl bg-[var(--bg-primary)]">
+            <div className="text-[var(--text-muted)] text-[10px] sm:text-xs mb-0.5 sm:mb-1">Available</div>
+            <div className="text-sm sm:text-xl font-bold text-[var(--accent)]">{decision.availableToStake.toFixed(2)}</div>
           </div>
-          <div className="p-4 rounded-xl bg-[var(--bg-primary)]">
-            <div className="text-[var(--text-muted)] text-xs mb-1">Action</div>
-            <div className="text-base font-semibold">{actionLabels[decision.action]}</div>
+          <div className="p-2 sm:p-4 rounded-lg sm:rounded-xl bg-[var(--bg-primary)]">
+            <div className="text-[var(--text-muted)] text-[10px] sm:text-xs mb-0.5 sm:mb-1">Action</div>
+            <div className="text-xs sm:text-base font-semibold">{decision.action === "stake" ? "🎯 Stake" : decision.action === "hold" ? "⏸️ Hold" : "🔄 Rebalance"}</div>
           </div>
         </div>
 
         {/* Agent Reasoning */}
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-3 flex items-center gap-2">
-            <span>💭</span> Agent Reasoning
+        <div className="mb-4 sm:mb-6">
+          <h3 className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)] mb-2 sm:mb-3 flex items-center gap-2">
+            <span>💭</span> Reasoning
           </h3>
-          <div className="p-4 rounded-xl bg-[var(--bg-primary)] space-y-2">
-            {decision.reasoning.map((reason, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm">
-                <span className="text-[var(--accent)] mt-0.5">→</span>
+          <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-[var(--bg-primary)] space-y-1.5 sm:space-y-2 max-h-32 sm:max-h-48 overflow-y-auto">
+            {decision.reasoning.slice(0, 6).map((reason, i) => (
+              <div key={i} className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                <span className="text-[var(--accent)] mt-0.5 shrink-0">→</span>
                 <span className="text-[var(--text-secondary)]">{reason}</span>
               </div>
             ))}
@@ -183,10 +183,10 @@ export function AgentActivity() {
           <div>
             <button 
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center justify-between w-full text-sm font-semibold text-[var(--text-secondary)] mb-3 hover:text-[var(--text-primary)] transition"
+              className="flex items-center justify-between w-full text-xs sm:text-sm font-semibold text-[var(--text-secondary)] mb-2 sm:mb-3 hover:text-[var(--text-primary)] transition"
             >
               <span className="flex items-center gap-2">
-                <span>📊</span> Staking Plan ({decision.analysis.length} validators)
+                <span>📊</span> Plan ({decision.analysis.length} validators)
               </span>
               <span className="text-[var(--text-muted)]">{expanded ? "▼" : "▶"}</span>
             </button>
@@ -270,34 +270,26 @@ export function AgentActivity() {
       )}
 
       {/* Footer */}
-      <div className="bg-[var(--bg-primary)] px-6 py-4 flex items-center justify-between text-sm border-t border-[var(--border)]">
-        <span className="text-[var(--text-muted)]">
-          {executing ? "Executing..." : "Next analysis in ~30 seconds"}
+      <div className="bg-[var(--bg-primary)] px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-sm border-t border-[var(--border)]">
+        <span className="text-[var(--text-muted)] text-xs sm:text-sm text-center sm:text-left">
+          {executing ? "Executing..." : "Auto-refresh in ~30s"}
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {decision?.action === "stake" && (
             <button 
               onClick={simulateExecution}
               disabled={executing}
-              className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:bg-[var(--bg-elevated)] disabled:text-[var(--text-muted)] text-black rounded-xl font-semibold transition-all flex items-center gap-2"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:bg-[var(--bg-elevated)] disabled:text-[var(--text-muted)] text-black rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2"
             >
-              {executing ? (
-                <>
-                  <span className="animate-spin">⚙️</span> Executing...
-                </>
-              ) : (
-                <>
-                  <span>▶️</span> Simulate Execute
-                </>
-              )}
+              {executing ? "⚙️ Running..." : "▶️ Simulate"}
             </button>
           )}
           <button 
             onClick={fetchAgentDecision}
             disabled={executing}
-            className="text-[var(--accent)] hover:text-[var(--accent-hover)] disabled:text-[var(--text-muted)] transition flex items-center gap-1.5 font-medium"
+            className="px-3 py-2 text-[var(--accent)] hover:bg-[var(--accent)]/10 disabled:text-[var(--text-muted)] rounded-lg transition flex items-center gap-1.5 text-xs sm:text-sm font-medium"
           >
-            <span>🔄</span> Refresh
+            🔄 Refresh
           </button>
         </div>
       </div>
