@@ -36,12 +36,15 @@ function getVaultSolPDA(vault: PublicKey): [PublicKey, number] {
   );
 }
 
-// Instruction discriminators (from Anchor)
+// Instruction discriminators (sha256("global:<name>")[0..8])
 const DISCRIMINATORS = {
   initialize_vault: Buffer.from([48, 191, 163, 44, 71, 129, 63, 164]),
   deposit: Buffer.from([242, 35, 198, 137, 82, 225, 242, 182]),
   withdraw: Buffer.from([183, 18, 70, 156, 148, 109, 161, 34]),
-  update_strategy: Buffer.from([29, 154, 203, 81, 46, 165, 69, 101]),
+  update_strategy: Buffer.from([16, 76, 138, 179, 171, 112, 196, 21]),
+  execute_stake: Buffer.from([123, 140, 82, 174, 137, 211, 238, 49]),
+  execute_unstake: Buffer.from([136, 166, 210, 104, 134, 184, 142, 230]),
+  change_agent: Buffer.from([163, 82, 144, 6, 24, 107, 48, 119]),
 };
 
 /**

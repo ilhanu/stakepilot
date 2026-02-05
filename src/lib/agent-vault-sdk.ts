@@ -92,10 +92,8 @@ export function createInitializeVaultInstruction(
   const [strategy] = getStrategyPDA(vault);
   const [vaultSol] = getVaultSolPDA(vault);
 
-  // Instruction discriminator for "initialize_vault"
-  const discriminator = Buffer.from([
-    0x5b, 0x4f, 0x4d, 0x89, 0x8b, 0x37, 0x0e, 0x7a,
-  ]);
+  // Instruction discriminator for "initialize_vault" - sha256("global:initialize_vault")[0..8]
+  const discriminator = Buffer.from([48, 191, 163, 44, 71, 129, 63, 164]);
 
   return new TransactionInstruction({
     keys: [
@@ -185,10 +183,8 @@ export function createUpdateStrategyInstruction(
   const [vault] = getVaultPDA(owner);
   const [strategy] = getStrategyPDA(vault);
 
-  // Instruction discriminator for "update_strategy"
-  const discriminator = Buffer.from([
-    0x1d, 0x9a, 0xcb, 0x51, 0x2e, 0xa5, 0x45, 0x65,
-  ]);
+  // Instruction discriminator for "update_strategy" - sha256("global:update_strategy")[0..8]
+  const discriminator = Buffer.from([16, 76, 138, 179, 171, 112, 196, 21]);
 
   const data = Buffer.concat([
     discriminator,
@@ -221,10 +217,8 @@ export function createExecuteStakeInstruction(
   const [strategy] = getStrategyPDA(vault);
   const [vaultSol] = getVaultSolPDA(vault);
 
-  // Instruction discriminator for "execute_stake"
-  const discriminator = Buffer.from([
-    0x4e, 0x78, 0x12, 0xab, 0x56, 0xcd, 0x34, 0xef,
-  ]);
+  // Instruction discriminator for "execute_stake" - sha256("global:execute_stake")[0..8]
+  const discriminator = Buffer.from([123, 140, 82, 174, 137, 211, 238, 49]);
 
   const data = Buffer.concat([
     discriminator,
