@@ -4,7 +4,7 @@
 
 import { Connection, PublicKey, StakeProgram } from "@solana/web3.js";
 
-const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://api.mainnet-beta.solana.com";
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
 
 export interface UserStakeAccount {
   pubkey: string;

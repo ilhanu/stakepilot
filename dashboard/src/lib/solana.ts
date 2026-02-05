@@ -3,7 +3,7 @@
  */
 
 const RPC_URL =
-  process.env.NEXT_PUBLIC_RPC_URL || "https://api.mainnet-beta.solana.com";
+  process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
 
 export interface EpochInfo {
   epoch: number;

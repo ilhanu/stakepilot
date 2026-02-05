@@ -14,7 +14,7 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 
-const RPC_URL = process.env.HELIUS_RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || "https://api.mainnet-beta.solana.com";
+const RPC_URL = process.env.HELIUS_RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
 
 interface PrepareUnstakeRequest {
   stakeAccount: string;     // Stake account to unstake
