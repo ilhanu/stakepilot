@@ -1,12 +1,19 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { getQualifiedValidators, scoreValidator, calculateNetApy, StakeWizValidator } from "@/lib/stakewiz";
+import {
+  generateStakingDecision,
+  getQualifiedValidators,
+  STAKER_SPACE_VALIDATORS,
+  Network,
+} from "@/lib/validators";
 
 /**
  * Agent Recommendation API
  * 
- * Generates staking recommendations for the Staker Space vault.
- * Uses StakeWiz data and our scoring algorithm.
+ * Generates staking recommendations for StakePilot vault.
+ * Uses validators.app API for comprehensive validator data.
+ * 
+ * Supports both mainnet and testnet networks.
  * 
  * Criteria:
  * - Stake < 1M SOL (decentralization)
@@ -14,114 +21,63 @@ import { getQualifiedValidators, scoreValidator, calculateNetApy, StakeWizValida
  * - MEV Commission ≤ 10%
  * - Uptime > 95%
  * - Always includes Staker Space validator
+ * 
+ * Query params:
+ * - network: "mainnet" | "testnet" (default: testnet for demo)
+ * - balance: amount to stake in SOL (default: 100)
+ * - maxValidators: max validators to recommend (default: 10)
  */
-
-const STAKER_SPACE_VOTE = "49DJjUX3cwFvaZD5rCAwubiz7qdRWDez9xmB381XdHru";
-
-interface Recommendation {
-  validator: string;
-  validatorName: string;
-  allocatedAmount: number;
-  reason: string;
-  expectedApy: number;
-  wizScore: number;
-  stake: number;
-  commission: number;
-  mevCommission: number | null;
-}
-
-interface StakingDecision {
-  recommendations: Recommendation[];
-  totalToStake: number;
-  reasoning: string;
-  stakerSpaceIncluded: boolean;
-}
-
-function generateStakingDecision(
-  validators: StakeWizValidator[],
-  amountToStake: number,
-  maxValidators: number
-): StakingDecision {
-  const reasoningParts: string[] = [];
-  
-  // Score all validators
-  const scored = validators.map((v) => ({
-    validator: v,
-    score: scoreValidator(v),
-    netApy: calculateNetApy(v),
-  }));
-  
-  // Sort by score (highest first)
-  scored.sort((a, b) => b.score - a.score);
-  reasoningParts.push(`Scored ${scored.length} qualified validators`);
-  
-  // Select top N
-  const selected = scored.slice(0, maxValidators);
-  reasoningParts.push(`Selected top ${selected.length} by score`);
-  
-  // Check if Staker Space is included
-  const stakerSpaceIncluded = selected.some(
-    (s) => s.validator.vote_identity === STAKER_SPACE_VOTE
-  );
-  
-  // Distribute stake evenly
-  const amountPerValidator = amountToStake / selected.length;
-  
-  const recommendations: Recommendation[] = selected.map((s) => ({
-    validator: s.validator.vote_identity,
-    validatorName: s.validator.name || "Unknown",
-    allocatedAmount: amountPerValidator,
-    reason: `Score: ${s.score.toFixed(0)}, APY: ${s.netApy.toFixed(2)}%, Stake: ${(s.validator.activated_stake / 1000).toFixed(0)}K SOL`,
-    expectedApy: s.netApy,
-    wizScore: s.validator.wiz_score,
-    stake: s.validator.activated_stake,
-    commission: s.validator.commission,
-    mevCommission: s.validator.is_jito ? s.validator.jito_commission_bps / 100 : null,
-  }));
-  
-  const avgApy = selected.reduce((sum, s) => sum + s.netApy, 0) / selected.length;
-  reasoningParts.push(`Average expected APY: ${avgApy.toFixed(2)}%`);
-  
-  if (stakerSpaceIncluded) {
-    reasoningParts.push("✓ Staker Space included");
-  }
-  
-  return {
-    recommendations,
-    totalToStake: amountToStake,
-    reasoning: reasoningParts.join(" → "),
-    stakerSpaceIncluded,
-  };
-}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   
+  const network = (searchParams.get("network") || "testnet") as Network;
   const balance = parseFloat(searchParams.get("balance") || "100");
   const maxValidators = parseInt(searchParams.get("maxValidators") || "10");
 
+  // Validate network
+  if (network !== "mainnet" && network !== "testnet") {
+    return NextResponse.json(
+      { error: "Invalid network. Use 'mainnet' or 'testnet'" },
+      { status: 400 }
+    );
+  }
+
   try {
-    const validators = await getQualifiedValidators();
-    
-    if (validators.length === 0) {
-      return NextResponse.json(
-        { error: "No qualified validators found" },
-        { status: 500 }
-      );
-    }
-    
-    const decision = generateStakingDecision(validators, balance, maxValidators);
+    const decision = await generateStakingDecision(network, balance, maxValidators);
     
     return NextResponse.json({
       success: true,
-      decision,
-      qualifiedValidators: validators.length,
-      timestamp: new Date().toISOString(),
+      decision: {
+        network: decision.network,
+        recommendations: decision.recommendations.map(r => ({
+          validator: r.validator.voteAccount,
+          validatorName: r.validator.name,
+          identity: r.validator.identity,
+          allocatedAmount: r.allocatedAmount,
+          reason: r.reason,
+          expectedApy: r.estimatedApy,
+          score: r.score,
+          stake: r.validator.activatedStake,
+          commission: r.validator.commission,
+          mevCommission: r.validator.mevCommission,
+          isJito: r.validator.isJito,
+          isDz: r.validator.isDz,
+          location: r.validator.location.country,
+          avatarUrl: r.validator.avatarUrl,
+        })),
+        totalToStake: decision.totalToStake,
+        reasoning: decision.reasoning,
+        stakerSpaceIncluded: decision.stakerSpaceIncluded,
+        stakerSpaceValidator: STAKER_SPACE_VALIDATORS[network],
+      },
+      qualifiedValidators: (await getQualifiedValidators(network)).length,
+      timestamp: decision.timestamp,
     });
   } catch (error) {
     console.error("Error generating recommendation:", error);
     return NextResponse.json(
-      { error: "Failed to generate recommendation" },
+      { error: "Failed to generate recommendation", details: String(error) },
       { status: 500 }
     );
   }
@@ -132,31 +88,53 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     const {
+      network = "testnet",
       balance = 100,
       maxValidators = 10,
     } = body;
 
-    const validators = await getQualifiedValidators();
-    
-    if (validators.length === 0) {
+    // Validate network
+    if (network !== "mainnet" && network !== "testnet") {
       return NextResponse.json(
-        { error: "No qualified validators found" },
-        { status: 500 }
+        { error: "Invalid network. Use 'mainnet' or 'testnet'" },
+        { status: 400 }
       );
     }
-    
-    const decision = generateStakingDecision(validators, balance, maxValidators);
+
+    const decision = await generateStakingDecision(network as Network, balance, maxValidators);
     
     return NextResponse.json({
       success: true,
-      decision,
-      qualifiedValidators: validators.length,
-      timestamp: new Date().toISOString(),
+      decision: {
+        network: decision.network,
+        recommendations: decision.recommendations.map(r => ({
+          validator: r.validator.voteAccount,
+          validatorName: r.validator.name,
+          identity: r.validator.identity,
+          allocatedAmount: r.allocatedAmount,
+          reason: r.reason,
+          expectedApy: r.estimatedApy,
+          score: r.score,
+          stake: r.validator.activatedStake,
+          commission: r.validator.commission,
+          mevCommission: r.validator.mevCommission,
+          isJito: r.validator.isJito,
+          isDz: r.validator.isDz,
+          location: r.validator.location.country,
+          avatarUrl: r.validator.avatarUrl,
+        })),
+        totalToStake: decision.totalToStake,
+        reasoning: decision.reasoning,
+        stakerSpaceIncluded: decision.stakerSpaceIncluded,
+        stakerSpaceValidator: STAKER_SPACE_VALIDATORS[network as Network],
+      },
+      qualifiedValidators: (await getQualifiedValidators(network as Network)).length,
+      timestamp: decision.timestamp,
     });
   } catch (error) {
     console.error("Error generating recommendation:", error);
     return NextResponse.json(
-      { error: "Failed to generate recommendation" },
+      { error: "Failed to generate recommendation", details: String(error) },
       { status: 500 }
     );
   }

@@ -1,375 +1,311 @@
 /**
  * validators.app API Client
  * 
- * Fetches validator data including names, commission, location, uptime
- * API Token: uawTM1ynsnonDJ9z8YUun59F
+ * Fetches validator data from validators.app API
+ * Supports both mainnet and testnet
+ * API Docs: https://www.validators.app/api-docs
  */
 
-const VALIDATORS_APP_API = "https://www.validators.app/api/v1";
-const API_TOKEN = process.env.VALIDATORS_APP_TOKEN || "uawTM1ynsnonDJ9z8YUun59F";
+export type Network = "mainnet" | "testnet";
 
-// ============================================
-// TYPES
-// ============================================
-
-export interface ValidatorFilters {
-  minUptimePercent?: number;
-  maxSkippedSlotPercent?: number;
-  countries?: string[];
-  excludeCountries?: string[];
-  minAgeDays?: number;
-  maxCommission?: number;
-  requireJito?: boolean;
-  maxJitoCommission?: number;
-  minScore?: number;
-  maxStakeSol?: number;
-  minStakeSol?: number;
-  excludeDelinquent?: boolean;
-  maxDatacenterConcentration?: number;
-}
-
-export interface ValidatorMetrics {
-  netBaseApy: number;
-  netMevApy: number;
-  netTotalApy: number;
-  qualityTier: "S" | "A" | "B" | "C" | "D";
-  uptimePercent: number;
-  ageInDays: number;
-  stakeSol: number;
-  location: string;
-}
-
-export interface RawValidator {
-  vote_account: string;
-  account: string;
-  name?: string;
-  keybase_username?: string;
-  www_url?: string;
-  avatar_url?: string;
-  details?: string;
-  commission: number;
-  active_stake: number;
+export interface ValidatorsAppValidator {
+  network: string;
+  account: string;           // Identity account
+  name: string | null;
+  keybase_id: string | null;
+  www_url: string | null;
+  details: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+  admin_warning: string | null;
+  jito: boolean;
+  jito_commission: number | null;  // Percentage (0-100)
+  stake_pools_list: string[];
+  is_active: boolean;
+  is_dz: boolean;            // DoubleZero validator
+  avatar_file_url: string | null;
+  active_stake: number;      // In lamports
+  authorized_withdrawer_score: number;
+  commission: number;        // Percentage (0-100)
+  data_center_concentration_score: number | null;
   delinquent: boolean;
-  data_center_key?: string;
-  data_center_concentration?: number;
-  city?: string;
-  country?: string;
-  latitude?: string;
-  longitude?: string;
-  root_distance_score?: number;
-  vote_distance_score?: number;
-  skipped_slot_percent?: string;
-  skipped_slots?: number;
-  skipped_slot_percent_moving_average?: string;
-  epoch_credits?: number;
-  total_score?: number;
-  ping_time?: string;
-  software_version?: string;
-  software_client?: string;
-  stake_pools_list?: string[];
-  jito?: boolean;
-  jito_commission?: number;
-  created_at?: string;
-  apy?: number;
+  published_information_score: number;
+  root_distance_score: number;
+  security_report_score: number;
+  skipped_slot_score: number;
+  skipped_after_score: number;
+  software_version: string;
+  software_version_score: number;
+  stake_concentration_score: number;
+  consensus_mods_score: number;
+  vote_latency_score: number | null;
+  total_score: number;
+  vote_distance_score: number;
+  software_client: string;
+  software_client_id: number;
+  ip: string;
+  data_center_key: string;
+  autonomous_system_number: number;
+  latitude: string;
+  longitude: string;
+  data_center_host: string | null;
+  vote_account: string;
+  epoch_credits: number;
+  epoch: number;
+  skipped_slots: number;
+  skipped_slot_percent: string;
+  ping_time: number | null;
+  url: string;
 }
 
-export interface EnrichedValidator extends RawValidator {
-  qualityTier: "S" | "A" | "B" | "C" | "D";
-  uptimePercent: number;
-  ageInDays: number;
-  stakeSol: number;
-  location: string;
-  netBaseApy: number;
-  netMevApy: number;
-  netTotalApy: number;
+// Normalized validator interface for our app
+export interface NormalizedValidator {
+  voteAccount: string;
+  identity: string;
+  name: string;
+  commission: number;           // Percentage (0-100)
+  mevCommission: number | null; // Percentage (0-100) - Jito commission
+  activatedStake: number;       // In SOL
+  delinquent: boolean;
+  isJito: boolean;
+  isDz: boolean;                // DoubleZero
+  uptime: number;               // Calculated from skipped_slot_percent
+  totalScore: number;           // validators.app score
+  softwareVersion: string;
+  location: {
+    city: string | null;
+    country: string | null;
+    datacenter: string;
+  };
+  avatarUrl: string | null;
+  website: string | null;
+  source: "validators.app";
 }
 
-interface GetAllValidatorsOptions {
-  limit?: number;
-  order?: "score" | "stake" | "name";
-  activeOnly?: boolean;
-}
+// API token from TOOLS.md
+const VALIDATORS_APP_TOKEN = process.env.VALIDATORS_APP_TOKEN || "uawTM1ynsnonDJ9z8YUun59F";
 
-// ============================================
-// CACHE
-// ============================================
-
-let validatorsCache: RawValidator[] | null = null;
-let cacheTimestamp = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-// ============================================
-// API FUNCTIONS
-// ============================================
+// Cache
+const cache: Record<Network, { data: ValidatorsAppValidator[]; timestamp: number }> = {
+  mainnet: { data: [], timestamp: 0 },
+  testnet: { data: [], timestamp: 0 },
+};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Fetch all validators from validators.app
+ * Fetch all validators from validators.app API
  */
-export async function getAllValidators(options: GetAllValidatorsOptions = {}): Promise<RawValidator[]> {
-  const { limit = 1500, activeOnly = true } = options;
-
-  // Return cache if valid
-  if (validatorsCache && Date.now() - cacheTimestamp < CACHE_TTL) {
-    let result = validatorsCache;
-    if (activeOnly) {
-      result = result.filter(v => !v.delinquent);
-    }
-    return result.slice(0, limit);
+export async function fetchValidatorsApp(network: Network): Promise<ValidatorsAppValidator[]> {
+  // Return cache if still valid
+  if (cache[network].data.length > 0 && Date.now() - cache[network].timestamp < CACHE_DURATION) {
+    return cache[network].data;
   }
 
-  try {
-    const res = await fetch(`${VALIDATORS_APP_API}/validators/mainnet.json`, {
-      headers: {
-        "Token": API_TOKEN,
-      },
-      next: { revalidate: 300 },
-    });
-
-    if (!res.ok) {
-      throw new Error(`validators.app API error: ${res.status}`);
-    }
-
-    const data: RawValidator[] = await res.json();
-
-    // Update cache
-    validatorsCache = data;
-    cacheTimestamp = Date.now();
-
-    let result = data;
-    if (activeOnly) {
-      result = result.filter(v => !v.delinquent);
-    }
-    return result.slice(0, limit);
-  } catch (error) {
-    console.error("Failed to fetch from validators.app:", error);
-    return validatorsCache || [];
-  }
-}
-
-/**
- * Fetch validators for the agent recommendation API (simpler interface)
- */
-export async function fetchAllValidators(): Promise<EnrichedValidator[]> {
-  const raw = await getAllValidators({ activeOnly: true });
-  return enrichValidators(raw);
-}
-
-/**
- * Enrich validators with derived metrics
- */
-export function enrichValidators(validators: RawValidator[]): EnrichedValidator[] {
-  const BASE_APY = 6.5;
+  const url = `https://www.validators.app/api/v1/validators/${network}.json`;
   
-  return validators.map((v) => {
-    // Calculate quality tier based on score
-    let qualityTier: "S" | "A" | "B" | "C" | "D" = "C";
-    const score = v.total_score || 0;
-    if (score >= 9) qualityTier = "S";
-    else if (score >= 7) qualityTier = "A";
-    else if (score >= 5) qualityTier = "B";
-    else if (score >= 3) qualityTier = "C";
-    else qualityTier = "D";
-
-    // Calculate uptime from skip rate
-    const skipRate = parseFloat(v.skipped_slot_percent || "0");
-    const uptimePercent = Math.max(0, 100 - skipRate);
-
-    // Calculate age in days
-    const createdAt = v.created_at ? new Date(v.created_at) : new Date();
-    const ageInDays = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-
-    // Convert stake to SOL
-    const stakeSol = (v.active_stake || 0) / 1e9;
-
-    // Build location string
-    const location = [v.city, v.country].filter(Boolean).join(", ") || "Unknown";
-
-    // Calculate NET APY
-    const commission = v.commission || 0;
-    const netBaseApy = BASE_APY * (1 - commission / 100);
-    
-    // MEV APY (if Jito enabled)
-    // jito_commission is in basis points (400 = 4%)
-    const jitoCommissionBps = v.jito_commission ?? 10000; // Default 100% if not set
-    const mevGross = v.jito ? 1.5 : 0; // Estimate ~1.5% MEV APY for Jito validators
-    const netMevApy = mevGross * (1 - jitoCommissionBps / 10000);
-    
-    const netTotalApy = netBaseApy + netMevApy;
-
-    return {
-      ...v,
-      qualityTier,
-      uptimePercent,
-      ageInDays,
-      stakeSol,
-      location,
-      netBaseApy,
-      netMevApy,
-      netTotalApy,
-    };
+  const response = await fetch(url, {
+    headers: {
+      "Token": VALIDATORS_APP_TOKEN,
+    },
+    next: { revalidate: 300 },
   });
+
+  if (!response.ok) {
+    throw new Error(`validators.app API error: ${response.status} ${response.statusText}`);
+  }
+
+  const data: ValidatorsAppValidator[] = await response.json();
+  
+  // Update cache
+  cache[network] = { data, timestamp: Date.now() };
+  
+  return data;
 }
 
 /**
- * Filter validators based on criteria
+ * Normalize validators.app data to our standard interface
  */
-export function filterValidators(
-  validators: EnrichedValidator[],
-  filters: ValidatorFilters
-): EnrichedValidator[] {
-  return validators.filter((v) => {
-    if (filters.excludeDelinquent && v.delinquent) return false;
-    
-    if (filters.minUptimePercent && v.uptimePercent < filters.minUptimePercent) return false;
-    
-    if (filters.maxSkippedSlotPercent) {
-      const skipRate = parseFloat(v.skipped_slot_percent || "0");
-      if (skipRate > filters.maxSkippedSlotPercent) return false;
-    }
-    
-    if (filters.countries && filters.countries.length > 0) {
-      if (!v.country || !filters.countries.includes(v.country)) return false;
-    }
-    
-    if (filters.excludeCountries && filters.excludeCountries.length > 0) {
-      if (v.country && filters.excludeCountries.includes(v.country)) return false;
-    }
-    
-    if (filters.minAgeDays && v.ageInDays < filters.minAgeDays) return false;
-    
-    if (filters.maxCommission && v.commission > filters.maxCommission) return false;
-    
-    if (filters.requireJito && !v.jito) return false;
-    
-    if (filters.maxJitoCommission && v.jito_commission && v.jito_commission > filters.maxJitoCommission) return false;
-    
-    if (filters.minScore && (v.total_score || 0) < filters.minScore) return false;
-    
-    if (filters.maxStakeSol && v.stakeSol > filters.maxStakeSol) return false;
-    
-    if (filters.minStakeSol && v.stakeSol < filters.minStakeSol) return false;
-    
-    if (filters.maxDatacenterConcentration && v.data_center_concentration && 
-        v.data_center_concentration > filters.maxDatacenterConcentration) return false;
+export function normalizeValidator(v: ValidatorsAppValidator): NormalizedValidator {
+  // Calculate uptime from skipped_slot_percent
+  const skippedPct = parseFloat(v.skipped_slot_percent) || 0;
+  const uptime = 100 - skippedPct;
+  
+  // Parse location from data_center_key (format: "ASN-COUNTRY-Region/City")
+  const dcParts = v.data_center_key.split("-");
+  const location = dcParts.length >= 3 
+    ? { city: dcParts.slice(2).join("-"), country: dcParts[1], datacenter: v.data_center_key }
+    : { city: null, country: null, datacenter: v.data_center_key };
 
+  return {
+    voteAccount: v.vote_account,
+    identity: v.account,
+    name: v.name || `Validator ${v.vote_account.slice(0, 8)}...`,
+    commission: v.commission,
+    mevCommission: v.jito_commission,
+    activatedStake: v.active_stake / 1e9, // Convert lamports to SOL
+    delinquent: v.delinquent,
+    isJito: v.jito,
+    isDz: v.is_dz,
+    uptime,
+    totalScore: v.total_score,
+    softwareVersion: v.software_version,
+    location,
+    avatarUrl: v.avatar_file_url || v.avatar_url,
+    website: v.www_url,
+    source: "validators.app",
+  };
+}
+
+/**
+ * Get all validators normalized
+ */
+export async function getValidators(network: Network): Promise<NormalizedValidator[]> {
+  const raw = await fetchValidatorsApp(network);
+  return raw
+    .filter(v => v.is_active) // Only active validators
+    .map(normalizeValidator);
+}
+
+/**
+ * Get validators matching StakePilot criteria
+ * - Stake < 1M SOL (decentralization)
+ * - Commission ≤ 5%
+ * - MEV Commission ≤ 10%
+ * - Uptime > 95%
+ * - Not delinquent
+ */
+export interface FilterCriteria {
+  maxStake?: number;      // SOL, default 1M
+  maxCommission?: number; // %, default 5
+  maxMevCommission?: number; // %, default 10
+  minUptime?: number;     // %, default 95
+  alwaysInclude?: string[]; // Vote accounts to always include
+}
+
+export async function getQualifiedValidators(
+  network: Network,
+  criteria: FilterCriteria = {}
+): Promise<NormalizedValidator[]> {
+  const {
+    maxStake = 1_000_000,
+    maxCommission = 5,
+    maxMevCommission = 10,
+    minUptime = 95,
+    alwaysInclude = [],
+  } = criteria;
+
+  const validators = await getValidators(network);
+  
+  const alwaysIncludeSet = new Set(alwaysInclude.map(v => v.toLowerCase()));
+  
+  const qualified = validators.filter((v) => {
+    // Always include specified validators
+    if (alwaysIncludeSet.has(v.voteAccount.toLowerCase())) return true;
+    
+    // Apply criteria
+    if (v.delinquent) return false;
+    if (v.activatedStake >= maxStake) return false;
+    if (v.commission > maxCommission) return false;
+    if (v.isJito && v.mevCommission !== null && v.mevCommission > maxMevCommission) return false;
+    if (v.uptime < minUptime) return false;
+    
     return true;
   });
-}
-
-/**
- * Get location statistics
- */
-export function getLocationStats(validators: EnrichedValidator[]): Array<{
-  location: string;
-  country: string;
-  count: number;
-  totalStake: number;
-  avgScore: number;
-}> {
-  const stats = new Map<string, {
-    location: string;
-    country: string;
-    count: number;
-    totalStake: number;
-    scores: number[];
-  }>();
-
-  for (const v of validators) {
-    const key = v.location || "Unknown";
-    const existing = stats.get(key) || {
-      location: key,
-      country: v.country || "Unknown",
-      count: 0,
-      totalStake: 0,
-      scores: [],
-    };
-    
-    existing.count++;
-    existing.totalStake += v.stakeSol;
-    if (v.total_score) existing.scores.push(v.total_score);
-    
-    stats.set(key, existing);
-  }
-
-  return Array.from(stats.values())
-    .map((s) => ({
-      location: s.location,
-      country: s.country,
-      count: s.count,
-      totalStake: s.totalStake,
-      avgScore: s.scores.length > 0 
-        ? s.scores.reduce((a, b) => a + b, 0) / s.scores.length 
-        : 0,
-    }))
-    .sort((a, b) => b.count - a.count);
-}
-
-/**
- * Get validator info by vote account
- */
-export async function getValidatorInfo(voteAccount: string): Promise<EnrichedValidator | null> {
-  const validators = await fetchAllValidators();
-  return validators.find((v) => v.vote_account === voteAccount) || null;
-}
-
-/**
- * Get multiple validators by vote accounts
- */
-export async function getValidatorsInfo(voteAccounts: string[]): Promise<Map<string, EnrichedValidator>> {
-  const validators = await fetchAllValidators();
-  const map = new Map<string, EnrichedValidator>();
   
-  for (const v of validators) {
-    if (voteAccounts.includes(v.vote_account)) {
-      map.set(v.vote_account, v);
-    }
+  // Sort by total score (higher is better)
+  qualified.sort((a, b) => b.totalScore - a.totalScore);
+  
+  return qualified;
+}
+
+/**
+ * Score a validator using StakePilot algorithm
+ */
+export function scoreValidator(v: NormalizedValidator, alwaysInclude: string[] = []): number {
+  let score = 0;
+  
+  const alwaysIncludeSet = new Set(alwaysInclude.map(a => a.toLowerCase()));
+  
+  // Always-include bonus
+  if (alwaysIncludeSet.has(v.voteAccount.toLowerCase())) {
+    score += 100;
   }
   
-  return map;
+  // Decentralization bonus (stake < 1M = bonus points)
+  if (v.activatedStake < 100_000) score += 40;
+  else if (v.activatedStake < 500_000) score += 30;
+  else if (v.activatedStake < 1_000_000) score += 15;
+  
+  // Commission score (0% = +25, 5% = +15, 10% = 0)
+  score += Math.max(0, 25 - v.commission * 2.5);
+  
+  // MEV commission score (0% = +20, 10% = +10, 100% = 0)
+  if (v.isJito && v.mevCommission !== null) {
+    score += Math.max(0, 20 - v.mevCommission * 0.2);
+  }
+  
+  // Uptime score (100% = +15, 95% = +7.5)
+  score += Math.max(0, (v.uptime - 90) * 1.5);
+  
+  // validators.app score bonus
+  if (v.totalScore >= 8) score += 10;
+  else if (v.totalScore >= 6) score += 5;
+  
+  // DoubleZero bonus
+  if (v.isDz) score += 5;
+  
+  return score;
+}
+
+/**
+ * Get top validators ranked by our scoring algorithm
+ */
+export async function getTopValidators(
+  network: Network,
+  limit = 20,
+  alwaysInclude: string[] = []
+): Promise<NormalizedValidator[]> {
+  const qualified = await getQualifiedValidators(network, { alwaysInclude });
+  
+  // Score and sort
+  const scored = qualified.map((v) => ({
+    validator: v,
+    score: scoreValidator(v, alwaysInclude),
+  }));
+  
+  scored.sort((a, b) => b.score - a.score);
+  
+  return scored.slice(0, limit).map((s) => s.validator);
+}
+
+/**
+ * Get validator by vote account
+ */
+export async function getValidator(
+  network: Network,
+  voteAccount: string
+): Promise<NormalizedValidator | null> {
+  const validators = await getValidators(network);
+  return validators.find((v) => 
+    v.voteAccount.toLowerCase() === voteAccount.toLowerCase()
+  ) || null;
 }
 
 /**
  * Search validators by name
  */
-export async function searchValidators(query: string, limit = 20): Promise<EnrichedValidator[]> {
-  const validators = await fetchAllValidators();
+export async function searchValidators(
+  network: Network,
+  query: string
+): Promise<NormalizedValidator[]> {
+  const validators = await getValidators(network);
   const lowerQuery = query.toLowerCase();
   
-  return validators
-    .filter((v) => 
-      (v.name || "").toLowerCase().includes(lowerQuery) ||
-      v.vote_account.toLowerCase().includes(lowerQuery)
-    )
-    .slice(0, limit);
-}
-
-/**
- * Get top validators by stake
- */
-export async function getTopValidators(limit = 100): Promise<EnrichedValidator[]> {
-  const validators = await fetchAllValidators();
-  
-  return validators
-    .filter((v) => !v.delinquent)
-    .sort((a, b) => b.stakeSol - a.stakeSol)
-    .slice(0, limit);
-}
-
-/**
- * Get validators filtered by criteria (for agent algorithm)
- */
-export async function getFilteredValidators(options: {
-  minStake?: number;
-  maxCommission?: number;
-  maxDatacenterConcentration?: number;
-  excludeDelinquent?: boolean;
-}): Promise<EnrichedValidator[]> {
-  const validators = await fetchAllValidators();
-  
-  return filterValidators(validators, {
-    minStakeSol: options.minStake,
-    maxCommission: options.maxCommission,
-    maxDatacenterConcentration: options.maxDatacenterConcentration,
-    excludeDelinquent: options.excludeDelinquent,
-  });
+  return validators.filter(
+    (v) =>
+      v.name.toLowerCase().includes(lowerQuery) ||
+      v.voteAccount.toLowerCase().includes(lowerQuery) ||
+      v.identity.toLowerCase().includes(lowerQuery)
+  );
 }

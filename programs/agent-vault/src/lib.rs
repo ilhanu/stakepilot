@@ -6,6 +6,7 @@ use anchor_lang::solana_program::{
     },
     system_instruction,
     program::invoke_signed,
+    program::invoke,
 };
 
 declare_id!("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
@@ -42,7 +43,7 @@ pub mod agent_vault {
             &ctx.accounts.vault.key(),
             amount,
         );
-        anchor_lang::solana_program::program::invoke(
+        invoke(
             &transfer_ix,
             &[
                 ctx.accounts.user.to_account_info(),
@@ -98,11 +99,7 @@ pub mod agent_vault {
             VaultError::CooldownNotComplete
         );
 
-        // Transfer SOL from vault to user
-        let vault_bump = vault.bump;
-        let seeds = &[b"vault".as_ref(), &[vault_bump]];
-        let signer_seeds = &[&seeds[..]];
-        
+        // Transfer SOL from vault to user (direct lamport manipulation for PDAs)
         **vault.to_account_info().try_borrow_mut_lamports()? -= amount;
         **ctx.accounts.user.to_account_info().try_borrow_mut_lamports()? += amount;
 
@@ -116,60 +113,48 @@ pub mod agent_vault {
     }
 
     /// Agent stakes vault funds to a validator
+    /// Agent pays upfront to create stake account, vault reimburses
     pub fn stake_to_validator(
         ctx: Context<StakeToValidator>,
         amount: u64,
     ) -> Result<()> {
         let vault = &ctx.accounts.vault;
         require!(ctx.accounts.agent.key() == vault.agent, VaultError::UnauthorizedAgent);
-        require!(amount >= 1_000_000_000, VaultError::MinimumStake); // 1 SOL minimum for staking
+        require!(amount >= 1_000_000_000, VaultError::MinimumStake); // 1 SOL minimum
         
         // Calculate rent for stake account
-        let stake_rent = Rent::get()?.minimum_balance(std::mem::size_of::<StakeState>());
+        let stake_space = std::mem::size_of::<StakeState>();
+        let stake_rent = Rent::get()?.minimum_balance(stake_space);
         let total_lamports = amount.checked_add(stake_rent).unwrap();
         
-        // Check vault has enough lamports
-        let vault_lamports = ctx.accounts.vault.to_account_info().lamports();
-        require!(vault_lamports >= total_lamports + 100_000, VaultError::InsufficientBalance); // Keep some for rent
+        // Check vault has enough lamports to reimburse
+        let vault_lamports = vault.to_account_info().lamports();
+        require!(vault_lamports >= total_lamports + 100_000, VaultError::InsufficientBalance);
         
         let vault_bump = vault.bump;
-        let stake_bump = *ctx.bumps.get("stake_account").unwrap();
-        let vault_key = ctx.accounts.vault.key();
-        let validator_key = ctx.accounts.validator_vote.key();
-        
-        let vault_seeds = &[b"vault".as_ref(), &[vault_bump]];
-        let stake_seeds = &[
-            b"stake".as_ref(),
-            vault_key.as_ref(),
-            validator_key.as_ref(),
-            &[stake_bump],
-        ];
+        let vault_seeds: &[&[u8]] = &[b"vault", &[vault_bump]];
 
-        // Agent creates the stake account PDA (agent pays rent, will be reimbursed)
-        let create_stake_ix = system_instruction::create_account(
-            &ctx.accounts.agent.key(),
-            &ctx.accounts.stake_account.key(),
-            stake_rent,
-            std::mem::size_of::<StakeState>() as u64,
+        // Step 1: Agent creates stake account with FULL amount (rent + stake)
+        // Agent pays upfront, vault will reimburse
+        let create_ix = system_instruction::create_account(
+            &ctx.accounts.agent.key(),  // Funder (agent pays)
+            &ctx.accounts.stake_account.key(),  // New account
+            total_lamports,  // Full amount: rent + stake
+            stake_space as u64,
             &stake::program::ID,
         );
         
-        invoke_signed(
-            &create_stake_ix,
+        invoke(
+            &create_ix,
             &[
                 ctx.accounts.agent.to_account_info(),
                 ctx.accounts.stake_account.to_account_info(),
                 ctx.accounts.system_program.to_account_info(),
             ],
-            &[stake_seeds],
         )?;
-        
-        // Transfer stake amount from vault to stake account
-        **ctx.accounts.vault.to_account_info().try_borrow_mut_lamports()? -= amount;
-        **ctx.accounts.stake_account.to_account_info().try_borrow_mut_lamports()? += amount;
 
-        // Initialize stake account with vault as staker/withdrawer
-        let init_stake_ix = stake::instruction::initialize(
+        // Step 2: Initialize stake account with vault as staker/withdrawer
+        let init_ix = stake::instruction::initialize(
             &ctx.accounts.stake_account.key(),
             &Authorized {
                 staker: ctx.accounts.vault.key(),
@@ -178,19 +163,18 @@ pub mod agent_vault {
             &Lockup::default(),
         );
         
-        invoke_signed(
-            &init_stake_ix,
+        invoke(
+            &init_ix,
             &[
                 ctx.accounts.stake_account.to_account_info(),
                 ctx.accounts.rent.to_account_info(),
             ],
-            &[stake_seeds],
         )?;
 
-        // Delegate to validator
+        // Step 3: Delegate to validator (vault signs as staker)
         let delegate_ix = stake::instruction::delegate_stake(
             &ctx.accounts.stake_account.key(),
-            &ctx.accounts.vault.key(),
+            &ctx.accounts.vault.key(),  // Staker authority
             &ctx.accounts.validator_vote.key(),
         );
         
@@ -202,16 +186,20 @@ pub mod agent_vault {
                 ctx.accounts.clock.to_account_info(),
                 ctx.accounts.stake_history.to_account_info(),
                 ctx.accounts.stake_config.to_account_info(),
-                ctx.accounts.vault.to_account_info(),
+                ctx.accounts.vault.to_account_info(),  // Staker signs
             ],
             &[vault_seeds],
         )?;
 
-        // Update vault
+        // Step 4: Vault reimburses agent for the full amount (rent + stake)
+        **ctx.accounts.vault.to_account_info().try_borrow_mut_lamports()? -= total_lamports;
+        **ctx.accounts.agent.to_account_info().try_borrow_mut_lamports()? += total_lamports;
+
+        // Update vault accounting
         let vault = &mut ctx.accounts.vault;
         vault.total_staked = vault.total_staked.checked_add(amount).unwrap();
 
-        msg!("Staked {} lamports to validator {}", amount, validator_key);
+        msg!("Staked {} lamports to validator {}", amount, ctx.accounts.validator_vote.key());
         Ok(())
     }
 
@@ -221,7 +209,7 @@ pub mod agent_vault {
         require!(ctx.accounts.agent.key() == vault.agent, VaultError::UnauthorizedAgent);
         
         let vault_bump = vault.bump;
-        let vault_seeds = &[b"vault".as_ref(), &[vault_bump]];
+        let vault_seeds: &[&[u8]] = &[b"vault", &[vault_bump]];
 
         let deactivate_ix = stake::instruction::deactivate_stake(
             &ctx.accounts.stake_account.key(),
@@ -248,15 +236,15 @@ pub mod agent_vault {
         require!(ctx.accounts.agent.key() == vault.agent, VaultError::UnauthorizedAgent);
         
         let vault_bump = vault.bump;
-        let vault_seeds = &[b"vault".as_ref(), &[vault_bump]];
+        let vault_seeds: &[&[u8]] = &[b"vault", &[vault_bump]];
 
         // Get stake account balance before withdrawal
         let stake_balance = ctx.accounts.stake_account.lamports();
 
         let withdraw_ix = stake::instruction::withdraw(
             &ctx.accounts.stake_account.key(),
-            &ctx.accounts.vault.key(),
-            &ctx.accounts.vault.key(),
+            &ctx.accounts.vault.key(),  // Withdrawer
+            &ctx.accounts.vault.key(),  // Destination
             stake_balance,
             None,
         );
@@ -268,7 +256,7 @@ pub mod agent_vault {
                 ctx.accounts.vault.to_account_info(),
                 ctx.accounts.clock.to_account_info(),
                 ctx.accounts.stake_history.to_account_info(),
-                ctx.accounts.vault.to_account_info(),
+                ctx.accounts.vault.to_account_info(),  // Withdrawer signs
             ],
             &[vault_seeds],
         )?;
@@ -418,13 +406,10 @@ pub struct StakeToValidator<'info> {
     #[account(mut)]
     pub agent: Signer<'info>,
     
-    /// CHECK: Stake account PDA
-    #[account(
-        mut,
-        seeds = [b"stake", vault.key().as_ref(), validator_vote.key().as_ref()],
-        bump
-    )]
-    pub stake_account: UncheckedAccount<'info>,
+    /// CHECK: Stake account - created in this instruction
+    /// Must be a new keypair signed by the agent
+    #[account(mut)]
+    pub stake_account: Signer<'info>,
     
     /// CHECK: Validator vote account
     pub validator_vote: UncheckedAccount<'info>,

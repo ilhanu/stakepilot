@@ -1,63 +1,125 @@
-import { NextResponse } from "next/server";
-import { getMevStats } from "@/lib/jito";
-import { getCurrentEpoch } from "@/lib/solana";
+export const dynamic = "force-dynamic";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  getAllValidators,
+  getQualifiedValidators,
+  getTopValidators,
+  getValidator,
+  STAKER_SPACE_VALIDATORS,
+  Network,
+  formatValidator,
+  estimateApy,
+} from "@/lib/validators";
 
-export const revalidate = 300; // Cache for 5 minutes
+/**
+ * Validators API
+ * 
+ * Fetch validator data from validators.app + Solana RPC
+ * 
+ * Query params:
+ * - network: "mainnet" | "testnet" (default: testnet)
+ * - filter: "all" | "qualified" | "top" (default: qualified)
+ * - limit: max results (default: 50 for all, 20 for top)
+ * - vote: specific vote account to fetch
+ * - search: search by name or address
+ */
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  
+  const network = (searchParams.get("network") || "testnet") as Network;
+  const filter = searchParams.get("filter") || "qualified";
+  const limit = parseInt(searchParams.get("limit") || (filter === "top" ? "20" : "50"));
+  const vote = searchParams.get("vote");
+  const search = searchParams.get("search");
+
+  // Validate network
+  if (network !== "mainnet" && network !== "testnet") {
+    return NextResponse.json(
+      { error: "Invalid network. Use 'mainnet' or 'testnet'" },
+      { status: 400 }
+    );
+  }
+
   try {
-    const currentEpoch = await getCurrentEpoch();
-    const mevStats = await getMevStats(currentEpoch);
-
-    // If no data for current epoch, try previous
-    let stats = mevStats;
-    if (stats.validatorCount === 0) {
-      stats = await getMevStats(currentEpoch - 1);
+    // Single validator lookup
+    if (vote) {
+      const validator = await getValidator(network, vote);
+      if (!validator) {
+        return NextResponse.json(
+          { error: "Validator not found" },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json({
+        success: true,
+        validator: {
+          ...validator,
+          ...formatValidator(validator),
+          estimatedApy: estimateApy(validator),
+        },
+        network,
+      });
     }
 
-    // Calculate scores for each validator
-    const scoredValidators = stats.topValidators.map((v, index) => {
-      const mevScore = Math.max(0, 100 - index * 5); // Top gets 100
-      const mevPerStake =
-        v.stake > 0 ? (v.mevRevenue / v.stake) * 1_000_000 : 0;
+    // Fetch validators based on filter
+    let validators;
+    switch (filter) {
+      case "all":
+        validators = (await getAllValidators(network)).slice(0, limit);
+        break;
+      case "top":
+        validators = await getTopValidators(network, limit);
+        break;
+      case "qualified":
+      default:
+        validators = (await getQualifiedValidators(network)).slice(0, limit);
+        break;
+    }
 
-      // Estimate APY (simplified)
-      const baseApy = 6.5;
-      const mevApy = mevPerStake * 0.1; // Rough estimate
-      const totalApy = baseApy + mevApy;
+    // Apply search filter if provided
+    if (search) {
+      const searchLower = search.toLowerCase();
+      validators = validators.filter(v =>
+        v.name.toLowerCase().includes(searchLower) ||
+        v.voteAccount.toLowerCase().includes(searchLower) ||
+        v.identity.toLowerCase().includes(searchLower)
+      );
+    }
 
-      return {
-        voteAccount: v.voteAccount,
-        name: v.name,
-        mevScore,
-        totalScore: mevScore,
-        mevApy: Math.min(mevApy, 3), // Cap at 3%
-        baseApy,
-        totalApy: Math.min(totalApy, 10), // Cap at 10%
-        mevRevenue: v.mevRevenue,
-        mevRevenueSol: v.mevRevenueSol,
-        stake: v.stake,
-        riskLevel: mevScore > 80 ? "low" : mevScore > 50 ? "medium" : "high",
-        recommendation:
-          mevScore > 80
-            ? "strong-stake"
-            : mevScore > 60
-            ? "stake"
-            : mevScore > 40
-            ? "hold"
-            : "avoid",
-      };
-    });
+    // Format response
+    const formattedValidators = validators.map(v => ({
+      voteAccount: v.voteAccount,
+      identity: v.identity,
+      name: v.name,
+      commission: v.commission,
+      mevCommission: v.mevCommission,
+      activatedStake: v.activatedStake,
+      ...formatValidator(v),
+      estimatedApy: estimateApy(v),
+      delinquent: v.delinquent,
+      isJito: v.isJito,
+      isDz: v.isDz,
+      uptime: v.uptime,
+      totalScore: v.totalScore,
+      location: v.location,
+      avatarUrl: v.avatarUrl,
+      website: v.website,
+    }));
 
     return NextResponse.json({
-      validators: scoredValidators,
-      epoch: stats.epoch,
-      updatedAt: new Date().toISOString(),
+      success: true,
+      network,
+      filter,
+      count: formattedValidators.length,
+      stakerSpaceValidator: STAKER_SPACE_VALIDATORS[network],
+      validators: formattedValidators,
     });
   } catch (error) {
     console.error("Error fetching validators:", error);
     return NextResponse.json(
-      { error: "Failed to fetch validators" },
+      { error: "Failed to fetch validators", details: String(error) },
       { status: 500 }
     );
   }
