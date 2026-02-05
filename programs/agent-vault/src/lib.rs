@@ -1,204 +1,287 @@
 use anchor_lang::prelude::*;
-use anchor_lang::system_program;
+use anchor_lang::solana_program::{
+    stake::{
+        self,
+        state::{Authorized, Lockup, StakeState},
+    },
+    system_instruction,
+    program::invoke_signed,
+};
 
 declare_id!("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 
+/// Staker Space Vault - A managed staking vault for decentralized validators
+/// 
+/// Users deposit SOL → Vault tracks balances → Agent stakes to validators
+/// No LST tokens - just native SOL and stake accounts
 #[program]
 pub mod agent_vault {
     use super::*;
 
-    /// Initialize a new vault for a user
+    /// Initialize the main vault (one-time setup by admin)
     pub fn initialize_vault(ctx: Context<InitializeVault>) -> Result<()> {
         let vault = &mut ctx.accounts.vault;
-        vault.owner = ctx.accounts.owner.key();
+        vault.authority = ctx.accounts.authority.key();
         vault.agent = ctx.accounts.agent.key();
-        vault.balance = 0;
+        vault.total_deposits = 0;
         vault.total_staked = 0;
+        vault.total_users = 0;
         vault.bump = *ctx.bumps.get("vault").unwrap();
         
-        let strategy = &mut ctx.accounts.strategy;
-        strategy.vault = vault.key();
-        strategy.risk_tolerance = RiskTolerance::Medium;
-        strategy.target_apy = 800; // 8.00% in basis points
-        strategy.max_validators = 5;
-        strategy.prefer_decentralization = true;
-        strategy.bump = *ctx.bumps.get("strategy").unwrap();
-        
-        emit!(VaultCreated {
-            vault: vault.key(),
-            owner: vault.owner,
-            agent: vault.agent,
-        });
-        
+        msg!("Vault initialized. Authority: {}, Agent: {}", vault.authority, vault.agent);
         Ok(())
     }
 
-    /// Deposit SOL into the vault
+    /// User deposits SOL into the vault
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
-        require!(amount > 0, AgentVaultError::ZeroAmount);
+        require!(amount >= 10_000_000, VaultError::MinimumDeposit); // 0.01 SOL minimum
         
         // Transfer SOL from user to vault
-        let cpi_context = CpiContext::new(
-            ctx.accounts.system_program.to_account_info(),
-            system_program::Transfer {
-                from: ctx.accounts.owner.to_account_info(),
-                to: ctx.accounts.vault_sol.to_account_info(),
-            },
-        );
-        system_program::transfer(cpi_context, amount)?;
-        
-        // Update vault balance
-        let vault = &mut ctx.accounts.vault;
-        vault.balance = vault.balance.checked_add(amount).ok_or(AgentVaultError::Overflow)?;
-        
-        emit!(Deposited {
-            vault: vault.key(),
-            owner: ctx.accounts.owner.key(),
+        let transfer_ix = system_instruction::transfer(
+            &ctx.accounts.user.key(),
+            &ctx.accounts.vault.key(),
             amount,
-            new_balance: vault.balance,
-        });
-        
+        );
+        anchor_lang::solana_program::program::invoke(
+            &transfer_ix,
+            &[
+                ctx.accounts.user.to_account_info(),
+                ctx.accounts.vault.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+        )?;
+
+        // Update or create user deposit record
+        let user_deposit = &mut ctx.accounts.user_deposit;
+        let is_new_user = user_deposit.amount == 0;
+        user_deposit.user = ctx.accounts.user.key();
+        user_deposit.amount = user_deposit.amount.checked_add(amount).unwrap();
+        user_deposit.deposit_time = Clock::get()?.unix_timestamp;
+        user_deposit.bump = *ctx.bumps.get("user_deposit").unwrap();
+
+        // Update vault totals
+        let vault = &mut ctx.accounts.vault;
+        vault.total_deposits = vault.total_deposits.checked_add(amount).unwrap();
+        if is_new_user {
+            vault.total_users = vault.total_users.checked_add(1).unwrap();
+        }
+
+        msg!("Deposited {} lamports from {}", amount, ctx.accounts.user.key());
         Ok(())
     }
 
-    /// Withdraw SOL from the vault (only owner can call)
+    /// User requests unstake (initiates deactivation)
+    pub fn request_unstake(ctx: Context<RequestUnstake>, amount: u64) -> Result<()> {
+        let user_deposit = &mut ctx.accounts.user_deposit;
+        require!(user_deposit.amount >= amount, VaultError::InsufficientBalance);
+        
+        user_deposit.pending_unstake = user_deposit.pending_unstake.checked_add(amount).unwrap();
+        user_deposit.unstake_request_time = Clock::get()?.unix_timestamp;
+        
+        msg!("Unstake requested: {} lamports for {}", amount, ctx.accounts.user.key());
+        Ok(())
+    }
+
+    /// User withdraws after cooldown period
     pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
+        let user_deposit = &mut ctx.accounts.user_deposit;
         let vault = &mut ctx.accounts.vault;
-        let vault_key = vault.key();
         
-        require!(amount > 0, AgentVaultError::ZeroAmount);
-        require!(amount <= vault.balance, AgentVaultError::InsufficientBalance);
+        // Check user has enough pending unstake that's ready
+        require!(user_deposit.pending_unstake >= amount, VaultError::NoPendingUnstake);
         
-        // Transfer SOL from vault to user
-        let bump = *ctx.bumps.get("vault_sol").unwrap();
-        let seeds = &[
-            b"vault_sol".as_ref(),
-            vault_key.as_ref(),
-            &[bump],
-        ];
-        let signer = &[&seeds[..]];
-        
-        let cpi_context = CpiContext::new_with_signer(
-            ctx.accounts.system_program.to_account_info(),
-            system_program::Transfer {
-                from: ctx.accounts.vault_sol.to_account_info(),
-                to: ctx.accounts.owner.to_account_info(),
-            },
-            signer,
+        // Check cooldown period (1 epoch ≈ 2-3 days on mainnet)
+        let current_time = Clock::get()?.unix_timestamp;
+        let cooldown_seconds = 172800; // 2 days
+        require!(
+            current_time - user_deposit.unstake_request_time >= cooldown_seconds,
+            VaultError::CooldownNotComplete
         );
-        system_program::transfer(cpi_context, amount)?;
+
+        // Transfer SOL from vault to user
+        let vault_bump = vault.bump;
+        let seeds = &[b"vault".as_ref(), &[vault_bump]];
+        let signer_seeds = &[&seeds[..]];
         
-        // Update vault balance
-        vault.balance = vault.balance.checked_sub(amount).ok_or(AgentVaultError::Underflow)?;
-        
-        emit!(Withdrawn {
-            vault: vault.key(),
-            owner: ctx.accounts.owner.key(),
-            amount,
-            new_balance: vault.balance,
-        });
-        
+        **vault.to_account_info().try_borrow_mut_lamports()? -= amount;
+        **ctx.accounts.user.to_account_info().try_borrow_mut_lamports()? += amount;
+
+        // Update records
+        user_deposit.amount = user_deposit.amount.checked_sub(amount).unwrap();
+        user_deposit.pending_unstake = user_deposit.pending_unstake.checked_sub(amount).unwrap();
+        vault.total_deposits = vault.total_deposits.checked_sub(amount).unwrap();
+
+        msg!("Withdrawn {} lamports to {}", amount, ctx.accounts.user.key());
         Ok(())
     }
 
-    /// Update strategy parameters (only owner can call)
-    pub fn update_strategy(
-        ctx: Context<UpdateStrategy>,
-        risk_tolerance: RiskTolerance,
-        target_apy: u16,
-        max_validators: u8,
-        prefer_decentralization: bool,
-    ) -> Result<()> {
-        let strategy = &mut ctx.accounts.strategy;
-        
-        strategy.risk_tolerance = risk_tolerance;
-        strategy.target_apy = target_apy;
-        strategy.max_validators = max_validators;
-        strategy.prefer_decentralization = prefer_decentralization;
-        
-        emit!(StrategyUpdated {
-            vault: ctx.accounts.vault.key(),
-            risk_tolerance,
-            target_apy,
-            max_validators,
-            prefer_decentralization,
-        });
-        
-        Ok(())
-    }
-
-    /// Execute stake operation (only agent can call)
-    /// Agent can stake vault funds to validators but cannot withdraw to itself
-    pub fn execute_stake(
-        ctx: Context<ExecuteStake>,
-        validator: Pubkey,
+    /// Agent stakes vault funds to a validator
+    pub fn stake_to_validator(
+        ctx: Context<StakeToValidator>,
         amount: u64,
     ) -> Result<()> {
+        let vault = &ctx.accounts.vault;
+        require!(ctx.accounts.agent.key() == vault.agent, VaultError::UnauthorizedAgent);
+        require!(amount >= 1_000_000_000, VaultError::MinimumStake); // 1 SOL minimum for staking
+        
+        // Create stake account
+        let stake_rent = Rent::get()?.minimum_balance(std::mem::size_of::<StakeState>());
+        let total_lamports = amount.checked_add(stake_rent).unwrap();
+        
+        let vault_bump = vault.bump;
+        let stake_bump = *ctx.bumps.get("stake_account").unwrap();
+        let vault_key = ctx.accounts.vault.key();
+        let validator_key = ctx.accounts.validator_vote.key();
+        
+        let vault_seeds = &[b"vault".as_ref(), &[vault_bump]];
+        let stake_seeds = &[
+            b"stake".as_ref(),
+            vault_key.as_ref(),
+            validator_key.as_ref(),
+            &[stake_bump],
+        ];
+
+        // Create stake account via CPI
+        let create_stake_ix = system_instruction::create_account(
+            &ctx.accounts.vault.key(),
+            &ctx.accounts.stake_account.key(),
+            total_lamports,
+            std::mem::size_of::<StakeState>() as u64,
+            &stake::program::ID,
+        );
+        
+        invoke_signed(
+            &create_stake_ix,
+            &[
+                ctx.accounts.vault.to_account_info(),
+                ctx.accounts.stake_account.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+            &[vault_seeds, stake_seeds],
+        )?;
+
+        // Initialize stake account
+        let init_stake_ix = stake::instruction::initialize(
+            &ctx.accounts.stake_account.key(),
+            &Authorized {
+                staker: ctx.accounts.vault.key(),
+                withdrawer: ctx.accounts.vault.key(),
+            },
+            &Lockup::default(),
+        );
+        
+        invoke_signed(
+            &init_stake_ix,
+            &[
+                ctx.accounts.stake_account.to_account_info(),
+                ctx.accounts.rent.to_account_info(),
+            ],
+            &[stake_seeds],
+        )?;
+
+        // Delegate to validator
+        let delegate_ix = stake::instruction::delegate_stake(
+            &ctx.accounts.stake_account.key(),
+            &ctx.accounts.vault.key(),
+            &ctx.accounts.validator_vote.key(),
+        );
+        
+        invoke_signed(
+            &delegate_ix,
+            &[
+                ctx.accounts.stake_account.to_account_info(),
+                ctx.accounts.validator_vote.to_account_info(),
+                ctx.accounts.clock.to_account_info(),
+                ctx.accounts.stake_history.to_account_info(),
+                ctx.accounts.stake_config.to_account_info(),
+                ctx.accounts.vault.to_account_info(),
+            ],
+            &[vault_seeds],
+        )?;
+
+        // Update vault
         let vault = &mut ctx.accounts.vault;
-        
-        require!(amount > 0, AgentVaultError::ZeroAmount);
-        require!(amount <= vault.balance, AgentVaultError::InsufficientBalance);
-        
-        // Verify the validator is in our allowed list or strategy permits it
-        // For hackathon MVP, we trust the agent's validator selection
-        
-        // Create stake account and delegate
-        // This will be implemented with native stake program CPI
-        
-        // Update vault state
-        vault.balance = vault.balance.checked_sub(amount).ok_or(AgentVaultError::Underflow)?;
-        vault.total_staked = vault.total_staked.checked_add(amount).ok_or(AgentVaultError::Overflow)?;
-        
-        emit!(StakeExecuted {
-            vault: vault.key(),
-            agent: ctx.accounts.agent.key(),
-            validator,
-            amount,
-            remaining_balance: vault.balance,
-            total_staked: vault.total_staked,
-        });
-        
+        vault.total_staked = vault.total_staked.checked_add(amount).unwrap();
+
+        msg!("Staked {} lamports to validator {}", amount, validator_key);
         Ok(())
     }
 
-    /// Execute unstake operation (only agent can call)
-    /// Unstaked funds return to vault, not to agent
-    pub fn execute_unstake(
-        ctx: Context<ExecuteUnstake>,
-        stake_account: Pubkey,
-        amount: u64,
-    ) -> Result<()> {
-        let vault = &mut ctx.accounts.vault;
+    /// Agent deactivates stake (for rebalancing or unstake requests)
+    pub fn deactivate_stake(ctx: Context<DeactivateStake>) -> Result<()> {
+        let vault = &ctx.accounts.vault;
+        require!(ctx.accounts.agent.key() == vault.agent, VaultError::UnauthorizedAgent);
         
-        // Deactivate stake and return to vault
-        // This will be implemented with native stake program CPI
+        let vault_bump = vault.bump;
+        let vault_seeds = &[b"vault".as_ref(), &[vault_bump]];
+
+        let deactivate_ix = stake::instruction::deactivate_stake(
+            &ctx.accounts.stake_account.key(),
+            &ctx.accounts.vault.key(),
+        );
         
-        // Update vault state (funds return after cooldown)
-        vault.total_staked = vault.total_staked.checked_sub(amount).ok_or(AgentVaultError::Underflow)?;
-        
-        emit!(UnstakeExecuted {
-            vault: vault.key(),
-            agent: ctx.accounts.agent.key(),
-            stake_account,
-            amount,
-            total_staked: vault.total_staked,
-        });
-        
+        invoke_signed(
+            &deactivate_ix,
+            &[
+                ctx.accounts.stake_account.to_account_info(),
+                ctx.accounts.clock.to_account_info(),
+                ctx.accounts.vault.to_account_info(),
+            ],
+            &[vault_seeds],
+        )?;
+
+        msg!("Deactivated stake account {}", ctx.accounts.stake_account.key());
         Ok(())
     }
 
-    /// Change the agent (only owner can call)
-    pub fn change_agent(ctx: Context<ChangeAgent>, new_agent: Pubkey) -> Result<()> {
+    /// Agent withdraws deactivated stake back to vault
+    pub fn withdraw_stake(ctx: Context<WithdrawStake>) -> Result<()> {
+        let vault = &ctx.accounts.vault;
+        require!(ctx.accounts.agent.key() == vault.agent, VaultError::UnauthorizedAgent);
+        
+        let vault_bump = vault.bump;
+        let vault_seeds = &[b"vault".as_ref(), &[vault_bump]];
+
+        // Get stake account balance before withdrawal
+        let stake_balance = ctx.accounts.stake_account.lamports();
+
+        let withdraw_ix = stake::instruction::withdraw(
+            &ctx.accounts.stake_account.key(),
+            &ctx.accounts.vault.key(),
+            &ctx.accounts.vault.key(),
+            stake_balance,
+            None,
+        );
+        
+        invoke_signed(
+            &withdraw_ix,
+            &[
+                ctx.accounts.stake_account.to_account_info(),
+                ctx.accounts.vault.to_account_info(),
+                ctx.accounts.clock.to_account_info(),
+                ctx.accounts.stake_history.to_account_info(),
+                ctx.accounts.vault.to_account_info(),
+            ],
+            &[vault_seeds],
+        )?;
+
+        // Update vault
         let vault = &mut ctx.accounts.vault;
+        vault.total_staked = vault.total_staked.saturating_sub(stake_balance);
+
+        msg!("Withdrew {} lamports from stake account", stake_balance);
+        Ok(())
+    }
+
+    /// Update agent address (authority only)
+    pub fn update_agent(ctx: Context<UpdateAgent>, new_agent: Pubkey) -> Result<()> {
+        let vault = &mut ctx.accounts.vault;
+        require!(ctx.accounts.authority.key() == vault.authority, VaultError::UnauthorizedAuthority);
+        
         let old_agent = vault.agent;
         vault.agent = new_agent;
         
-        emit!(AgentChanged {
-            vault: vault.key(),
-            old_agent,
-            new_agent,
-        });
-        
+        msg!("Agent updated from {} to {}", old_agent, new_agent);
         Ok(())
     }
 }
@@ -207,280 +290,206 @@ pub mod agent_vault {
 // ACCOUNTS
 // ============================================
 
+#[account]
+pub struct Vault {
+    pub authority: Pubkey,      // Admin who can update agent
+    pub agent: Pubkey,          // Agent who can stake/unstake
+    pub total_deposits: u64,    // Total SOL deposited by users
+    pub total_staked: u64,      // Total SOL currently staked
+    pub total_users: u64,       // Number of depositors
+    pub bump: u8,
+}
+
+#[account]
+pub struct UserDeposit {
+    pub user: Pubkey,
+    pub amount: u64,
+    pub pending_unstake: u64,
+    pub deposit_time: i64,
+    pub unstake_request_time: i64,
+    pub bump: u8,
+}
+
+// ============================================
+// CONTEXTS
+// ============================================
+
 #[derive(Accounts)]
 pub struct InitializeVault<'info> {
-    #[account(mut)]
-    pub owner: Signer<'info>,
-    
-    /// The agent wallet that can execute staking operations
-    /// CHECK: This is just a pubkey for authorization
-    pub agent: UncheckedAccount<'info>,
-    
     #[account(
         init,
-        payer = owner,
-        space = 8 + Vault::INIT_SPACE,
-        seeds = [b"vault", owner.key().as_ref()],
+        payer = authority,
+        space = 8 + 32 + 32 + 8 + 8 + 8 + 1,
+        seeds = [b"vault"],
         bump
     )]
     pub vault: Account<'info, Vault>,
     
-    #[account(
-        init,
-        payer = owner,
-        space = 8 + Strategy::INIT_SPACE,
-        seeds = [b"strategy", vault.key().as_ref()],
-        bump
-    )]
-    pub strategy: Account<'info, Strategy>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
     
-    /// The PDA that holds the actual SOL
-    #[account(
-        seeds = [b"vault_sol", vault.key().as_ref()],
-        bump
-    )]
-    /// CHECK: This is a PDA that holds SOL
-    pub vault_sol: UncheckedAccount<'info>,
+    /// CHECK: Agent wallet address
+    pub agent: UncheckedAccount<'info>,
     
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct Deposit<'info> {
-    #[account(mut)]
-    pub owner: Signer<'info>,
-    
     #[account(
         mut,
-        seeds = [b"vault", owner.key().as_ref()],
-        bump = vault.bump,
-        has_one = owner @ AgentVaultError::Unauthorized,
+        seeds = [b"vault"],
+        bump = vault.bump
+    )]
+    pub vault: Account<'info, Vault>,
+    
+    #[account(
+        init_if_needed,
+        payer = user,
+        space = 8 + 32 + 8 + 8 + 8 + 8 + 1,
+        seeds = [b"deposit", user.key().as_ref()],
+        bump
+    )]
+    pub user_deposit: Account<'info, UserDeposit>,
+    
+    #[account(mut)]
+    pub user: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct RequestUnstake<'info> {
+    #[account(
+        seeds = [b"vault"],
+        bump = vault.bump
     )]
     pub vault: Account<'info, Vault>,
     
     #[account(
         mut,
-        seeds = [b"vault_sol", vault.key().as_ref()],
-        bump
+        seeds = [b"deposit", user.key().as_ref()],
+        bump = user_deposit.bump,
+        constraint = user_deposit.user == user.key()
     )]
-    /// CHECK: This is a PDA that holds SOL
-    pub vault_sol: UncheckedAccount<'info>,
+    pub user_deposit: Account<'info, UserDeposit>,
     
-    pub system_program: Program<'info, System>,
+    pub user: Signer<'info>,
 }
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
+    #[account(
+        mut,
+        seeds = [b"vault"],
+        bump = vault.bump
+    )]
+    pub vault: Account<'info, Vault>,
+    
+    #[account(
+        mut,
+        seeds = [b"deposit", user.key().as_ref()],
+        bump = user_deposit.bump,
+        constraint = user_deposit.user == user.key()
+    )]
+    pub user_deposit: Account<'info, UserDeposit>,
+    
     #[account(mut)]
-    pub owner: Signer<'info>,
-    
-    #[account(
-        mut,
-        seeds = [b"vault", owner.key().as_ref()],
-        bump = vault.bump,
-        has_one = owner @ AgentVaultError::Unauthorized,
-    )]
-    pub vault: Account<'info, Vault>,
-    
-    #[account(
-        mut,
-        seeds = [b"vault_sol", vault.key().as_ref()],
-        bump
-    )]
-    /// CHECK: This is a PDA that holds SOL
-    pub vault_sol: UncheckedAccount<'info>,
-    
-    pub system_program: Program<'info, System>,
+    pub user: Signer<'info>,
 }
 
 #[derive(Accounts)]
-pub struct UpdateStrategy<'info> {
-    pub owner: Signer<'info>,
-    
+pub struct StakeToValidator<'info> {
     #[account(
-        seeds = [b"vault", owner.key().as_ref()],
-        bump = vault.bump,
-        has_one = owner @ AgentVaultError::Unauthorized,
+        mut,
+        seeds = [b"vault"],
+        bump = vault.bump
     )]
     pub vault: Account<'info, Vault>,
     
-    #[account(
-        mut,
-        seeds = [b"strategy", vault.key().as_ref()],
-        bump = strategy.bump,
-    )]
-    pub strategy: Account<'info, Strategy>,
-}
-
-#[derive(Accounts)]
-pub struct ExecuteStake<'info> {
+    #[account(mut)]
     pub agent: Signer<'info>,
     
+    /// CHECK: Stake account PDA
     #[account(
         mut,
-        has_one = agent @ AgentVaultError::Unauthorized,
-    )]
-    pub vault: Account<'info, Vault>,
-    
-    #[account(
-        seeds = [b"strategy", vault.key().as_ref()],
-        bump = strategy.bump,
-    )]
-    pub strategy: Account<'info, Strategy>,
-    
-    #[account(
-        mut,
-        seeds = [b"vault_sol", vault.key().as_ref()],
+        seeds = [b"stake", vault.key().as_ref(), validator_vote.key().as_ref()],
         bump
     )]
-    /// CHECK: This is a PDA that holds SOL
-    pub vault_sol: UncheckedAccount<'info>,
+    pub stake_account: UncheckedAccount<'info>,
+    
+    /// CHECK: Validator vote account
+    pub validator_vote: UncheckedAccount<'info>,
+    
+    pub rent: Sysvar<'info, Rent>,
+    pub clock: Sysvar<'info, Clock>,
+    pub stake_history: Sysvar<'info, StakeHistory>,
+    
+    /// CHECK: Stake config
+    #[account(address = stake::config::ID)]
+    pub stake_config: UncheckedAccount<'info>,
     
     pub system_program: Program<'info, System>,
-    // TODO: Add stake program and related accounts
+    
+    /// CHECK: Stake program
+    #[account(address = stake::program::ID)]
+    pub stake_program: UncheckedAccount<'info>,
 }
 
 #[derive(Accounts)]
-pub struct ExecuteUnstake<'info> {
+pub struct DeactivateStake<'info> {
+    #[account(
+        seeds = [b"vault"],
+        bump = vault.bump
+    )]
+    pub vault: Account<'info, Vault>,
+    
     pub agent: Signer<'info>,
     
-    #[account(
-        mut,
-        has_one = agent @ AgentVaultError::Unauthorized,
-    )]
-    pub vault: Account<'info, Vault>,
+    /// CHECK: Stake account to deactivate
+    #[account(mut)]
+    pub stake_account: UncheckedAccount<'info>,
     
-    #[account(
-        mut,
-        seeds = [b"vault_sol", vault.key().as_ref()],
-        bump
-    )]
-    /// CHECK: This is a PDA that holds SOL
-    pub vault_sol: UncheckedAccount<'info>,
+    pub clock: Sysvar<'info, Clock>,
     
-    pub system_program: Program<'info, System>,
-    // TODO: Add stake program and related accounts
+    /// CHECK: Stake program
+    #[account(address = stake::program::ID)]
+    pub stake_program: UncheckedAccount<'info>,
 }
 
 #[derive(Accounts)]
-pub struct ChangeAgent<'info> {
-    pub owner: Signer<'info>,
-    
+pub struct WithdrawStake<'info> {
     #[account(
         mut,
-        seeds = [b"vault", owner.key().as_ref()],
-        bump = vault.bump,
-        has_one = owner @ AgentVaultError::Unauthorized,
+        seeds = [b"vault"],
+        bump = vault.bump
     )]
     pub vault: Account<'info, Vault>,
+    
+    pub agent: Signer<'info>,
+    
+    /// CHECK: Stake account to withdraw from
+    #[account(mut)]
+    pub stake_account: UncheckedAccount<'info>,
+    
+    pub clock: Sysvar<'info, Clock>,
+    pub stake_history: Sysvar<'info, StakeHistory>,
+    
+    /// CHECK: Stake program
+    #[account(address = stake::program::ID)]
+    pub stake_program: UncheckedAccount<'info>,
 }
 
-// ============================================
-// STATE
-// ============================================
-
-#[account]
-#[derive(InitSpace)]
-pub struct Vault {
-    /// The owner who can deposit, withdraw, and change settings
-    pub owner: Pubkey,
-    /// The agent that can execute staking operations
-    pub agent: Pubkey,
-    /// Current unstaked balance in the vault (lamports)
-    pub balance: u64,
-    /// Total amount currently staked (lamports)
-    pub total_staked: u64,
-    /// PDA bump
-    pub bump: u8,
-}
-
-#[account]
-#[derive(InitSpace)]
-pub struct Strategy {
-    /// The vault this strategy belongs to
-    pub vault: Pubkey,
-    /// Risk tolerance level
-    pub risk_tolerance: RiskTolerance,
-    /// Target APY in basis points (800 = 8.00%)
-    pub target_apy: u16,
-    /// Maximum number of validators to spread stake across
-    pub max_validators: u8,
-    /// Whether to prefer validators that help decentralization
-    pub prefer_decentralization: bool,
-    /// PDA bump
-    pub bump: u8,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
-pub enum RiskTolerance {
-    /// Conservative: Prefer established validators with long track records
-    Low,
-    /// Balanced: Mix of established and high-performing validators
-    Medium,
-    /// Aggressive: Prioritize APY, accept more variance
-    High,
-}
-
-// ============================================
-// EVENTS
-// ============================================
-
-#[event]
-pub struct VaultCreated {
-    pub vault: Pubkey,
-    pub owner: Pubkey,
-    pub agent: Pubkey,
-}
-
-#[event]
-pub struct Deposited {
-    pub vault: Pubkey,
-    pub owner: Pubkey,
-    pub amount: u64,
-    pub new_balance: u64,
-}
-
-#[event]
-pub struct Withdrawn {
-    pub vault: Pubkey,
-    pub owner: Pubkey,
-    pub amount: u64,
-    pub new_balance: u64,
-}
-
-#[event]
-pub struct StrategyUpdated {
-    pub vault: Pubkey,
-    pub risk_tolerance: RiskTolerance,
-    pub target_apy: u16,
-    pub max_validators: u8,
-    pub prefer_decentralization: bool,
-}
-
-#[event]
-pub struct StakeExecuted {
-    pub vault: Pubkey,
-    pub agent: Pubkey,
-    pub validator: Pubkey,
-    pub amount: u64,
-    pub remaining_balance: u64,
-    pub total_staked: u64,
-}
-
-#[event]
-pub struct UnstakeExecuted {
-    pub vault: Pubkey,
-    pub agent: Pubkey,
-    pub stake_account: Pubkey,
-    pub amount: u64,
-    pub total_staked: u64,
-}
-
-#[event]
-pub struct AgentChanged {
-    pub vault: Pubkey,
-    pub old_agent: Pubkey,
-    pub new_agent: Pubkey,
+#[derive(Accounts)]
+pub struct UpdateAgent<'info> {
+    #[account(
+        mut,
+        seeds = [b"vault"],
+        bump = vault.bump
+    )]
+    pub vault: Account<'info, Vault>,
+    
+    pub authority: Signer<'info>,
 }
 
 // ============================================
@@ -488,15 +497,19 @@ pub struct AgentChanged {
 // ============================================
 
 #[error_code]
-pub enum AgentVaultError {
-    #[msg("Unauthorized: caller is not the owner or agent")]
-    Unauthorized,
-    #[msg("Amount must be greater than zero")]
-    ZeroAmount,
-    #[msg("Insufficient balance in vault")]
+pub enum VaultError {
+    #[msg("Minimum deposit is 0.01 SOL")]
+    MinimumDeposit,
+    #[msg("Minimum stake is 1 SOL")]
+    MinimumStake,
+    #[msg("Insufficient balance")]
     InsufficientBalance,
-    #[msg("Arithmetic overflow")]
-    Overflow,
-    #[msg("Arithmetic underflow")]
-    Underflow,
+    #[msg("No pending unstake")]
+    NoPendingUnstake,
+    #[msg("Cooldown period not complete")]
+    CooldownNotComplete,
+    #[msg("Unauthorized agent")]
+    UnauthorizedAgent,
+    #[msg("Unauthorized authority")]
+    UnauthorizedAuthority,
 }
