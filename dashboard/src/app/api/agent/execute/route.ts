@@ -5,12 +5,15 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { getTopValidators } from "@/lib/stakewiz";
+import { loadAgentKeypair, stakeToValidator, getStakeAccounts } from "@/lib/native-staking";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Agent Execution API
  * 
- * This endpoint is called by a cron job to execute staking operations.
- * It reads vault balance and stakes to qualified validators.
+ * This endpoint executes staking operations using native Solana staking.
+ * The agent creates stake accounts and delegates to qualified validators.
  * 
  * Security: Only Vercel cron or valid Bearer token can execute.
  */
@@ -18,26 +21,31 @@ import { getTopValidators } from "@/lib/stakewiz";
 const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 const VAULT_PDA = new PublicKey("HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u");
 const AGENT_PUBKEY = new PublicKey("By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny");
-const RPC_URL = "https://api.devnet.solana.com";
+const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.devnet.solana.com";
 
-// Minimum SOL to keep in vault for rent/operations
-const MIN_VAULT_BALANCE = 0.1 * LAMPORTS_PER_SOL;
-// Minimum stake per validator
+// Minimum SOL to keep for operations
+const MIN_RESERVE = 0.1 * LAMPORTS_PER_SOL;
+// Minimum stake per validator (1 SOL)
 const MIN_STAKE_AMOUNT = 1 * LAMPORTS_PER_SOL;
+
+interface StakeExecution {
+  validator: string;
+  validatorName: string;
+  amount: number;
+  stakeAccount?: string;
+  signature?: string;
+  success: boolean;
+  error?: string;
+}
 
 interface ExecutionResult {
   success: boolean;
-  vaultBalance: number;
+  agentBalance: number;
   availableToStake: number;
   stakesCreated: number;
+  totalStaked: number;
+  executions: StakeExecution[];
   errors: string[];
-  transactions: string[];
-  stakingPlan?: Array<{
-    validator: string;
-    validatorName: string;
-    amount: number;
-    expectedApy: number;
-  }>;
 }
 
 function isAuthorized(request: NextRequest): boolean {
@@ -90,37 +98,28 @@ export async function GET(request: NextRequest) {
   try {
     const connection = new Connection(RPC_URL, "confirmed");
     
-    const vaultAccount = await connection.getAccountInfo(VAULT_PDA);
-    if (!vaultAccount) {
-      return NextResponse.json({ error: "Vault not found" }, { status: 404 });
-    }
-
-    const vaultBalance = vaultAccount.lamports / LAMPORTS_PER_SOL;
+    // Get agent balance
+    const agentBalance = await connection.getBalance(AGENT_PUBKEY);
     
-    // Parse vault data
-    const vaultData = vaultAccount.data.slice(8);
-    const totalDeposits = Number(vaultData.readBigUInt64LE(64)) / LAMPORTS_PER_SOL;
-    const totalStaked = Number(vaultData.readBigUInt64LE(72)) / LAMPORTS_PER_SOL;
-    const totalUsers = Number(vaultData.readBigUInt64LE(80));
+    // Get existing stake accounts
+    const stakeAccounts = await getStakeAccounts(AGENT_PUBKEY);
+    const totalStaked = stakeAccounts.reduce((sum, sa) => sum + sa.lamports, 0);
 
     const validators = await getTopValidators(10);
 
     return NextResponse.json({
-      vault: {
-        address: VAULT_PDA.toBase58(),
-        balance: vaultBalance,
-        totalDeposits,
-        totalStaked,
-        totalUsers,
-      },
       agent: AGENT_PUBKEY.toBase58(),
-      availableToStake: Math.max(0, vaultBalance - MIN_VAULT_BALANCE / LAMPORTS_PER_SOL),
+      balance: agentBalance / LAMPORTS_PER_SOL,
+      totalStaked: totalStaked / LAMPORTS_PER_SOL,
+      stakeAccounts: stakeAccounts.length,
+      availableToStake: Math.max(0, (agentBalance - MIN_RESERVE) / LAMPORTS_PER_SOL),
       topValidators: validators.map((v) => ({
         name: v.name,
         voteAccount: v.vote_identity,
         totalApy: v.total_apy,
         wizScore: v.wiz_score,
         stake: v.activated_stake,
+        commission: v.commission,
       })),
       timestamp: new Date().toISOString(),
     });
@@ -135,24 +134,36 @@ export async function GET(request: NextRequest) {
 
 async function executeStaking(): Promise<ExecutionResult> {
   const connection = new Connection(RPC_URL, "confirmed");
+  const executions: StakeExecution[] = [];
+  const errors: string[] = [];
 
-  // Get vault balance
-  const vaultAccount = await connection.getAccountInfo(VAULT_PDA);
-  if (!vaultAccount) {
-    throw new Error("Vault not found");
+  // Load agent keypair
+  const agent = loadAgentKeypair();
+  if (!agent) {
+    return {
+      success: false,
+      agentBalance: 0,
+      availableToStake: 0,
+      stakesCreated: 0,
+      totalStaked: 0,
+      executions: [],
+      errors: ["Agent keypair not configured. Set AGENT_PRIVATE_KEY or run locally with agent.json"],
+    };
   }
 
-  const vaultBalance = vaultAccount.lamports;
-  const availableToStake = vaultBalance - MIN_VAULT_BALANCE;
+  // Get agent balance
+  const agentBalance = await connection.getBalance(agent.publicKey);
+  const availableToStake = agentBalance - MIN_RESERVE;
 
   if (availableToStake < MIN_STAKE_AMOUNT) {
     return {
       success: true,
-      vaultBalance: vaultBalance / LAMPORTS_PER_SOL,
+      agentBalance: agentBalance / LAMPORTS_PER_SOL,
       availableToStake: availableToStake / LAMPORTS_PER_SOL,
       stakesCreated: 0,
-      errors: ["Insufficient balance to stake (need at least 1 SOL per validator)"],
-      transactions: [],
+      totalStaked: 0,
+      executions: [],
+      errors: [`Insufficient balance to stake. Need at least ${MIN_STAKE_AMOUNT / LAMPORTS_PER_SOL + MIN_RESERVE / LAMPORTS_PER_SOL} SOL`],
     };
   }
 
@@ -161,11 +172,12 @@ async function executeStaking(): Promise<ExecutionResult> {
   if (validators.length === 0) {
     return {
       success: false,
-      vaultBalance: vaultBalance / LAMPORTS_PER_SOL,
+      agentBalance: agentBalance / LAMPORTS_PER_SOL,
       availableToStake: availableToStake / LAMPORTS_PER_SOL,
       stakesCreated: 0,
+      totalStaked: 0,
+      executions: [],
       errors: ["No qualified validators found"],
-      transactions: [],
     };
   }
 
@@ -174,31 +186,59 @@ async function executeStaking(): Promise<ExecutionResult> {
   if (stakePerValidator < MIN_STAKE_AMOUNT) {
     return {
       success: true,
-      vaultBalance: vaultBalance / LAMPORTS_PER_SOL,
+      agentBalance: agentBalance / LAMPORTS_PER_SOL,
       availableToStake: availableToStake / LAMPORTS_PER_SOL,
       stakesCreated: 0,
-      errors: [`Stake per validator (${stakePerValidator / LAMPORTS_PER_SOL} SOL) below minimum`],
-      transactions: [],
+      totalStaked: 0,
+      executions: [],
+      errors: [`Stake per validator (${stakePerValidator / LAMPORTS_PER_SOL} SOL) below minimum ${MIN_STAKE_AMOUNT / LAMPORTS_PER_SOL} SOL`],
     };
   }
 
-  // Build staking plan
-  const stakingPlan = validators.map((v) => ({
-    validator: v.vote_identity,
-    validatorName: v.name,
-    amount: stakePerValidator / LAMPORTS_PER_SOL,
-    expectedApy: v.total_apy,
-  }));
+  // Execute staking to each validator
+  let stakesCreated = 0;
+  let totalStaked = 0;
 
-  // TODO: Load agent keypair from AGENT_PRIVATE_KEY and execute actual staking
-  // For now, return the plan
+  for (const validator of validators) {
+    const execution: StakeExecution = {
+      validator: validator.vote_identity,
+      validatorName: validator.name,
+      amount: stakePerValidator / LAMPORTS_PER_SOL,
+      success: false,
+    };
+
+    try {
+      const result = await stakeToValidator(
+        agent,
+        new PublicKey(validator.vote_identity),
+        stakePerValidator,
+      );
+
+      if (result.success) {
+        execution.success = true;
+        execution.stakeAccount = result.stakeAccount;
+        execution.signature = result.signature;
+        stakesCreated++;
+        totalStaked += stakePerValidator;
+      } else {
+        execution.error = result.error;
+        errors.push(`Failed to stake to ${validator.name}: ${result.error}`);
+      }
+    } catch (error: any) {
+      execution.error = error.message;
+      errors.push(`Error staking to ${validator.name}: ${error.message}`);
+    }
+
+    executions.push(execution);
+  }
+
   return {
-    success: true,
-    vaultBalance: vaultBalance / LAMPORTS_PER_SOL,
+    success: stakesCreated > 0,
+    agentBalance: agentBalance / LAMPORTS_PER_SOL,
     availableToStake: availableToStake / LAMPORTS_PER_SOL,
-    stakesCreated: 0,
-    errors: ["Agent keypair not configured - staking plan generated but not executed"],
-    transactions: [],
-    stakingPlan,
+    stakesCreated,
+    totalStaked: totalStaked / LAMPORTS_PER_SOL,
+    executions,
+    errors,
   };
 }
