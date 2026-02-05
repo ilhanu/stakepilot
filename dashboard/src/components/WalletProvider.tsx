@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, ReactNode } from "react";
+import { useMemo, ReactNode, useState, useEffect } from "react";
 import {
   ConnectionProvider,
   WalletProvider as SolanaWalletProvider,
@@ -20,6 +20,8 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 const RPC_URL = "https://api.devnet.solana.com";
 
 export function WalletProvider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
@@ -29,6 +31,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     ],
     []
   );
+
+  // Prevent hydration mismatch by only rendering wallet on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   return (
     <ConnectionProvider endpoint={RPC_URL}>

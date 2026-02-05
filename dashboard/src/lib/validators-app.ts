@@ -189,9 +189,10 @@ export function enrichValidators(validators: RawValidator[]): EnrichedValidator[
     const netBaseApy = BASE_APY * (1 - commission / 100);
     
     // MEV APY (if Jito enabled)
-    const jitoCommission = v.jito_commission || 100;
+    // jito_commission is in basis points (400 = 4%)
+    const jitoCommissionBps = v.jito_commission ?? 10000; // Default 100% if not set
     const mevGross = v.jito ? 1.5 : 0; // Estimate ~1.5% MEV APY for Jito validators
-    const netMevApy = mevGross * (1 - jitoCommission / 100);
+    const netMevApy = mevGross * (1 - jitoCommissionBps / 10000);
     
     const netTotalApy = netBaseApy + netMevApy;
 
