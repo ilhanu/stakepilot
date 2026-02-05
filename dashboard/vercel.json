@@ -2,11 +2,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "installCommand": "npm install",
-  "crons": [
-    {
-      "path": "/api/agent/execute",
-      "schedule": "0 * * * *"
-    }
-  ]
+  "installCommand": "npm install"
 }
