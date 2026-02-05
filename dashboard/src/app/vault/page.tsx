@@ -13,6 +13,16 @@ import {
 import Link from "next/link";
 
 const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
+
+// Helper to encode u64 as little-endian bytes (browser compatible)
+function encodeU64(value: number): Uint8Array {
+  const buffer = new ArrayBuffer(8);
+  const view = new DataView(buffer);
+  // Split into two 32-bit parts for browser compatibility
+  view.setUint32(0, value & 0xffffffff, true); // lower 32 bits
+  view.setUint32(4, Math.floor(value / 0x100000000), true); // upper 32 bits
+  return new Uint8Array(buffer);
+}
 const VAULT_PDA = new PublicKey("HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u");
 
 interface VaultStatus {
@@ -143,9 +153,13 @@ export default function VaultPage() {
 
       // Build deposit instruction
       // Discriminator: sha256("global:deposit") first 8 bytes
-      const discriminator = Buffer.from([0xf2, 0x23, 0xc6, 0x89, 0x52, 0xe1, 0xf2, 0xb6]);
-      const amountBuffer = Buffer.alloc(8);
-      amountBuffer.writeBigUInt64LE(BigInt(lamports));
+      const discriminator = new Uint8Array([0xf2, 0x23, 0xc6, 0x89, 0x52, 0xe1, 0xf2, 0xb6]);
+      const amountBuffer = encodeU64(lamports);
+      
+      // Combine discriminator + amount
+      const data = new Uint8Array(16);
+      data.set(discriminator, 0);
+      data.set(amountBuffer, 8);
       
       const instruction = new TransactionInstruction({
         programId: PROGRAM_ID,
@@ -155,7 +169,7 @@ export default function VaultPage() {
           { pubkey: publicKey, isSigner: true, isWritable: true },
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ],
-        data: Buffer.concat([discriminator, amountBuffer]),
+        data: Buffer.from(data),
       });
 
       const transaction = new Transaction().add(instruction);
@@ -206,9 +220,13 @@ export default function VaultPage() {
 
       // Build request_unstake instruction
       // sha256("global:request_unstake") = 2c9a6efda0ca3622...
-      const discriminator = Buffer.from([0x2c, 0x9a, 0x6e, 0xfd, 0xa0, 0xca, 0x36, 0x22]);
-      const amountBuffer = Buffer.alloc(8);
-      amountBuffer.writeBigUInt64LE(BigInt(lamports));
+      const discriminator = new Uint8Array([0x2c, 0x9a, 0x6e, 0xfd, 0xa0, 0xca, 0x36, 0x22]);
+      const amountBuffer = encodeU64(lamports);
+      
+      // Combine discriminator + amount
+      const data = new Uint8Array(16);
+      data.set(discriminator, 0);
+      data.set(amountBuffer, 8);
       
       const instruction = new TransactionInstruction({
         programId: PROGRAM_ID,
@@ -217,7 +235,7 @@ export default function VaultPage() {
           { pubkey: userDepositPDA, isSigner: false, isWritable: true },
           { pubkey: publicKey, isSigner: true, isWritable: false },
         ],
-        data: Buffer.concat([discriminator, amountBuffer]),
+        data: Buffer.from(data),
       });
 
       const transaction = new Transaction().add(instruction);
