@@ -170,11 +170,11 @@ export default function Home() {
             </div>
             
             <div className="p-5 md:p-8 rounded-xl md:rounded-2xl bg-gradient-to-br from-[var(--accent)]/10 to-transparent border border-[var(--accent)]/20">
-              <div className="text-xs md:text-sm text-[var(--accent)] font-medium mb-3 md:mb-4">⭐ Always Included</div>
+              <div className="text-xs md:text-sm text-[var(--accent)] font-medium mb-3 md:mb-4">⭐ Featured Validator</div>
               <h3 className="text-xl md:text-2xl font-bold mb-2">Staker Space</h3>
               <p className="text-sm md:text-base text-[var(--text-secondary)] mb-4 md:mb-6">
-                Our own validator is always part of the staking set, 
-                ensuring alignment between the team and users.
+                Our team's validator is always part of the staking set, 
+                ensuring alignment between the builders and users.
               </p>
               <div className="grid grid-cols-2 gap-2 md:gap-4 text-sm">
                 <div className="p-2.5 md:p-3 rounded-lg bg-[var(--bg-primary)]">
@@ -257,7 +257,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-6 md:py-8 border-t border-[var(--border)]">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[var(--text-muted)]">
-          <div>© 2026 Staker Space</div>
+          <div>© 2026 StakePilot · Built by <a href="https://staker.space" target="_blank" className="hover:text-[var(--accent)] transition">Staker Space</a></div>
           <div className="flex items-center gap-6">
             <Link href="/docs" className="hover:text-[var(--text-primary)] transition">Docs</Link>
             <a href="https://github.com/ilhanu/stakepilot" target="_blank" className="hover:text-[var(--text-primary)] transition">GitHub</a>

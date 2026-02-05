@@ -30,7 +30,7 @@ export function Header() {
               <span className="text-black font-bold text-base md:text-lg">S</span>
             </div>
             <span className="font-semibold text-base md:text-lg tracking-tight">
-              Staker Space
+              StakePilot
             </span>
           </Link>
 

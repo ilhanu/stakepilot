@@ -268,7 +268,7 @@ export default function VaultPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Title */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Staker Space Vault</h1>
+          <h1 className="text-3xl font-bold mb-2">StakePilot Vault</h1>
           <p className="text-[var(--text-secondary)]">
             Deposit SOL and let our agent stake to quality decentralized validators
           </p>
@@ -486,7 +486,7 @@ export default function VaultPage() {
                     <span className="text-[var(--accent)]">✓</span> Uptime &gt; 95%
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-[var(--accent)]">✓</span> Always includes Staker Space
+                    <span className="text-[var(--accent)]">✓</span> Includes Staker Space validator
                   </li>
                 </ul>
               </div>
