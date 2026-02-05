@@ -14,12 +14,12 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg-primary)]/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg-primary)]/90 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--accent)] to-emerald-600 flex items-center justify-center shadow-lg shadow-[var(--accent)]/20 group-hover:shadow-[var(--accent)]/30 transition-shadow">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center shadow-lg group-hover:shadow-[var(--accent)]/30 transition-shadow">
               <span className="text-black font-bold text-lg">S</span>
             </div>
             <span className="font-semibold text-lg tracking-tight hidden sm:block">
@@ -47,9 +47,9 @@ export function Header() {
           {/* Right side */}
           <div className="flex items-center gap-3">
             {/* Network badge */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-              <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-              <span className="text-xs font-medium text-yellow-500">Devnet</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--coral)]/10 border border-[var(--coral)]/20">
+              <div className="w-2 h-2 rounded-full bg-[var(--coral)] animate-pulse" />
+              <span className="text-xs font-medium text-[var(--coral)]">Devnet</span>
             </div>
             
             {/* Wallet button */}

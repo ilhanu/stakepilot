@@ -1,27 +1,77 @@
 @import "tailwindcss";
 
+/* Tailwind v4 Theme Configuration */
+@theme {
+  /* Color Palette from Coolors */
+  --color-lime: #E5E059;
+  --color-lime-light: #BDD358;
+  --color-white: #FFFFFF;
+  --color-gray: #999799;
+  --color-coral: #E5625E;
+  
+  /* Extended palette */
+  --color-lime-50: #FAFDE8;
+  --color-lime-100: #F5FACD;
+  --color-lime-200: #EDF59F;
+  --color-lime-300: #E5E059;
+  --color-lime-400: #D4D040;
+  --color-lime-500: #BDD358;
+  --color-lime-600: #9AB33E;
+  --color-lime-700: #7A8F31;
+  --color-lime-800: #5A6A25;
+  --color-lime-900: #3D4819;
+  
+  --color-coral-50: #FEF2F2;
+  --color-coral-100: #FDE8E8;
+  --color-coral-200: #FBD5D5;
+  --color-coral-300: #F5A8A8;
+  --color-coral-400: #E5625E;
+  --color-coral-500: #D94545;
+  --color-coral-600: #C53030;
+  --color-coral-700: #9B2C2C;
+  --color-coral-800: #742A2A;
+  --color-coral-900: #5A2020;
+  
+  /* Background colors */
+  --color-bg-primary: #0A0A0A;
+  --color-bg-secondary: #111111;
+  --color-bg-card: #161616;
+  --color-bg-elevated: #1C1C1C;
+  
+  /* Border colors */
+  --color-border: #2A2A2A;
+  --color-border-hover: #3A3A3A;
+  
+  /* Font */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
 :root {
-  /* Lido-inspired design tokens */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #0f0f0f;
-  --bg-card: #111111;
-  --bg-card-hover: #1a1a1a;
-  --bg-elevated: #161616;
+  /* Semantic tokens using the new palette */
+  --bg-primary: #0A0A0A;
+  --bg-secondary: #111111;
+  --bg-card: #161616;
+  --bg-card-hover: #1E1E1E;
+  --bg-elevated: #1C1C1C;
   
-  --text-primary: #ffffff;
-  --text-secondary: #a3a3a3;
-  --text-muted: #737373;
+  --text-primary: #FFFFFF;
+  --text-secondary: #B8B8B8;
+  --text-muted: #999799;
   
-  --accent: #14f195;
-  --accent-hover: #00dc82;
-  --accent-glow: rgba(20, 241, 149, 0.15);
+  /* Main accent is lime */
+  --accent: #E5E059;
+  --accent-hover: #D4D040;
+  --accent-glow: rgba(229, 224, 89, 0.15);
   
-  --border: #262626;
-  --border-hover: #404040;
+  /* Secondary accent is green-lime */
+  --accent-secondary: #BDD358;
   
-  /* Spacing */
-  --section-y: 96px;
-  --section-y-mobile: 64px;
+  /* Coral for highlights/warnings */
+  --coral: #E5625E;
+  --coral-glow: rgba(229, 98, 94, 0.15);
+  
+  --border: #2A2A2A;
+  --border-hover: #3A3A3A;
   
   /* Radius */
   --radius-sm: 8px;
@@ -77,19 +127,6 @@ body {
   outline-offset: 2px;
 }
 
-/* Page container */
-.container-lg {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-@media (min-width: 768px) {
-  .container-lg {
-    padding: 0 48px;
-  }
-}
-
 /* Card base */
 .card {
   background: var(--bg-card);
@@ -103,22 +140,17 @@ body {
   border-color: var(--border-hover);
 }
 
-.card-interactive:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-}
-
-/* Primary button - Lido style */
+/* Primary button - Lime accent */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 16px 32px;
+  padding: 14px 28px;
   background: var(--accent);
   color: #000;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
   border-radius: var(--radius-md);
   border: none;
   cursor: pointer;
@@ -141,11 +173,11 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 16px 32px;
+  padding: 14px 28px;
   background: transparent;
   color: var(--text-primary);
   font-weight: 500;
-  font-size: 16px;
+  font-size: 15px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -157,26 +189,27 @@ body {
   border-color: var(--border-hover);
 }
 
-/* Ghost button */
-.btn-ghost {
+/* Coral button for special actions */
+.btn-coral {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 20px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 14px;
-  border: none;
+  padding: 14px 28px;
+  background: var(--coral);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
   border-radius: var(--radius-md);
+  border: none;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.btn-ghost:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+.btn-coral:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--coral-glow);
 }
 
 /* Stat number styling */
@@ -194,66 +227,28 @@ body {
   }
 }
 
-.stat-label {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  margin-top: 8px;
-}
-
-/* Gradient text */
+/* Gradient text using the palette */
 .text-gradient {
-  background: linear-gradient(135deg, var(--accent) 0%, #00d4ff 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Glow effect for accent elements */
+.text-gradient-coral {
+  background: linear-gradient(135deg, var(--coral) 0%, #FF8A80 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glow effects */
 .glow-accent {
   box-shadow: 0 0 40px var(--accent-glow);
 }
 
-/* Subtle grid background */
-.bg-grid {
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 64px 64px;
-}
-
-/* Radial gradient overlay */
-.bg-radial {
-  background: radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-glow), transparent);
-}
-
-/* Animation keyframes */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.6s ease-out forwards;
-}
-
-.animate-fade-in-delay-1 {
-  animation: fadeIn 0.6s ease-out 0.1s forwards;
-  opacity: 0;
-}
-
-.animate-fade-in-delay-2 {
-  animation: fadeIn 0.6s ease-out 0.2s forwards;
-  opacity: 0;
-}
-
-.animate-fade-in-delay-3 {
-  animation: fadeIn 0.6s ease-out 0.3s forwards;
-  opacity: 0;
+.glow-coral {
+  box-shadow: 0 0 40px var(--coral-glow);
 }
 
 /* Badge */
@@ -262,16 +257,35 @@ body {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: rgba(20, 241, 149, 0.1);
+  background: rgba(229, 224, 89, 0.1);
   color: var(--accent);
   font-size: 12px;
   font-weight: 500;
   border-radius: 999px;
-  border: 1px solid rgba(20, 241, 149, 0.2);
+  border: 1px solid rgba(229, 224, 89, 0.2);
 }
 
-/* Section divider */
-.section-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border), transparent);
+.badge-coral {
+  background: rgba(229, 98, 94, 0.1);
+  color: var(--coral);
+  border: 1px solid rgba(229, 98, 94, 0.2);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+  50% { box-shadow: 0 0 40px var(--accent-glow); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
