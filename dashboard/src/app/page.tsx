@@ -36,72 +36,73 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Hero */}
-      <section className="py-20 lg:py-28 relative overflow-hidden">
+      <section className="py-12 md:py-20 lg:py-28 relative overflow-hidden">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--accent)]/5 via-transparent to-transparent" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[var(--accent)]/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] md:w-[800px] h-[300px] md:h-[400px] bg-[var(--accent)]/10 rounded-full blur-3xl" />
         
         <div className="max-w-6xl mx-auto px-4 text-center relative z-10">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] text-sm font-medium mb-8">
-            <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] text-xs md:text-sm font-medium mb-6 md:mb-8">
+            <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[var(--accent)] animate-pulse" />
             Colosseum Agent Hackathon
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 leading-tight tracking-tight">
             <span className="text-white">Autonomous</span>
             <br />
             <span className="text-gradient">Staking Vault</span>
           </h1>
 
-          <p className="text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-base md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed px-4">
             Deposit SOL. Let the AI agent stake to quality decentralized validators.
-            <br />
+            <span className="hidden sm:inline"><br /></span>
+            <span className="sm:hidden"> </span>
             <span className="text-[var(--accent)]">Support the little guys.</span> Earn competitive yields.
           </p>
 
-          <div className="flex items-center justify-center gap-4 mb-16">
-            <Link href="/vault" className="btn-primary text-lg px-8 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-10 md:mb-16 px-4">
+            <Link href="/vault" className="btn-primary text-base md:text-lg px-6 md:px-8 py-3 md:py-4 w-full sm:w-auto">
               Start Staking →
             </Link>
-            <Link href="/docs" className="btn-secondary text-lg px-8 py-4">
+            <Link href="/docs" className="btn-secondary text-base md:text-lg px-6 md:px-8 py-3 md:py-4 w-full sm:w-auto">
               Learn More
             </Link>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
-            <div className="p-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="text-3xl md:text-4xl font-bold text-[var(--accent)]">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 max-w-2xl mx-auto">
+            <div className="p-3 sm:p-4 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
+              <div className="text-xl sm:text-2xl md:text-4xl font-bold text-[var(--accent)]">
                 {vaultStats?.totalDeposits.toFixed(1) || "0"}
               </div>
-              <div className="text-sm text-[var(--text-muted)] mt-1">SOL Deposited</div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-[var(--text-muted)] mt-1">SOL Deposited</div>
             </div>
-            <div className="p-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="text-3xl md:text-4xl font-bold text-white">
+            <div className="p-3 sm:p-4 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
+              <div className="text-xl sm:text-2xl md:text-4xl font-bold text-white">
                 {vaultStats?.totalUsers || 0}
               </div>
-              <div className="text-sm text-[var(--text-muted)] mt-1">Depositors</div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-[var(--text-muted)] mt-1">Depositors</div>
             </div>
-            <div className="p-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="text-3xl md:text-4xl font-bold text-[var(--accent-secondary)]">
+            <div className="p-3 sm:p-4 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
+              <div className="text-xl sm:text-2xl md:text-4xl font-bold text-[var(--accent-secondary)]">
                 ~6.3%
               </div>
-              <div className="text-sm text-[var(--text-muted)] mt-1">Expected APY</div>
+              <div className="text-[10px] sm:text-xs md:text-sm text-[var(--text-muted)] mt-1">Expected APY</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-20 border-t border-[var(--border)]">
+      <section className="py-12 md:py-20 border-t border-[var(--border)]">
         <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">How It Works</h2>
-          <p className="text-center text-[var(--text-secondary)] mb-12 max-w-xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4">How It Works</h2>
+          <p className="text-center text-[var(--text-secondary)] mb-8 md:mb-12 max-w-xl mx-auto text-sm md:text-base">
             Autonomous staking in three simple steps
           </p>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
             <div className="p-8 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/30 transition-colors">
               <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center mb-6 text-2xl">
                 💰

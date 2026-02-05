@@ -95,17 +95,17 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Discover Validators</h1>
-          <p className="text-[var(--text-secondary)]">
-            Browse quality Solana validators that meet our criteria. The agent selects from these for optimal staking.
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Discover Validators</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">
+            Browse quality validators that meet our criteria.
           </p>
         </div>
 
-        {/* Criteria Banner */}
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-[var(--accent)]/10 to-transparent border border-[var(--accent)]/20">
+        {/* Criteria Banner - Hidden on mobile, shown on md+ */}
+        <div className="hidden md:block mb-6 p-4 rounded-xl bg-gradient-to-r from-[var(--accent)]/10 to-transparent border border-[var(--accent)]/20">
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span className="text-[var(--accent)] font-semibold">Agent Criteria:</span>
             <span className="px-2 py-1 rounded-md bg-[var(--bg-card)] text-[var(--text-secondary)]">
@@ -124,52 +124,47 @@ export default function DiscoverPage() {
         </div>
 
         {/* Search & Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="space-y-3 mb-6">
           {/* Search */}
-          <div className="flex-1">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or vote account..."
-              className="w-full px-4 py-3 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/20 outline-none text-sm transition-colors"
-            />
-          </div>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search validators..."
+            className="w-full px-3 py-2.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm"
+          />
 
-          {/* Filter pills */}
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Filter pills + Sort */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {[
-              { value: "all", label: "All", count: validators.length },
-              { value: "quality", label: "High Quality", emoji: "⭐" },
-              { value: "small", label: "Small Validators", emoji: "🌱" },
-              { value: "jito", label: "Jito MEV", emoji: "⚡" },
+              { value: "all", label: "All" },
+              { value: "quality", label: "⭐ Quality" },
+              { value: "small", label: "🌱 Small" },
+              { value: "jito", label: "⚡ Jito" },
             ].map(f => (
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value as FilterType)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                   filter === f.value 
-                    ? "bg-[var(--accent)] text-black shadow-lg shadow-[var(--accent)]/20" 
-                    : "bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border)] hover:border-[var(--accent)]/50 hover:text-[var(--text-primary)]"
+                    ? "bg-[var(--accent)] text-black" 
+                    : "bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border)]"
                 }`}
               >
-                {f.emoji && <span className="mr-1">{f.emoji}</span>}
                 {f.label}
               </button>
             ))}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortType)}
+              className="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-xs md:text-sm focus:border-[var(--accent)] outline-none whitespace-nowrap"
+            >
+              <option value="wiz_score">Quality ↓</option>
+              <option value="total_apy">APY ↓</option>
+              <option value="activated_stake">Stake ↑</option>
+              <option value="commission">Comm ↑</option>
+            </select>
           </div>
-
-          {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortType)}
-            className="px-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl text-sm focus:border-[var(--accent)] outline-none cursor-pointer"
-          >
-            <option value="wiz_score">Quality Score ↓</option>
-            <option value="total_apy">APY ↓</option>
-            <option value="activated_stake">Stake ↑</option>
-            <option value="commission">Commission ↑</option>
-          </select>
         </div>
 
         {/* Error State */}
@@ -194,32 +189,31 @@ export default function DiscoverPage() {
 
         {/* Validators Grid */}
         {!loading && !error && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filteredValidators.map((v) => (
               <div 
                 key={v.vote_identity}
-                className="group p-5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all hover:shadow-lg hover:shadow-[var(--accent)]/5"
+                className="group p-3 md:p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--accent)]/50 transition-all"
               >
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent)]/5 flex items-center justify-center text-[var(--accent)] font-bold shrink-0">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent)]/5 flex items-center justify-center text-[var(--accent)] font-bold text-sm shrink-0">
                       {(v.name || "?").charAt(0).toUpperCase()}
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold truncate group-hover:text-[var(--accent)] transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-sm truncate">
                         {v.name || "Unknown"}
                       </h3>
-                      <p className="text-xs text-[var(--text-muted)] font-mono">
-                        {v.vote_identity.slice(0, 8)}...
+                      <p className="text-[10px] text-[var(--text-muted)] font-mono">
+                        {v.vote_identity.slice(0, 6)}...
                       </p>
                     </div>
                   </div>
                   {/* Quality Score */}
-                  <div className={`px-2 py-1 rounded-lg text-xs font-bold ${
+                  <div className={`px-2 py-0.5 rounded text-xs font-bold ${
                     v.wiz_score >= 95 ? "bg-yellow-500/20 text-yellow-400" :
                     v.wiz_score >= 90 ? "bg-[var(--accent)]/20 text-[var(--accent)]" :
-                    v.wiz_score >= 80 ? "bg-blue-500/20 text-blue-400" :
                     "bg-gray-500/20 text-gray-400"
                   }`}>
                     {v.wiz_score.toFixed(0)}
@@ -227,40 +221,40 @@ export default function DiscoverPage() {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
-                    <p className="text-xs text-[var(--text-muted)] mb-1">APY</p>
-                    <p className="text-lg font-bold text-[var(--accent)]">{v.total_apy.toFixed(2)}%</p>
+                <div className="grid grid-cols-4 gap-1.5 md:gap-2">
+                  <div className="p-2 rounded-lg bg-[var(--bg-primary)] text-center">
+                    <p className="text-[10px] text-[var(--text-muted)]">APY</p>
+                    <p className="text-sm font-bold text-[var(--accent)]">{v.total_apy.toFixed(1)}%</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
-                    <p className="text-xs text-[var(--text-muted)] mb-1">Commission</p>
-                    <p className="text-lg font-bold">{v.commission}%</p>
+                  <div className="p-2 rounded-lg bg-[var(--bg-primary)] text-center">
+                    <p className="text-[10px] text-[var(--text-muted)]">Comm</p>
+                    <p className="text-sm font-bold">{v.commission}%</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
-                    <p className="text-xs text-[var(--text-muted)] mb-1">Stake</p>
-                    <p className="text-lg font-bold">{formatStake(v.activated_stake)}</p>
+                  <div className="p-2 rounded-lg bg-[var(--bg-primary)] text-center">
+                    <p className="text-[10px] text-[var(--text-muted)]">Stake</p>
+                    <p className="text-sm font-bold">{formatStake(v.activated_stake)}</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-[var(--bg-primary)]">
-                    <p className="text-xs text-[var(--text-muted)] mb-1">Uptime</p>
-                    <p className="text-lg font-bold">{v.uptime?.toFixed(1) || "99"}%</p>
+                  <div className="p-2 rounded-lg bg-[var(--bg-primary)] text-center">
+                    <p className="text-[10px] text-[var(--text-muted)]">Up</p>
+                    <p className="text-sm font-bold">{v.uptime?.toFixed(0) || "99"}%</p>
                   </div>
                 </div>
 
                 {/* Tags */}
-                <div className="flex items-center gap-2 mt-4">
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                   {v.jito_commission_bps !== undefined && (
-                    <span className="px-2 py-1 text-xs rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                      ⚡ Jito {(v.jito_commission_bps / 100).toFixed(0)}%
+                    <span className="px-1.5 py-0.5 text-[10px] rounded bg-purple-500/10 text-purple-400">
+                      ⚡ Jito
                     </span>
                   )}
                   {v.activated_stake < 100000 && (
-                    <span className="px-2 py-1 text-xs rounded-md bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20">
+                    <span className="px-1.5 py-0.5 text-[10px] rounded bg-[var(--accent)]/10 text-[var(--accent)]">
                       🌱 Small
                     </span>
                   )}
                   {v.name === "Staker Space" && (
-                    <span className="px-2 py-1 text-xs rounded-md bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
-                      ⭐ Our Validator
+                    <span className="px-1.5 py-0.5 text-[10px] rounded bg-yellow-500/10 text-yellow-400">
+                      ⭐ Ours
                     </span>
                   )}
                 </div>

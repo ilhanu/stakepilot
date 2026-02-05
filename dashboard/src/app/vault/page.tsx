@@ -294,39 +294,39 @@ export default function VaultPage() {
             {/* Vault Stats */}
             <div className="lg:col-span-2 space-y-6">
               {/* Vault Overview */}
-              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
-                <h2 className="text-lg font-semibold mb-4">Vault Overview</h2>
-                <div className="grid grid-cols-3 gap-4">
+              <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
+                <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Vault Overview</h2>
+                <div className="grid grid-cols-3 gap-2 md:gap-4">
                   <div>
-                    <div className="text-[var(--text-secondary)] text-sm">Total Deposits</div>
-                    <div className="text-2xl font-bold">{vaultStatus?.totalDeposits.toFixed(2) || "0"} SOL</div>
+                    <div className="text-[var(--text-secondary)] text-xs md:text-sm">Total Deposits</div>
+                    <div className="text-lg md:text-2xl font-bold">{vaultStatus?.totalDeposits.toFixed(2) || "0"} <span className="text-sm md:text-base">SOL</span></div>
                   </div>
                   <div>
-                    <div className="text-[var(--text-secondary)] text-sm">Total Staked</div>
-                    <div className="text-2xl font-bold text-[var(--accent)]">{vaultStatus?.totalStaked.toFixed(2) || "0"} SOL</div>
+                    <div className="text-[var(--text-secondary)] text-xs md:text-sm">Total Staked</div>
+                    <div className="text-lg md:text-2xl font-bold text-[var(--accent)]">{vaultStatus?.totalStaked.toFixed(2) || "0"} <span className="text-sm md:text-base">SOL</span></div>
                   </div>
                   <div>
-                    <div className="text-[var(--text-secondary)] text-sm">Depositors</div>
-                    <div className="text-2xl font-bold">{vaultStatus?.totalUsers || 0}</div>
+                    <div className="text-[var(--text-secondary)] text-xs md:text-sm">Depositors</div>
+                    <div className="text-lg md:text-2xl font-bold">{vaultStatus?.totalUsers || 0}</div>
                   </div>
                 </div>
               </div>
 
               {/* Your Position */}
-              <div className="bg-[var(--bg-card)] rounded-xl p-6 border border-[var(--border)]">
-                <h2 className="text-lg font-semibold mb-4">Your Position</h2>
-                <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
+                <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Your Position</h2>
+                <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4 md:mb-6">
                   <div>
-                    <div className="text-[var(--text-secondary)] text-sm">Wallet Balance</div>
-                    <div className="text-xl font-bold">{walletBalance.toFixed(4)} SOL</div>
+                    <div className="text-[var(--text-secondary)] text-xs md:text-sm">Wallet</div>
+                    <div className="text-base md:text-xl font-bold">{walletBalance.toFixed(2)} <span className="text-xs md:text-sm">SOL</span></div>
                   </div>
                   <div>
-                    <div className="text-[var(--text-secondary)] text-sm">Your Deposit</div>
-                    <div className="text-xl font-bold text-[var(--accent)]">{vaultStatus?.userDeposit.toFixed(4) || "0"} SOL</div>
+                    <div className="text-[var(--text-secondary)] text-xs md:text-sm">Deposited</div>
+                    <div className="text-base md:text-xl font-bold text-[var(--accent)]">{vaultStatus?.userDeposit.toFixed(2) || "0"} <span className="text-xs md:text-sm">SOL</span></div>
                   </div>
                   <div>
-                    <div className="text-[var(--text-secondary)] text-sm">Pending Unstake</div>
-                    <div className="text-xl font-bold text-[var(--coral)]">{vaultStatus?.userPendingUnstake.toFixed(4) || "0"} SOL</div>
+                    <div className="text-[var(--text-secondary)] text-xs md:text-sm">Pending</div>
+                    <div className="text-base md:text-xl font-bold text-[var(--coral)]">{vaultStatus?.userPendingUnstake.toFixed(2) || "0"} <span className="text-xs md:text-sm">SOL</span></div>
                   </div>
                 </div>
 
@@ -343,22 +343,22 @@ export default function VaultPage() {
                 )}
 
                 {/* Deposit/Withdraw Forms */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Deposit SOL</label>
+                    <label className="block text-xs md:text-sm text-[var(--text-secondary)] mb-2">Deposit SOL</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
                         value={depositAmount}
                         onChange={(e) => setDepositAmount(e.target.value)}
                         placeholder="0.00"
-                        className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--accent)]"
+                        className="flex-1 min-w-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
                         disabled={txPending}
                       />
                       <button
                         onClick={handleDeposit}
                         disabled={txPending || !depositAmount}
-                        className="px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition"
+                        className="px-3 md:px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium text-sm text-black transition whitespace-nowrap"
                       >
                         {txPending ? "..." : "Deposit"}
                       </button>
@@ -367,33 +367,33 @@ export default function VaultPage() {
                       onClick={() => setDepositAmount(walletBalance.toFixed(4))}
                       className="mt-1 text-xs text-[var(--accent)] hover:text-[var(--accent-hover)]"
                     >
-                      Max: {walletBalance.toFixed(4)} SOL
+                      Max: {walletBalance.toFixed(2)} SOL
                     </button>
                   </div>
                   <div>
-                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Request Unstake</label>
+                    <label className="block text-xs md:text-sm text-[var(--text-secondary)] mb-2">Request Unstake</label>
                     <div className="flex gap-2">
                       <input
                         type="number"
                         value={withdrawAmount}
                         onChange={(e) => setWithdrawAmount(e.target.value)}
                         placeholder="0.00"
-                        className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-4 py-2 focus:outline-none focus:border-[var(--coral)]"
+                        className="flex-1 min-w-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--coral)]"
                         disabled={txPending}
                       />
                       <button
                         onClick={handleRequestUnstake}
                         disabled={txPending || !withdrawAmount}
-                        className="px-4 py-2 bg-[var(--coral)] hover:bg-[var(--coral)] disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition"
+                        className="px-3 md:px-4 py-2 bg-[var(--coral)] hover:opacity-90 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium text-sm text-white transition whitespace-nowrap"
                       >
                         {txPending ? "..." : "Unstake"}
                       </button>
                     </div>
                     <button
                       onClick={() => setWithdrawAmount(vaultStatus?.userDeposit.toFixed(4) || "0")}
-                      className="mt-1 text-xs text-[var(--coral)] hover:text-yellow-300"
+                      className="mt-1 text-xs text-[var(--coral)] hover:opacity-80"
                     >
-                      Max: {vaultStatus?.userDeposit.toFixed(4) || "0"} SOL
+                      Max: {vaultStatus?.userDeposit.toFixed(2) || "0"} SOL
                     </button>
                   </div>
                 </div>
