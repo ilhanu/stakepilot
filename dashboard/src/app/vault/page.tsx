@@ -45,7 +45,8 @@ interface Recommendation {
   validatorName: string;
   allocatedAmount: number;
   expectedApy: number;
-  wizScore: number;
+  score: number;
+  wizScore?: number;
 }
 
 export default function VaultPage() {
@@ -442,8 +443,8 @@ export default function VaultPage() {
                         </div>
                       </div>
                       <div className="text-right shrink-0 ml-2">
-                        <div className="text-[var(--accent)] font-medium text-sm md:text-base">{rec.expectedApy.toFixed(1)}%</div>
-                        <div className="text-[10px] md:text-xs text-[var(--text-secondary)]">Score: {rec.wizScore.toFixed(0)}</div>
+                        <div className="text-[var(--accent)] font-medium text-sm md:text-base">{(rec.expectedApy ?? 0).toFixed(1)}%</div>
+                        <div className="text-[10px] md:text-xs text-[var(--text-secondary)]">Score: {(rec.score ?? rec.wizScore ?? 0).toFixed(0)}</div>
                       </div>
                     </div>
                   ))}
