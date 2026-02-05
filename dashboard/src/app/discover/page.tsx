@@ -34,12 +34,23 @@ export default function DiscoverPage() {
     setError(null);
     try {
       // Use StakeWiz API via our recommend endpoint for consistent data
-      const res = await fetch("/api/agent/recommend?balance=1000000&maxValidators=100");
+      const res = await fetch("/api/agent/recommend?balance=10000000&maxValidators=100");
       if (!res.ok) throw new Error("Failed to fetch validators");
       
       const data = await res.json();
-      if (data.success && data.validators) {
-        setValidators(data.validators);
+      if (data.success && data.decision?.recommendations) {
+        // Map recommendations to our validator format
+        const mapped = data.decision.recommendations.map((r: any) => ({
+          name: r.validatorName,
+          vote_identity: r.validator,
+          activated_stake: r.stake,
+          total_apy: r.expectedApy,
+          wiz_score: r.wizScore,
+          commission: r.commission || 0,
+          jito_commission_bps: r.mevCommission ? r.mevCommission * 100 : undefined,
+          uptime: 99.5, // Default high uptime since they passed filters
+        }));
+        setValidators(mapped);
       } else {
         throw new Error("Invalid response format");
       }
