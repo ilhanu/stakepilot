@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   Connection,
-  Keypair,
   PublicKey,
-  Transaction,
-  TransactionInstruction,
   LAMPORTS_PER_SOL,
-  StakeProgram,
-  SYSVAR_CLOCK_PUBKEY,
-  SYSVAR_RENT_PUBKEY,
-  SYSVAR_STAKE_HISTORY_PUBKEY,
 } from "@solana/web3.js";
 import { getTopValidators } from "@/lib/stakewiz";
 
@@ -19,14 +12,13 @@ import { getTopValidators } from "@/lib/stakewiz";
  * This endpoint is called by a cron job to execute staking operations.
  * It reads vault balance and stakes to qualified validators.
  * 
- * Security: Only the configured agent wallet can execute.
+ * Security: Only Vercel cron or valid Bearer token can execute.
  */
 
 const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 const VAULT_PDA = new PublicKey("HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u");
 const AGENT_PUBKEY = new PublicKey("Fc8gNpU62evbZBdiu9TN1isD1Zx3HDPZbBAhDAdmqthS");
 const RPC_URL = "https://api.devnet.solana.com";
-const STAKE_CONFIG = new PublicKey("StakeConfig11111111111111111111111111111111");
 
 // Minimum SOL to keep in vault for rent/operations
 const MIN_VAULT_BALANCE = 0.1 * LAMPORTS_PER_SOL;
@@ -40,14 +32,29 @@ interface ExecutionResult {
   stakesCreated: number;
   errors: string[];
   transactions: string[];
+  stakingPlan?: Array<{
+    validator: string;
+    validatorName: string;
+    amount: number;
+    expectedApy: number;
+  }>;
+}
+
+function isAuthorized(request: NextRequest): boolean {
+  // Check Vercel cron header
+  const vercelCronHeader = request.headers.get("x-vercel-cron");
+  if (vercelCronHeader === "true") return true;
+
+  // Check Bearer token
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true;
+
+  return false;
 }
 
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  // Verify cron secret
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -63,12 +70,26 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// GET handles both Vercel cron (executes) and status checks
 export async function GET(request: NextRequest) {
-  // GET endpoint for status check
+  // Vercel cron calls GET with x-vercel-cron header
+  if (isAuthorized(request)) {
+    try {
+      const result = await executeStaking();
+      return NextResponse.json(result);
+    } catch (error: any) {
+      console.error("Agent execution failed:", error);
+      return NextResponse.json(
+        { error: error.message || "Execution failed" },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Regular GET = status check (public)
   try {
     const connection = new Connection(RPC_URL, "confirmed");
     
-    // Get vault info
     const vaultAccount = await connection.getAccountInfo(VAULT_PDA);
     if (!vaultAccount) {
       return NextResponse.json({ error: "Vault not found" }, { status: 404 });
@@ -82,7 +103,6 @@ export async function GET(request: NextRequest) {
     const totalStaked = Number(vaultData.readBigUInt64LE(72)) / LAMPORTS_PER_SOL;
     const totalUsers = Number(vaultData.readBigUInt64LE(80));
 
-    // Get top validators
     const validators = await getTopValidators(10);
 
     return NextResponse.json({
@@ -115,8 +135,6 @@ export async function GET(request: NextRequest) {
 
 async function executeStaking(): Promise<ExecutionResult> {
   const connection = new Connection(RPC_URL, "confirmed");
-  const errors: string[] = [];
-  const transactions: string[] = [];
 
   // Get vault balance
   const vaultAccount = await connection.getAccountInfo(VAULT_PDA);
@@ -164,8 +182,7 @@ async function executeStaking(): Promise<ExecutionResult> {
     };
   }
 
-  // Note: In production, we'd load the agent keypair and execute the transactions
-  // For now, we return what would be staked
+  // Build staking plan
   const stakingPlan = validators.map((v) => ({
     validator: v.vote_identity,
     validatorName: v.name,
@@ -173,14 +190,15 @@ async function executeStaking(): Promise<ExecutionResult> {
     expectedApy: v.total_apy,
   }));
 
+  // TODO: Load agent keypair from AGENT_PRIVATE_KEY and execute actual staking
+  // For now, return the plan
   return {
     success: true,
     vaultBalance: vaultBalance / LAMPORTS_PER_SOL,
     availableToStake: availableToStake / LAMPORTS_PER_SOL,
-    stakesCreated: 0, // Would be actual count after execution
-    errors: ["Agent keypair not loaded - staking plan generated but not executed"],
+    stakesCreated: 0,
+    errors: ["Agent keypair not configured - staking plan generated but not executed"],
     transactions: [],
-    // @ts-ignore
     stakingPlan,
   };
 }
