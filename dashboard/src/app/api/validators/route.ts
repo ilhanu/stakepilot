@@ -5,19 +5,15 @@ import {
   getQualifiedValidators,
   getTopValidators,
   getValidator,
-  STAKER_SPACE_VALIDATORS,
-  Network,
+  STAKER_SPACE_VALIDATOR,
   formatValidator,
   estimateApy,
 } from "@/lib/validators";
 
 /**
- * Validators API
- * 
- * Fetch validator data from validators.app + Solana RPC
+ * Validators API - TESTNET ONLY
  * 
  * Query params:
- * - network: "mainnet" | "testnet" (default: testnet)
  * - filter: "all" | "qualified" | "top" (default: qualified)
  * - limit: max results (default: 50 for all, 20 for top)
  * - vote: specific vote account to fetch
@@ -27,24 +23,15 @@ import {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   
-  const network = (searchParams.get("network") || "testnet") as Network;
   const filter = searchParams.get("filter") || "qualified";
   const limit = parseInt(searchParams.get("limit") || (filter === "top" ? "20" : "50"));
   const vote = searchParams.get("vote");
   const search = searchParams.get("search");
 
-  // Validate network
-  if (network !== "mainnet" && network !== "testnet") {
-    return NextResponse.json(
-      { error: "Invalid network. Use 'mainnet' or 'testnet'" },
-      { status: 400 }
-    );
-  }
-
   try {
     // Single validator lookup
     if (vote) {
-      const validator = await getValidator(network, vote);
+      const validator = await getValidator(vote);
       if (!validator) {
         return NextResponse.json(
           { error: "Validator not found" },
@@ -59,7 +46,7 @@ export async function GET(request: NextRequest) {
           ...formatValidator(validator),
           estimatedApy: estimateApy(validator),
         },
-        network,
+        network: "testnet",
       });
     }
 
@@ -67,14 +54,14 @@ export async function GET(request: NextRequest) {
     let validators;
     switch (filter) {
       case "all":
-        validators = (await getAllValidators(network)).slice(0, limit);
+        validators = (await getAllValidators()).slice(0, limit);
         break;
       case "top":
-        validators = await getTopValidators(network, limit);
+        validators = await getTopValidators(limit);
         break;
       case "qualified":
       default:
-        validators = (await getQualifiedValidators(network)).slice(0, limit);
+        validators = (await getQualifiedValidators()).slice(0, limit);
         break;
     }
 
@@ -110,10 +97,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      network,
+      network: "testnet",
       filter,
       count: formattedValidators.length,
-      stakerSpaceValidator: STAKER_SPACE_VALIDATORS[network],
+      stakerSpaceValidator: STAKER_SPACE_VALIDATOR,
       validators: formattedValidators,
     });
   } catch (error) {

@@ -1,11 +1,11 @@
 /**
- * Unified Validator Service
+ * Unified Validator Service - TESTNET ONLY
  * 
  * Combines data from:
  * - validators.app API (scores, MEV, location, metadata)
  * - Solana RPC (real-time stake, commission, status)
  * 
- * Use this as the main entry point for validator data
+ * Hardcoded to testnet for hackathon demo
  */
 
 import {
@@ -18,21 +18,15 @@ import {
 } from "./validators-app";
 
 import {
-  fetchValidatorsRpc,
   getValidatorRpc,
   RpcValidator,
 } from "./validators-rpc";
 
-export type Network = "mainnet" | "testnet";
-
 // Re-export types
 export type { NormalizedValidator, FilterCriteria, RpcValidator };
 
-// Staker Space validators (always include)
-export const STAKER_SPACE_VALIDATORS: Record<Network, string> = {
-  mainnet: "49DJjUX3cwFvaZD5rCAwubiz7qdRWDez9xmB381XdHru",
-  testnet: "3S4jVg5p1rw7t8MS5UtjhnChmo6ABdmh3nyXTVzAyP9f",
-};
+// Staker Space testnet validator (always include)
+export const STAKER_SPACE_VALIDATOR = "3S4jVg5p1rw7t8MS5UtjhnChmo6ABdmh3nyXTVzAyP9f";
 
 // Combined validator with both sources
 export interface EnrichedValidator extends NormalizedValidator {
@@ -44,31 +38,27 @@ export interface EnrichedValidator extends NormalizedValidator {
 }
 
 /**
- * Get all validators from validators.app
- * Primary data source for comprehensive validator info
+ * Get all validators from validators.app (testnet)
  */
-export async function getAllValidators(network: Network): Promise<NormalizedValidator[]> {
-  return getValidatorsApp(network);
+export async function getAllValidators(): Promise<NormalizedValidator[]> {
+  return getValidatorsApp("testnet");
 }
 
 /**
  * Get qualified validators matching StakePilot criteria
- * Always includes Staker Space validator for the network
+ * Always includes Staker Space validator
  */
 export async function getQualifiedValidators(
-  network: Network,
   criteria: Partial<FilterCriteria> = {}
 ): Promise<NormalizedValidator[]> {
-  const stakerSpaceVote = STAKER_SPACE_VALIDATORS[network];
-  
-  return getQualifiedValidatorsApp(network, {
+  return getQualifiedValidatorsApp("testnet", {
     maxStake: 1_000_000,
     maxCommission: 5,
     maxMevCommission: 10,
     minUptime: 95,
     ...criteria,
     alwaysInclude: [
-      stakerSpaceVote,
+      STAKER_SPACE_VALIDATOR,
       ...(criteria.alwaysInclude || []),
     ],
   });
@@ -77,17 +67,13 @@ export async function getQualifiedValidators(
 /**
  * Get top validators ranked by StakePilot scoring
  */
-export async function getTopValidators(
-  network: Network,
-  limit = 20
-): Promise<NormalizedValidator[]> {
-  const stakerSpaceVote = STAKER_SPACE_VALIDATORS[network];
-  const qualified = await getQualifiedValidators(network);
+export async function getTopValidators(limit = 20): Promise<NormalizedValidator[]> {
+  const qualified = await getQualifiedValidators();
   
   // Score and sort
   const scored = qualified.map((v) => ({
     validator: v,
-    score: scoreValidatorApp(v, [stakerSpaceVote]),
+    score: scoreValidatorApp(v, [STAKER_SPACE_VALIDATOR]),
   }));
   
   scored.sort((a, b) => b.score - a.score);
@@ -98,12 +84,9 @@ export async function getTopValidators(
 /**
  * Get a single validator enriched with RPC data
  */
-export async function getValidator(
-  network: Network,
-  voteAccount: string
-): Promise<EnrichedValidator | null> {
+export async function getValidator(voteAccount: string): Promise<EnrichedValidator | null> {
   // Try validators.app first (more data)
-  const appValidator = await getValidatorApp(network, voteAccount);
+  const appValidator = await getValidatorApp("testnet", voteAccount);
   
   if (!appValidator) {
     return null;
@@ -111,7 +94,7 @@ export async function getValidator(
   
   // Enrich with RPC data
   try {
-    const rpcValidator = await getValidatorRpc(network, voteAccount);
+    const rpcValidator = await getValidatorRpc("testnet", voteAccount);
     if (rpcValidator) {
       return {
         ...appValidator,
@@ -134,21 +117,18 @@ export async function getValidator(
 }
 
 /**
- * Get Staker Space validator for network
+ * Get Staker Space validator
  */
-export async function getStakerSpaceValidator(
-  network: Network
-): Promise<NormalizedValidator | null> {
-  return getValidator(network, STAKER_SPACE_VALIDATORS[network]);
+export async function getStakerSpaceValidator(): Promise<NormalizedValidator | null> {
+  return getValidator(STAKER_SPACE_VALIDATOR);
 }
 
 /**
  * Calculate estimated APY for a validator
- * Note: APY varies by network and epoch
  */
 export function estimateApy(
   validator: NormalizedValidator,
-  baseApy = 6.5 // Network average ~6.5% on mainnet
+  baseApy = 6.5
 ): number {
   // Base APY after commission
   const stakingApy = baseApy * (1 - validator.commission / 100);
@@ -156,7 +136,7 @@ export function estimateApy(
   // MEV APY (rough estimate: 0.5-1% extra for Jito)
   let mevApy = 0;
   if (validator.isJito && validator.mevCommission !== null) {
-    const baseMevApy = 0.8; // ~0.8% average MEV APY
+    const baseMevApy = 0.8;
     mevApy = baseMevApy * (1 - validator.mevCommission / 100);
   }
   
@@ -202,7 +182,6 @@ export interface StakingRecommendation {
 }
 
 export interface StakingDecision {
-  network: Network;
   recommendations: StakingRecommendation[];
   totalToStake: number;
   reasoning: string;
@@ -211,21 +190,19 @@ export interface StakingDecision {
 }
 
 export async function generateStakingDecision(
-  network: Network,
   amountToStake: number,
   maxValidators = 10
 ): Promise<StakingDecision> {
-  const stakerSpaceVote = STAKER_SPACE_VALIDATORS[network];
   const reasoningParts: string[] = [];
   
   // Get qualified validators
-  const qualified = await getQualifiedValidators(network);
-  reasoningParts.push(`Found ${qualified.length} qualified validators on ${network}`);
+  const qualified = await getQualifiedValidators();
+  reasoningParts.push(`Found ${qualified.length} qualified validators`);
   
   // Score all validators
   const scored = qualified.map((v) => ({
     validator: v,
-    score: scoreValidatorApp(v, [stakerSpaceVote]),
+    score: scoreValidatorApp(v, [STAKER_SPACE_VALIDATOR]),
   }));
   
   // Sort by score (highest first)
@@ -237,7 +214,7 @@ export async function generateStakingDecision(
   
   // Check if Staker Space is included
   const stakerSpaceIncluded = selected.some(
-    (s) => s.validator.voteAccount.toLowerCase() === stakerSpaceVote.toLowerCase()
+    (s) => s.validator.voteAccount.toLowerCase() === STAKER_SPACE_VALIDATOR.toLowerCase()
   );
   
   // Distribute stake evenly
@@ -264,7 +241,6 @@ export async function generateStakingDecision(
   }
   
   return {
-    network,
     recommendations,
     totalToStake: amountToStake,
     reasoning: reasoningParts.join(" → "),

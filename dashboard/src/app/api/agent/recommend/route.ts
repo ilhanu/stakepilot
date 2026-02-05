@@ -3,17 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   generateStakingDecision,
   getQualifiedValidators,
-  STAKER_SPACE_VALIDATORS,
-  Network,
+  STAKER_SPACE_VALIDATOR,
 } from "@/lib/validators";
 
 /**
- * Agent Recommendation API
+ * Agent Recommendation API - TESTNET ONLY
  * 
  * Generates staking recommendations for StakePilot vault.
- * Uses validators.app API for comprehensive validator data.
- * 
- * Supports both mainnet and testnet networks.
  * 
  * Criteria:
  * - Stake < 1M SOL (decentralization)
@@ -23,7 +19,6 @@ import {
  * - Always includes Staker Space validator
  * 
  * Query params:
- * - network: "mainnet" | "testnet" (default: testnet for demo)
  * - balance: amount to stake in SOL (default: 100)
  * - maxValidators: max validators to recommend (default: 10)
  */
@@ -31,25 +26,16 @@ import {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   
-  const network = (searchParams.get("network") || "testnet") as Network;
   const balance = parseFloat(searchParams.get("balance") || "100");
   const maxValidators = parseInt(searchParams.get("maxValidators") || "10");
 
-  // Validate network
-  if (network !== "mainnet" && network !== "testnet") {
-    return NextResponse.json(
-      { error: "Invalid network. Use 'mainnet' or 'testnet'" },
-      { status: 400 }
-    );
-  }
-
   try {
-    const decision = await generateStakingDecision(network, balance, maxValidators);
+    const decision = await generateStakingDecision(balance, maxValidators);
     
     return NextResponse.json({
       success: true,
+      network: "testnet",
       decision: {
-        network: decision.network,
         recommendations: decision.recommendations.map(r => ({
           validator: r.validator.voteAccount,
           validatorName: r.validator.name,
@@ -69,9 +55,9 @@ export async function GET(request: NextRequest) {
         totalToStake: decision.totalToStake,
         reasoning: decision.reasoning,
         stakerSpaceIncluded: decision.stakerSpaceIncluded,
-        stakerSpaceValidator: STAKER_SPACE_VALIDATORS[network],
+        stakerSpaceValidator: STAKER_SPACE_VALIDATOR,
       },
-      qualifiedValidators: (await getQualifiedValidators(network)).length,
+      qualifiedValidators: (await getQualifiedValidators()).length,
       timestamp: decision.timestamp,
     });
   } catch (error) {
@@ -86,27 +72,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    const {
-      network = "testnet",
-      balance = 100,
-      maxValidators = 10,
-    } = body;
+    const { balance = 100, maxValidators = 10 } = body;
 
-    // Validate network
-    if (network !== "mainnet" && network !== "testnet") {
-      return NextResponse.json(
-        { error: "Invalid network. Use 'mainnet' or 'testnet'" },
-        { status: 400 }
-      );
-    }
-
-    const decision = await generateStakingDecision(network as Network, balance, maxValidators);
+    const decision = await generateStakingDecision(balance, maxValidators);
     
     return NextResponse.json({
       success: true,
+      network: "testnet",
       decision: {
-        network: decision.network,
         recommendations: decision.recommendations.map(r => ({
           validator: r.validator.voteAccount,
           validatorName: r.validator.name,
@@ -126,9 +99,9 @@ export async function POST(request: NextRequest) {
         totalToStake: decision.totalToStake,
         reasoning: decision.reasoning,
         stakerSpaceIncluded: decision.stakerSpaceIncluded,
-        stakerSpaceValidator: STAKER_SPACE_VALIDATORS[network as Network],
+        stakerSpaceValidator: STAKER_SPACE_VALIDATOR,
       },
-      qualifiedValidators: (await getQualifiedValidators(network as Network)).length,
+      qualifiedValidators: (await getQualifiedValidators()).length,
       timestamp: decision.timestamp,
     });
   } catch (error) {
