@@ -1,24 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFilteredValidators } from "@/lib/validators-app";
+import { getQualifiedValidators, scoreValidator, calculateNetApy, StakeWizValidator } from "@/lib/stakewiz";
 
 /**
  * Agent Recommendation API
  * 
- * Generates staking recommendations based on user's strategy parameters
- * and current validator data from validators.app (real data!)
+ * Generates staking recommendations for the Staker Space vault.
+ * Uses StakeWiz data and our scoring algorithm.
+ * 
+ * Criteria:
+ * - Stake < 1M SOL (decentralization)
+ * - Commission ≤ 5%
+ * - MEV Commission ≤ 10%
+ * - Uptime > 95%
+ * - Always includes Staker Space validator
  */
 
-interface ValidatorData {
-  voteAccount: string;
-  name: string;
-  netApy: number;
-  commission: number;
-  activatedStake: number;
-  delinquent: boolean;
-  datacenterConcentration: number;
-  jito: boolean;
-  qualityTier: string;
-}
+const STAKER_SPACE_VOTE = "49DJjUX3cwFvaZD5rCAwubiz7qdRWDez9xmB381XdHru";
 
 interface Recommendation {
   validator: string;
@@ -26,167 +23,98 @@ interface Recommendation {
   allocatedAmount: number;
   reason: string;
   expectedApy: number;
-  qualityTier: string;
+  wizScore: number;
+  stake: number;
+  commission: number;
+  mevCommission: number | null;
 }
 
 interface StakingDecision {
   recommendations: Recommendation[];
   totalToStake: number;
-  strategyUsed: {
-    riskTolerance: string;
-    targetApy: number;
-    maxValidators: number;
-    preferDecentralization: boolean;
-  };
   reasoning: string;
+  stakerSpaceIncluded: boolean;
 }
 
-// Fetch validator data from validators.app
-async function fetchValidators(): Promise<ValidatorData[]> {
-  try {
-    const validators = await getFilteredValidators({
-      excludeDelinquent: true,
-    });
-    
-    return validators.map((v) => ({
-      voteAccount: v.vote_account,
-      name: v.name || "Unknown",
-      netApy: v.netTotalApy / 100, // Convert from percent to decimal
-      commission: v.commission || 10,
-      activatedStake: v.stakeSol || 0, // Already in SOL
-      delinquent: v.delinquent || false,
-      datacenterConcentration: 0.05, // Default - validators.app doesn't have this
-      jito: v.jito || false,
-      qualityTier: v.qualityTier || "Unknown",
-    }));
-  } catch (error) {
-    console.error("Failed to fetch validators:", error);
-    return [];
-  }
-}
-
-// Core algorithm: generate staking decision
 function generateStakingDecision(
-  strategy: {
-    riskTolerance: string;
-    targetApy: number;
-    maxValidators: number;
-    preferDecentralization: boolean;
-  },
-  availableBalance: number,
-  validators: ValidatorData[]
+  validators: StakeWizValidator[],
+  amountToStake: number,
+  maxValidators: number
 ): StakingDecision {
-  const recommendations: Recommendation[] = [];
-  let reasoningParts: string[] = [];
+  const reasoningParts: string[] = [];
   
-  // Step 1: Already filtered delinquent in fetch
-  let eligible = validators.filter(v => !v.delinquent);
-  reasoningParts.push(`Starting with ${eligible.length} active validators`);
+  // Score all validators
+  const scored = validators.map((v) => ({
+    validator: v,
+    score: scoreValidator(v),
+    netApy: calculateNetApy(v),
+  }));
   
-  // Step 2: Apply risk tolerance filter (by stake size)
-  const riskFilters: Record<string, number> = {
-    Low: 1_000_000,    // >1M SOL stake
-    Medium: 100_000,   // >100K SOL stake  
-    High: 0,           // No filter
-  };
+  // Sort by score (highest first)
+  scored.sort((a, b) => b.score - a.score);
+  reasoningParts.push(`Scored ${scored.length} qualified validators`);
   
-  const minStake = riskFilters[strategy.riskTolerance] || 100_000;
-  const beforeRisk = eligible.length;
-  eligible = eligible.filter(v => v.activatedStake >= minStake);
-  reasoningParts.push(`Risk filter (${strategy.riskTolerance}): ${eligible.length}/${beforeRisk} with ≥${(minStake/1000).toFixed(0)}K SOL`);
+  // Select top N
+  const selected = scored.slice(0, maxValidators);
+  reasoningParts.push(`Selected top ${selected.length} by score`);
   
-  // Step 3: Prefer Jito validators for MEV rewards
-  const jitoValidators = eligible.filter(v => v.jito);
-  if (jitoValidators.length >= strategy.maxValidators) {
-    eligible = jitoValidators;
-    reasoningParts.push(`Jito filter: ${eligible.length} MEV-enabled validators`);
+  // Check if Staker Space is included
+  const stakerSpaceIncluded = selected.some(
+    (s) => s.validator.vote_identity === STAKER_SPACE_VOTE
+  );
+  
+  // Distribute stake evenly
+  const amountPerValidator = amountToStake / selected.length;
+  
+  const recommendations: Recommendation[] = selected.map((s) => ({
+    validator: s.validator.vote_identity,
+    validatorName: s.validator.name || "Unknown",
+    allocatedAmount: amountPerValidator,
+    reason: `Score: ${s.score.toFixed(0)}, APY: ${s.netApy.toFixed(2)}%, Stake: ${(s.validator.activated_stake / 1000).toFixed(0)}K SOL`,
+    expectedApy: s.netApy,
+    wizScore: s.validator.wiz_score,
+    stake: s.validator.activated_stake,
+    commission: s.validator.commission,
+    mevCommission: s.validator.is_jito ? s.validator.jito_commission_bps / 100 : null,
+  }));
+  
+  const avgApy = selected.reduce((sum, s) => sum + s.netApy, 0) / selected.length;
+  reasoningParts.push(`Average expected APY: ${avgApy.toFixed(2)}%`);
+  
+  if (stakerSpaceIncluded) {
+    reasoningParts.push("✓ Staker Space included");
   }
-  
-  // Step 4: Sort by net APY (highest first)
-  eligible.sort((a, b) => b.netApy - a.netApy);
-  
-  // Step 5: Filter by target APY (allow 20% tolerance for flexibility)
-  const targetApyDecimal = strategy.targetApy / 10000; // basis points to decimal
-  const minAcceptableApy = targetApyDecimal * 0.8; // 20% tolerance
-  const beforeApy = eligible.length;
-  eligible = eligible.filter(v => v.netApy >= minAcceptableApy);
-  reasoningParts.push(`APY filter: ${eligible.length}/${beforeApy} with ≥${(minAcceptableApy * 100).toFixed(1)}% (target: ${(targetApyDecimal * 100).toFixed(1)}%)`);
-  
-  // Step 6: Select top N validators
-  const selected = eligible.slice(0, strategy.maxValidators);
-  reasoningParts.push(`Selected top ${selected.length} validators`);
-  
-  if (selected.length === 0) {
-    return {
-      recommendations: [],
-      totalToStake: 0,
-      strategyUsed: strategy,
-      reasoning: `No validators matched criteria. Tried: min stake ${(minStake/1000).toFixed(0)}K SOL, min APY ${(minAcceptableApy * 100).toFixed(1)}%. Consider lowering target APY or using High risk tolerance.`,
-    };
-  }
-  
-  // Step 7: Distribute stake evenly
-  const amountPerValidator = availableBalance / selected.length;
-  
-  for (const validator of selected) {
-    recommendations.push({
-      validator: validator.voteAccount,
-      validatorName: validator.name,
-      allocatedAmount: amountPerValidator,
-      reason: `APY: ${(validator.netApy * 100).toFixed(2)}%, Commission: ${validator.commission}%, Stake: ${(validator.activatedStake / 1e6).toFixed(2)}M SOL${validator.jito ? ", Jito ✓" : ""}`,
-      expectedApy: validator.netApy * 100,
-      qualityTier: validator.qualityTier,
-    });
-  }
-  
-  const totalToStake = amountPerValidator * selected.length;
-  const avgApy = selected.reduce((sum, v) => sum + v.netApy, 0) / selected.length;
-  
-  reasoningParts.push(`Avg expected APY: ${(avgApy * 100).toFixed(2)}%`);
   
   return {
     recommendations,
-    totalToStake,
-    strategyUsed: strategy,
+    totalToStake: amountToStake,
     reasoning: reasoningParts.join(" → "),
+    stakerSpaceIncluded,
   };
 }
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   
-  // Parse strategy parameters from query
-  const riskTolerance = searchParams.get("riskTolerance") || "Medium";
-  const targetApy = parseInt(searchParams.get("targetApy") || "700"); // basis points (7%)
-  const maxValidators = parseInt(searchParams.get("maxValidators") || "5");
-  const preferDecentralization = searchParams.get("preferDecentralization") !== "false";
-  const balance = parseFloat(searchParams.get("balance") || "100"); // SOL
-  
-  const strategy = {
-    riskTolerance,
-    targetApy,
-    maxValidators,
-    preferDecentralization,
-  };
-  
+  const balance = parseFloat(searchParams.get("balance") || "100");
+  const maxValidators = parseInt(searchParams.get("maxValidators") || "10");
+
   try {
-    // Fetch validator data
-    const validators = await fetchValidators();
+    const validators = await getQualifiedValidators();
     
     if (validators.length === 0) {
       return NextResponse.json(
-        { error: "Failed to fetch validator data" },
+        { error: "No qualified validators found" },
         { status: 500 }
       );
     }
     
-    // Generate staking decision
-    const decision = generateStakingDecision(strategy, balance, validators);
+    const decision = generateStakingDecision(validators, balance, maxValidators);
     
     return NextResponse.json({
       success: true,
       decision,
-      validatorsAnalyzed: validators.length,
+      qualifiedValidators: validators.length,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -203,37 +131,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     const {
-      riskTolerance = "Medium",
-      targetApy = 700, // 7% default
-      maxValidators = 5,
-      preferDecentralization = true,
       balance = 100,
+      maxValidators = 10,
     } = body;
-    
-    const strategy = {
-      riskTolerance,
-      targetApy,
-      maxValidators,
-      preferDecentralization,
-    };
-    
-    // Fetch validator data
-    const validators = await fetchValidators();
+
+    const validators = await getQualifiedValidators();
     
     if (validators.length === 0) {
       return NextResponse.json(
-        { error: "Failed to fetch validator data" },
+        { error: "No qualified validators found" },
         { status: 500 }
       );
     }
     
-    // Generate staking decision
-    const decision = generateStakingDecision(strategy, balance, validators);
+    const decision = generateStakingDecision(validators, balance, maxValidators);
     
     return NextResponse.json({
       success: true,
       decision,
-      validatorsAnalyzed: validators.length,
+      qualifiedValidators: validators.length,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
