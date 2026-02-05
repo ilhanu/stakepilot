@@ -467,7 +467,7 @@ export default function DashboardPage() {
                             <div className="flex items-center justify-between gap-2">
                               <p className="font-medium text-sm">{activity.summary}</p>
                               <a
-                                href={`https://solscan.io/tx/${activity.txSignature}?cluster=devnet`}
+                                href={`https://solscan.io/tx/${activity.txSignature}?cluster=testnet`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-[var(--accent)] hover:underline shrink-0"

@@ -502,7 +502,7 @@ export default function VaultPage() {
                   <div>
                     <div className="text-[var(--text-secondary)]">Vault Address</div>
                     <a
-                      href={`https://explorer.solana.com/address/${VAULT_PDA.toBase58()}?cluster=devnet`}
+                      href={`https://explorer.solana.com/address/${VAULT_PDA.toBase58()}?cluster=testnet`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono text-[var(--accent)] hover:underline break-all text-[11px] md:text-xs"
@@ -513,7 +513,7 @@ export default function VaultPage() {
                   <div>
                     <div className="text-[var(--text-secondary)]">Program</div>
                     <a
-                      href={`https://explorer.solana.com/address/${PROGRAM_ID.toBase58()}?cluster=devnet`}
+                      href={`https://explorer.solana.com/address/${PROGRAM_ID.toBase58()}?cluster=testnet`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono text-[var(--accent)] hover:underline break-all text-[11px] md:text-xs"

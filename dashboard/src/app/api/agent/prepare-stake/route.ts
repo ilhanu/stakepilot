@@ -18,7 +18,7 @@ import {
   Keypair,
 } from "@solana/web3.js";
 
-const RPC_URL = process.env.HELIUS_RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
+const RPC_URL = process.env.HELIUS_RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || "https://api.testnet.solana.com";
 
 interface PrepareStakeRequest {
   wallet: string;           // User's wallet (payer, stake authority, withdraw authority)

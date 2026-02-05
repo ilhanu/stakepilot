@@ -16,8 +16,8 @@ import {
 // Import wallet adapter CSS
 import "@solana/wallet-adapter-react-ui/styles.css";
 
-// Using devnet for vault operations (program deployed to devnet)
-const RPC_URL = "https://api.devnet.solana.com";
+// Testnet for hackathon demo
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://api.testnet.solana.com";
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);

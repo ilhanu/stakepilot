@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 const VAULT_PDA = new PublicKey("HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u");
 const AGENT_PUBKEY = new PublicKey("By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny");
-const RPC_URL = process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com";
+const RPC_URL = process.env.SOLANA_RPC_URL || "https://api.testnet.solana.com";
 
 // Minimum SOL to keep for rent
 const MIN_VAULT_BALANCE = 0.1;
@@ -49,7 +49,7 @@ export async function GET() {
       agent: agent.toBase58(),
       availableToStake,
       minVaultBalance: MIN_VAULT_BALANCE,
-      network: RPC_URL.includes("devnet") ? "devnet" : "mainnet",
+      network: "testnet",
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

@@ -1,11 +1,9 @@
 /**
- * Fetch and analyze user's stake accounts
+ * Fetch and analyze user's stake accounts - TESTNET
  */
 
 import { Connection, PublicKey, StakeProgram } from "@solana/web3.js";
-
-// Using devnet for vault operations
-const RPC_URL = "https://api.devnet.solana.com";
+import { RPC_URL } from "./config";
 
 export interface UserStakeAccount {
   pubkey: string;

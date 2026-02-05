@@ -16,7 +16,8 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 
-const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.devnet.solana.com";
+// Testnet RPC
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://api.testnet.solana.com";
 
 export interface StakeResult {
   success: boolean;

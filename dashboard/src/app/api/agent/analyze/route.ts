@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getTopValidators } from "@/lib/stakewiz";
 
-const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.devnet.solana.com";
+const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.testnet.solana.com";
 const VAULT_PDA = new PublicKey("HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u");
 
 // Minimum balance to keep in vault
@@ -139,8 +139,8 @@ export async function GET() {
       reasoning.push(`Expected weighted APY: ${(analysis.reduce((sum, v) => sum + v.totalApy, 0) / analysis.length).toFixed(2)}%`);
     }
 
-    // On devnet, we simulate rather than execute
-    reasoning.push("⚠️ Devnet mode: Execution simulated (mainnet will execute automatically)");
+    // On testnet, we simulate rather than execute
+    reasoning.push("⚠️ Testnet mode - demo execution");
 
     return NextResponse.json({
       timestamp: new Date().toISOString(),

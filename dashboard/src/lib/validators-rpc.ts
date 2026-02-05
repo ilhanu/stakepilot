@@ -1,13 +1,11 @@
 /**
- * Solana RPC Validator Client
+ * Solana RPC Validator Client - TESTNET ONLY
  * 
  * Fetches real-time validator data directly from Solana RPC
- * Can be used standalone or to augment validators.app data
  */
 
 import { Connection, VoteAccountInfo, VoteAccountStatus } from "@solana/web3.js";
-
-export type Network = "mainnet" | "testnet" | "devnet";
+import { RPC_URL } from "./config";
 
 export interface RpcValidator {
   voteAccount: string;
@@ -20,26 +18,15 @@ export interface RpcValidator {
   isDelinquent: boolean;
 }
 
-// RPC endpoints
-const RPC_ENDPOINTS: Record<Network, string> = {
-  mainnet: process.env.MAINNET_RPC_URL || "https://api.mainnet-beta.solana.com",
-  testnet: process.env.TESTNET_RPC_URL || "https://api.testnet.solana.com",
-  devnet: process.env.DEVNET_RPC_URL || "https://api.devnet.solana.com",
-};
-
 // Cache
-const cache: Record<Network, { data: RpcValidator[]; timestamp: number }> = {
-  mainnet: { data: [], timestamp: 0 },
-  testnet: { data: [], timestamp: 0 },
-  devnet: { data: [], timestamp: 0 },
-};
-const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes (shorter than validators.app)
+let cache: { data: RpcValidator[]; timestamp: number } = { data: [], timestamp: 0 };
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 
 /**
- * Get connection for network
+ * Get connection for testnet
  */
-export function getConnection(network: Network): Connection {
-  return new Connection(RPC_ENDPOINTS[network], "confirmed");
+export function getConnection(): Connection {
+  return new Connection(RPC_URL, "confirmed");
 }
 
 /**
@@ -61,14 +48,13 @@ function normalizeVoteAccount(v: VoteAccountInfo, isDelinquent: boolean): RpcVal
 /**
  * Fetch all validators from RPC
  */
-export async function fetchValidatorsRpc(network: Network): Promise<RpcValidator[]> {
+export async function fetchValidatorsRpc(): Promise<RpcValidator[]> {
   // Return cache if still valid
-  if (cache[network].data.length > 0 && Date.now() - cache[network].timestamp < CACHE_DURATION) {
-    return cache[network].data;
+  if (cache.data.length > 0 && Date.now() - cache.timestamp < CACHE_DURATION) {
+    return cache.data;
   }
 
-  const connection = getConnection(network);
-  
+  const connection = getConnection();
   const voteAccounts: VoteAccountStatus = await connection.getVoteAccounts();
   
   const validators: RpcValidator[] = [
@@ -77,7 +63,7 @@ export async function fetchValidatorsRpc(network: Network): Promise<RpcValidator
   ];
   
   // Update cache
-  cache[network] = { data: validators, timestamp: Date.now() };
+  cache = { data: validators, timestamp: Date.now() };
   
   return validators;
 }
@@ -85,8 +71,8 @@ export async function fetchValidatorsRpc(network: Network): Promise<RpcValidator
 /**
  * Get active validators (non-delinquent) sorted by stake
  */
-export async function getActiveValidators(network: Network): Promise<RpcValidator[]> {
-  const validators = await fetchValidatorsRpc(network);
+export async function getActiveValidators(): Promise<RpcValidator[]> {
+  const validators = await fetchValidatorsRpc();
   return validators
     .filter(v => !v.isDelinquent)
     .sort((a, b) => b.activatedStake - a.activatedStake);
@@ -96,10 +82,10 @@ export async function getActiveValidators(network: Network): Promise<RpcValidato
  * Get validator by vote account
  */
 export async function getValidatorRpc(
-  network: Network,
+  _network: string, // Ignored, always testnet
   voteAccount: string
 ): Promise<RpcValidator | null> {
-  const validators = await fetchValidatorsRpc(network);
+  const validators = await fetchValidatorsRpc();
   return validators.find(v => 
     v.voteAccount.toLowerCase() === voteAccount.toLowerCase()
   ) || null;
@@ -107,11 +93,8 @@ export async function getValidatorRpc(
 
 /**
  * Get validators meeting basic criteria from RPC
- * Note: RPC doesn't have MEV commission, uptime scores, etc.
- * Use this for real-time stake/commission data
  */
 export async function getQualifiedValidatorsRpc(
-  network: Network,
   criteria: {
     maxStake?: number;      // SOL
     maxCommission?: number; // %
@@ -124,7 +107,7 @@ export async function getQualifiedValidatorsRpc(
     alwaysInclude = [],
   } = criteria;
 
-  const validators = await fetchValidatorsRpc(network);
+  const validators = await fetchValidatorsRpc();
   const alwaysIncludeSet = new Set(alwaysInclude.map(v => v.toLowerCase()));
   
   return validators.filter((v) => {
@@ -141,45 +124,16 @@ export async function getQualifiedValidatorsRpc(
 }
 
 /**
- * Calculate validator uptime from epoch credits
- * Returns percentage (0-100)
- */
-export function calculateUptime(validator: RpcValidator, maxEpochs = 10): number {
-  const credits = validator.epochCredits;
-  if (credits.length < 2) return 100; // Not enough data
-  
-  // Get last N epochs
-  const recentCredits = credits.slice(-maxEpochs);
-  
-  // Calculate credits per epoch
-  let totalCredits = 0;
-  let expectedCredits = 0;
-  
-  for (let i = 1; i < recentCredits.length; i++) {
-    const current = recentCredits[i];
-    const prev = recentCredits[i - 1];
-    totalCredits += current[1] - current[2]; // Credits earned this epoch
-    // Rough estimate: ~432,000 slots per epoch at 400ms
-    expectedCredits += 432000;
-  }
-  
-  if (expectedCredits === 0) return 100;
-  
-  // Return percentage (capped at 100)
-  return Math.min(100, (totalCredits / expectedCredits) * 100);
-}
-
-/**
  * Get network statistics
  */
-export async function getNetworkStats(network: Network): Promise<{
+export async function getNetworkStats(): Promise<{
   totalValidators: number;
   activeValidators: number;
   delinquentValidators: number;
   totalStake: number;       // SOL
   averageCommission: number;
 }> {
-  const validators = await fetchValidatorsRpc(network);
+  const validators = await fetchValidatorsRpc();
   
   const active = validators.filter(v => !v.isDelinquent);
   const delinquent = validators.filter(v => v.isDelinquent);

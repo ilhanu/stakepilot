@@ -8,7 +8,7 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 
-const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.devnet.solana.com";
+const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.testnet.solana.com";
 const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 
 // Default agent wallet (in production, this would be configurable)

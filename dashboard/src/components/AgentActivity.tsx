@@ -82,7 +82,7 @@ export function AgentActivity() {
     addLog("📝 Building transaction...");
     await sleep(700);
     
-    addLog("⚠️ DEVNET: Simulated execution (mainnet would submit tx)");
+    addLog("⚠️ TESTNET: Demo execution");
     await sleep(500);
     
     addLog("✅ Execution plan complete!");

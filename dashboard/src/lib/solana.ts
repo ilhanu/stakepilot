@@ -1,9 +1,8 @@
 /**
- * Solana RPC utilities
+ * Solana RPC utilities - TESTNET
  */
 
-// Using devnet for vault operations
-const RPC_URL = "https://api.devnet.solana.com";
+import { RPC_URL } from "./config";
 
 export interface EpochInfo {
   epoch: number;

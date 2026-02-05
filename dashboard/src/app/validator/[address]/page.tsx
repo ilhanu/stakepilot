@@ -355,7 +355,7 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
                 🚀 Stake with This Validator ({prediction.netTotalApy.toFixed(1)}% APY)
               </a>
               <a
-                href={`https://validators.app/validators/${address}?network=mainnet`}
+                href={`https://validators.app/validators/${address}?network=testnet`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition"
