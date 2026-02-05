@@ -11,6 +11,7 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import Link from "next/link";
+import { AgentActivity } from "@/components/AgentActivity";
 
 const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 
@@ -413,6 +414,9 @@ export default function VaultPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Agent Activity */}
+              <AgentActivity />
 
               {/* Validator Targets */}
               <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
