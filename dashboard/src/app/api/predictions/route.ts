@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { generatePredictions, getRisingStars, backtestPredictions } from "@/lib/mev-prediction";
 import { getCurrentEpoch } from "@/lib/solana";

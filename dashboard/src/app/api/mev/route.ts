@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getMevStats } from "@/lib/jito";
 import { getCurrentEpoch } from "@/lib/solana";
