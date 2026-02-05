@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 /**
  * Agent API: GET /api/agent/validators
  * 
