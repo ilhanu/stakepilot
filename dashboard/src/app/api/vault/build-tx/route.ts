@@ -12,7 +12,7 @@ const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.devnet.solana.com";
 const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 
 // Default agent wallet (in production, this would be configurable)
-const DEFAULT_AGENT = new PublicKey("Fc8gNpU62evbZBdiu9TN1isD1Zx3HDPZbBAhDAdmqthS");
+const DEFAULT_AGENT = new PublicKey("By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny");
 
 // PDA derivation
 function getVaultPDA(owner: PublicKey): [PublicKey, number] {

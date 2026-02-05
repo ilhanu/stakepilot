@@ -17,7 +17,7 @@ import { getTopValidators } from "@/lib/stakewiz";
 
 const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 const VAULT_PDA = new PublicKey("HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u");
-const AGENT_PUBKEY = new PublicKey("Fc8gNpU62evbZBdiu9TN1isD1Zx3HDPZbBAhDAdmqthS");
+const AGENT_PUBKEY = new PublicKey("By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny");
 const RPC_URL = "https://api.devnet.solana.com";
 
 // Minimum SOL to keep in vault for rent/operations

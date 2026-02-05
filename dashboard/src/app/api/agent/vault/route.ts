@@ -4,7 +4,7 @@ import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 export const dynamic = "force-dynamic";
 
 const VAULT_PDA = new PublicKey("HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u");
-const AGENT_PUBKEY = new PublicKey("Fc8gNpU62evbZBdiu9TN1isD1Zx3HDPZbBAhDAdmqthS");
+const AGENT_PUBKEY = new PublicKey("By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny");
 const RPC_URL = process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com";
 
 // Minimum SOL to keep for rent

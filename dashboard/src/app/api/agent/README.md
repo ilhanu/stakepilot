@@ -168,7 +168,7 @@ runStakingAgent();
     "totalStaked": 0,
     "totalUsers": 1
   },
-  "agent": "Fc8gNpU62evbZBdiu9TN1isD1Zx3HDPZbBAhDAdmqthS",
+  "agent": "By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny",
   "availableToStake": 1.4,
   "timestamp": "2026-02-05T12:00:00.000Z"
 }

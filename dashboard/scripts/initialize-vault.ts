@@ -20,7 +20,7 @@ const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b")
 const RPC_URL = "https://api.devnet.solana.com";
 
 // Agent wallet - this will be the keeper that executes staking
-const AGENT_PUBKEY = new PublicKey("Fc8gNpU62evbZBdiu9TN1isD1Zx3HDPZbBAhDAdmqthS");
+const AGENT_PUBKEY = new PublicKey("By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny");
 
 async function main() {
   console.log("🏗️  Initializing Staker Space Vault...\n");

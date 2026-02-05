@@ -17,7 +17,7 @@ User deposits SOL → Vault holds funds → Agent stakes to validators
 | Account | Address |
 |---------|---------|
 | Program | `66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b` |
-| Vault Authority | `Fc8gNpU62evbZBdiu9TN1isD1Zx3HDPZbBAhDAdmqthS` |
+| Vault Authority | `By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny` |
 | Staker Space Validator | `49DJjUX3cwFvaZD5rCAwubiz7qdRWDez9xmB381XdHru` |
 
 ## Validator Selection Criteria
