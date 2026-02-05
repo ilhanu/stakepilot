@@ -80,8 +80,11 @@ export async function GET() {
     reasoning.push("Criteria: <1M stake, ≤5% comm, ≤10% MEV comm, >95% uptime");
 
     // Step 3: Select top validators
-    const numValidators = Math.min(MAX_VALIDATORS, Math.floor(availableToStake));
-    const selectedValidators = validators.slice(0, numValidators);
+    // Allow partial SOL per validator (min 0.5 SOL each) for better diversification
+    const minPerValidator = 0.5;
+    const maxByBalance = Math.floor(availableToStake / minPerValidator);
+    const numValidators = Math.min(MAX_VALIDATORS, maxByBalance, validators.length);
+    const selectedValidators = validators.slice(0, Math.max(1, numValidators));
     
     reasoning.push(`Selected top ${selectedValidators.length} validators for diversification`);
     reasoning.push(`Staker Space always included for alignment`);
