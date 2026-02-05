@@ -521,7 +521,7 @@ export default function VaultPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
