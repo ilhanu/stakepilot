@@ -29,6 +29,8 @@ export function AgentActivity() {
   const [decision, setDecision] = useState<AgentDecision | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [executionLog, setExecutionLog] = useState<string[]>([]);
 
   useEffect(() => {
     fetchAgentDecision();
@@ -50,6 +52,47 @@ export function AgentActivity() {
       setLoading(false);
     }
   };
+
+  const simulateExecution = async () => {
+    if (!decision || decision.action !== "stake") return;
+    
+    setExecuting(true);
+    setExecutionLog([]);
+    
+    const logs: string[] = [];
+    const addLog = (msg: string) => {
+      logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+      setExecutionLog([...logs]);
+    };
+
+    addLog("🤖 Agent execution started...");
+    await sleep(800);
+    
+    addLog(`📊 Analyzing ${decision.analysis.length} validators...`);
+    await sleep(600);
+
+    for (const validator of decision.analysis) {
+      addLog(`🔍 Preparing stake for ${validator.name}...`);
+      await sleep(500);
+      addLog(`   → Amount: ${validator.allocation.toFixed(4)} SOL`);
+      await sleep(300);
+      addLog(`   → Vote account: ${validator.voteAccount.slice(0, 8)}...`);
+      await sleep(400);
+    }
+
+    addLog("📝 Building transaction...");
+    await sleep(700);
+    
+    addLog("⚠️ DEVNET: Simulated execution (mainnet would submit tx)");
+    await sleep(500);
+    
+    addLog("✅ Execution plan complete!");
+    addLog(`   Total: ${decision.availableToStake.toFixed(4)} SOL across ${decision.analysis.length} validators`);
+    
+    setExecuting(false);
+  };
+
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   if (loading) {
     return (
@@ -211,17 +254,53 @@ export function AgentActivity() {
         )}
       </div>
 
+      {/* Execution Log */}
+      {executionLog.length > 0 && (
+        <div className="px-6 pb-4">
+          <div className="bg-black/40 rounded-lg p-4 font-mono text-xs max-h-48 overflow-y-auto">
+            {executionLog.map((log, i) => (
+              <div key={i} className={`${log.includes("✅") ? "text-emerald-400" : log.includes("⚠️") ? "text-yellow-400" : "text-gray-300"}`}>
+                {log}
+              </div>
+            ))}
+            {executing && (
+              <div className="text-purple-400 animate-pulse">▌</div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <div className="bg-black/30 px-6 py-3 flex items-center justify-between text-sm">
         <span className="text-gray-400">
-          Next analysis in ~30 seconds
+          {executing ? "Executing..." : "Next analysis in ~30 seconds"}
         </span>
-        <button 
-          onClick={fetchAgentDecision}
-          className="text-purple-400 hover:text-purple-300 transition flex items-center gap-1"
-        >
-          <span>🔄</span> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          {decision?.action === "stake" && (
+            <button 
+              onClick={simulateExecution}
+              disabled={executing}
+              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-700 rounded-lg font-medium transition flex items-center gap-1"
+            >
+              {executing ? (
+                <>
+                  <span className="animate-spin">⚙️</span> Executing...
+                </>
+              ) : (
+                <>
+                  <span>▶️</span> Simulate Execute
+                </>
+              )}
+            </button>
+          )}
+          <button 
+            onClick={fetchAgentDecision}
+            disabled={executing}
+            className="text-purple-400 hover:text-purple-300 disabled:text-gray-600 transition flex items-center gap-1"
+          >
+            <span>🔄</span> Refresh
+          </button>
+        </div>
       </div>
     </div>
   );
