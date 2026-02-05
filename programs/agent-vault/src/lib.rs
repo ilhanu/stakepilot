@@ -124,9 +124,13 @@ pub mod agent_vault {
         require!(ctx.accounts.agent.key() == vault.agent, VaultError::UnauthorizedAgent);
         require!(amount >= 1_000_000_000, VaultError::MinimumStake); // 1 SOL minimum for staking
         
-        // Create stake account
+        // Calculate rent for stake account
         let stake_rent = Rent::get()?.minimum_balance(std::mem::size_of::<StakeState>());
         let total_lamports = amount.checked_add(stake_rent).unwrap();
+        
+        // Check vault has enough lamports
+        let vault_lamports = ctx.accounts.vault.to_account_info().lamports();
+        require!(vault_lamports >= total_lamports + 100_000, VaultError::InsufficientBalance); // Keep some for rent
         
         let vault_bump = vault.bump;
         let stake_bump = *ctx.bumps.get("stake_account").unwrap();
@@ -141,11 +145,11 @@ pub mod agent_vault {
             &[stake_bump],
         ];
 
-        // Create stake account via CPI
+        // Agent creates the stake account PDA (agent pays rent, will be reimbursed)
         let create_stake_ix = system_instruction::create_account(
-            &ctx.accounts.vault.key(),
+            &ctx.accounts.agent.key(),
             &ctx.accounts.stake_account.key(),
-            total_lamports,
+            stake_rent,
             std::mem::size_of::<StakeState>() as u64,
             &stake::program::ID,
         );
@@ -153,14 +157,18 @@ pub mod agent_vault {
         invoke_signed(
             &create_stake_ix,
             &[
-                ctx.accounts.vault.to_account_info(),
+                ctx.accounts.agent.to_account_info(),
                 ctx.accounts.stake_account.to_account_info(),
                 ctx.accounts.system_program.to_account_info(),
             ],
-            &[vault_seeds, stake_seeds],
+            &[stake_seeds],
         )?;
+        
+        // Transfer stake amount from vault to stake account
+        **ctx.accounts.vault.to_account_info().try_borrow_mut_lamports()? -= amount;
+        **ctx.accounts.stake_account.to_account_info().try_borrow_mut_lamports()? += amount;
 
-        // Initialize stake account
+        // Initialize stake account with vault as staker/withdrawer
         let init_stake_ix = stake::instruction::initialize(
             &ctx.accounts.stake_account.key(),
             &Authorized {
