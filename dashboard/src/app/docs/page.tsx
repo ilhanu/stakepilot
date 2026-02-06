@@ -247,7 +247,7 @@ export default function DocsPage() {
               <div>
                 <h3 className="font-bold mb-2 md:mb-3 text-sm md:text-base">Data Sources</h3>
                 <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-[var(--text-secondary)]">
-                  <li><strong>Validators:</strong> StakeWiz API</li>
+                  <li><strong>Validators:</strong> validators.app API (testnet)</li>
                   <li><strong>MEV Data:</strong> Jito Kobe API</li>
                   <li><strong>On-chain:</strong> Solana RPC</li>
                 </ul>

@@ -347,7 +347,7 @@ export default async function ValidatorPage({ params }: ValidatorPageProps) {
             </p>
             <div className="flex justify-center gap-4">
               <a
-                href={`https://stakewiz.com/validator/${address}`}
+                href={`https://www.validators.app/validators/testnet/${address}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 rounded-lg transition font-medium"
