@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTopValidators, type StakeWizValidator } from "@/lib/stakewiz";
+import { getTopValidators, getQualifiedValidators, STAKER_SPACE_VALIDATOR } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +11,10 @@ const CRITERIA = {
   maxCommission: 5, // 5% max
   maxMevCommission: 10, // 10% max  
   minUptime: 95, // 95% min
-  minWizScore: 50, // Filter out delinquent
 };
 
-// Staker Space validator - always included
-const STAKER_SPACE_VOTE = "49DJjUX3cwFvaZD5rCAwubiz7qdRWDez9xmB381XdHru";
-
 /**
- * GET /api/agent/validators
+ * GET /api/agent/validators - TESTNET
  * 
  * Returns qualified validators that meet StakePilot criteria.
  * Used by agents to make staking decisions.
@@ -27,53 +23,33 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20");
-    const minScore = parseFloat(searchParams.get("minScore") || "50");
 
-    // Fetch validators from StakeWiz
-    const allValidators = await getTopValidators(100);
+    // Fetch testnet validators
+    const validators = await getTopValidators(limit);
 
-    // Apply criteria filters
-    const qualified = allValidators.filter((v) => {
-      // Always include Staker Space
-      if (v.vote_identity === STAKER_SPACE_VOTE) return true;
-
-      // Apply criteria
-      if (v.wiz_score < Math.max(minScore, CRITERIA.minWizScore)) return false;
-      if (v.activated_stake > CRITERIA.maxStake) return false;
-      if (v.commission > CRITERIA.maxCommission) return false;
-      if (v.jito_commission_bps && v.jito_commission_bps > CRITERIA.maxMevCommission * 100) return false;
-      
-      return true;
-    });
-
-    // Sort by score * APY (balanced metric)
-    const ranked = qualified
-      .map((v) => ({
-        name: v.name || "Unknown",
-        voteAccount: v.vote_identity,
-        totalApy: v.total_apy,
-        wizScore: v.wiz_score,
-        commission: v.commission,
-        mevCommission: v.jito_commission_bps ? v.jito_commission_bps / 100 : null,
-        activatedStake: v.activated_stake,
-        uptime: 99.5, // StakeWiz doesn't return this directly
-        delinquent: v.wiz_score < 50,
-        isStakerSpace: v.vote_identity === STAKER_SPACE_VOTE,
-        // Composite score: quality + yield
-        score: v.wiz_score * 0.6 + v.total_apy * 10 * 0.4,
-      }))
-      .sort((a, b) => {
-        // Staker Space always first
-        if (a.isStakerSpace) return -1;
-        if (b.isStakerSpace) return 1;
-        return b.score - a.score;
-      })
-      .slice(0, limit);
+    // Format response
+    const ranked = validators.map((v) => ({
+      name: v.name,
+      voteAccount: v.voteAccount,
+      identity: v.identity,
+      estimatedApy: 6.5 * (1 - v.commission / 100), // Rough APY estimate
+      score: v.totalScore,
+      commission: v.commission,
+      mevCommission: v.mevCommission,
+      activatedStake: v.activatedStake,
+      uptime: v.uptime,
+      delinquent: v.delinquent,
+      isJito: v.isJito,
+      isDz: v.isDz,
+      location: v.location.country,
+      isStakerSpace: v.voteAccount === STAKER_SPACE_VALIDATOR,
+    }));
 
     return NextResponse.json({
+      network: "testnet",
       validators: ranked,
       count: ranked.length,
-      totalQualified: qualified.length,
+      stakerSpaceValidator: STAKER_SPACE_VALIDATOR,
       criteria: CRITERIA,
       timestamp: new Date().toISOString(),
     });

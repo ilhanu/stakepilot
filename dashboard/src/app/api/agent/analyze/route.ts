@@ -1,5 +1,5 @@
 /**
- * Agent Analysis API
+ * Agent Analysis API - TESTNET
  * 
  * This endpoint returns the agent's current decision-making process.
  * It evaluates the vault state, available validators, and generates
@@ -8,9 +8,9 @@
 
 import { NextResponse } from "next/server";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { getTopValidators } from "@/lib/stakewiz";
+import { getTopValidators, STAKER_SPACE_VALIDATOR, estimateApy } from "@/lib/validators";
 
-const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.testnet.solana.com";
+const RPC_URL = "https://api.testnet.solana.com";
 const VAULT_PDA = new PublicKey("HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u");
 
 // Minimum balance to keep in vault
@@ -23,11 +23,11 @@ const MAX_VALIDATORS = 5;
 interface ValidatorAnalysis {
   name: string;
   voteAccount: string;
-  totalApy: number;
-  wizScore: number;
+  estimatedApy: number;
+  score: number;
   stake: number;
   commission: number;
-  mevCommission: number;
+  mevCommission: number | null;
   uptime: number;
   reasons: string[];
   allocation: number;
@@ -50,7 +50,7 @@ export async function GET() {
     const vaultData = vaultAccount.data.slice(8);
     const totalStaked = Number(vaultData.readBigUInt64LE(72)) / LAMPORTS_PER_SOL;
 
-    // Get qualified validators from StakeWiz
+    // Get qualified testnet validators
     const validators = await getTopValidators(20);
     
     // Agent reasoning process
@@ -58,6 +58,7 @@ export async function GET() {
     let action: "stake" | "hold" | "rebalance" = "hold";
 
     // Step 1: Evaluate vault state
+    reasoning.push(`📊 Network: Solana Testnet`);
     reasoning.push(`Vault balance: ${vaultBalance.toFixed(4)} SOL (reserve: 0.1 SOL)`);
     reasoning.push(`Available to stake: ${availableToStake.toFixed(4)} SOL`);
     reasoning.push(`Currently staked: ${totalStaked.toFixed(4)} SOL`);
@@ -65,6 +66,7 @@ export async function GET() {
     if (availableToStake < 1) {
       reasoning.push("❌ Insufficient balance - need at least 1 SOL per validator");
       return NextResponse.json({
+        network: "testnet",
         timestamp: new Date().toISOString(),
         vaultBalance,
         availableToStake,
@@ -76,56 +78,56 @@ export async function GET() {
     }
 
     // Step 2: Filter and score validators
-    reasoning.push(`Found ${validators.length} validators matching criteria`);
+    reasoning.push(`Found ${validators.length} testnet validators matching criteria`);
     reasoning.push("Criteria: <1M stake, ≤5% comm, ≤10% MEV comm, >95% uptime");
 
     // Step 3: Select top validators
-    // Allow partial SOL per validator (min 0.5 SOL each) for better diversification
     const minPerValidator = 0.5;
     const maxByBalance = Math.floor(availableToStake / minPerValidator);
     const numValidators = Math.min(MAX_VALIDATORS, maxByBalance, validators.length);
     const selectedValidators = validators.slice(0, Math.max(1, numValidators));
     
     reasoning.push(`Selected top ${selectedValidators.length} validators for diversification`);
-    reasoning.push(`Staker Space always included for alignment`);
+    reasoning.push(`⭐ Staker Space (testnet) always included`);
 
     // Step 4: Calculate allocation
     const stakePerValidator = availableToStake / selectedValidators.length;
     
-    const analysis: ValidatorAnalysis[] = selectedValidators.map((v, i) => {
+    const analysis: ValidatorAnalysis[] = selectedValidators.map((v) => {
       const reasons: string[] = [];
+      const apy = estimateApy(v);
       
       // Why this validator?
-      if (v.name === "Staker Space") {
+      if (v.voteAccount === STAKER_SPACE_VALIDATOR) {
         reasons.push("🌟 Our validator - always included");
       }
-      if (v.wiz_score >= 95) {
+      if (v.totalScore >= 9) {
         reasons.push("Excellent reliability score");
-      } else if (v.wiz_score >= 90) {
+      } else if (v.totalScore >= 7) {
         reasons.push("Strong reliability score");
       } else {
         reasons.push("Good reliability");
       }
       
-      if (v.activated_stake < 100000) {
+      if (v.activatedStake < 100000) {
         reasons.push("Supports decentralization (small stake)");
-      } else if (v.activated_stake < 500000) {
+      } else if (v.activatedStake < 500000) {
         reasons.push("Medium stake pool");
       }
       
-      if (v.total_apy >= 6.3) {
-        reasons.push("Above average APY");
+      if (v.isDz) {
+        reasons.push("DoubleZero validator");
       }
       
       return {
         name: v.name,
-        voteAccount: v.vote_identity,
-        totalApy: v.total_apy,
-        wizScore: v.wiz_score,
-        stake: v.activated_stake,
-        commission: v.commission || 0,
-        mevCommission: v.jito_commission_bps ? v.jito_commission_bps / 100 : 0,
-        uptime: v.uptime || 99,
+        voteAccount: v.voteAccount,
+        estimatedApy: apy,
+        score: v.totalScore,
+        stake: v.activatedStake,
+        commission: v.commission,
+        mevCommission: v.mevCommission,
+        uptime: v.uptime,
         reasons,
         allocation: stakePerValidator,
       };
@@ -136,16 +138,18 @@ export async function GET() {
       action = "stake";
       reasoning.push(`✅ Ready to stake ${availableToStake.toFixed(2)} SOL across ${selectedValidators.length} validators`);
       reasoning.push(`Each validator receives: ${stakePerValidator.toFixed(2)} SOL`);
-      reasoning.push(`Expected weighted APY: ${(analysis.reduce((sum, v) => sum + v.totalApy, 0) / analysis.length).toFixed(2)}%`);
+      const avgApy = analysis.reduce((sum, v) => sum + v.estimatedApy, 0) / analysis.length;
+      reasoning.push(`Expected weighted APY: ${avgApy.toFixed(2)}%`);
     }
 
-    // On testnet, we simulate rather than execute
-    reasoning.push("⚠️ Testnet mode - demo execution");
+    reasoning.push("🧪 Testnet mode - demo execution");
 
     return NextResponse.json({
+      network: "testnet",
       timestamp: new Date().toISOString(),
       vaultBalance,
       availableToStake,
+      stakerSpaceValidator: STAKER_SPACE_VALIDATOR,
       analysis,
       reasoning,
       action,

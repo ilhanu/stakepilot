@@ -4,13 +4,13 @@ import {
   PublicKey,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
-import { getTopValidators } from "@/lib/stakewiz";
+import { getTopValidators, STAKER_SPACE_VALIDATOR } from "@/lib/validators";
 import { loadAgentKeypair, stakeToValidator, getStakeAccounts } from "@/lib/native-staking";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Agent Execution API
+ * Agent Execution API - TESTNET
  * 
  * This endpoint executes staking operations using native Solana staking.
  * The agent creates stake accounts and delegates to qualified validators.
@@ -18,10 +18,9 @@ export const dynamic = "force-dynamic";
  * Security: Only Vercel cron or valid Bearer token can execute.
  */
 
-const PROGRAM_ID = new PublicKey("66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b");
 const VAULT_PDA = new PublicKey("HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u");
 const AGENT_PUBKEY = new PublicKey("By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny");
-const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.testnet.solana.com";
+const RPC_URL = "https://api.testnet.solana.com";
 
 // Minimum SOL to keep for operations
 const MIN_RESERVE = 0.1 * LAMPORTS_PER_SOL;
@@ -40,6 +39,7 @@ interface StakeExecution {
 
 interface ExecutionResult {
   success: boolean;
+  network: string;
   agentBalance: number;
   availableToStake: number;
   stakesCreated: number;
@@ -105,20 +105,23 @@ export async function GET(request: NextRequest) {
     const stakeAccounts = await getStakeAccounts(AGENT_PUBKEY);
     const totalStaked = stakeAccounts.reduce((sum, sa) => sum + sa.lamports, 0);
 
+    // Get testnet validators
     const validators = await getTopValidators(10);
 
     return NextResponse.json({
+      network: "testnet",
       agent: AGENT_PUBKEY.toBase58(),
       balance: agentBalance / LAMPORTS_PER_SOL,
       totalStaked: totalStaked / LAMPORTS_PER_SOL,
       stakeAccounts: stakeAccounts.length,
       availableToStake: Math.max(0, (agentBalance - MIN_RESERVE) / LAMPORTS_PER_SOL),
+      stakerSpaceValidator: STAKER_SPACE_VALIDATOR,
       topValidators: validators.map((v) => ({
         name: v.name,
-        voteAccount: v.vote_identity,
-        totalApy: v.total_apy,
-        wizScore: v.wiz_score,
-        stake: v.activated_stake,
+        voteAccount: v.voteAccount,
+        estimatedApy: v.activatedStake,
+        score: v.totalScore,
+        stake: v.activatedStake,
         commission: v.commission,
       })),
       timestamp: new Date().toISOString(),
@@ -142,6 +145,7 @@ async function executeStaking(): Promise<ExecutionResult> {
   if (!agent) {
     return {
       success: false,
+      network: "testnet",
       agentBalance: 0,
       availableToStake: 0,
       stakesCreated: 0,
@@ -158,6 +162,7 @@ async function executeStaking(): Promise<ExecutionResult> {
   if (availableToStake < MIN_STAKE_AMOUNT) {
     return {
       success: true,
+      network: "testnet",
       agentBalance: agentBalance / LAMPORTS_PER_SOL,
       availableToStake: availableToStake / LAMPORTS_PER_SOL,
       stakesCreated: 0,
@@ -167,11 +172,12 @@ async function executeStaking(): Promise<ExecutionResult> {
     };
   }
 
-  // Get top validators
+  // Get top testnet validators
   const validators = await getTopValidators(5);
   if (validators.length === 0) {
     return {
       success: false,
+      network: "testnet",
       agentBalance: agentBalance / LAMPORTS_PER_SOL,
       availableToStake: availableToStake / LAMPORTS_PER_SOL,
       stakesCreated: 0,
@@ -186,6 +192,7 @@ async function executeStaking(): Promise<ExecutionResult> {
   if (stakePerValidator < MIN_STAKE_AMOUNT) {
     return {
       success: true,
+      network: "testnet",
       agentBalance: agentBalance / LAMPORTS_PER_SOL,
       availableToStake: availableToStake / LAMPORTS_PER_SOL,
       stakesCreated: 0,
@@ -201,7 +208,7 @@ async function executeStaking(): Promise<ExecutionResult> {
 
   for (const validator of validators) {
     const execution: StakeExecution = {
-      validator: validator.vote_identity,
+      validator: validator.voteAccount,
       validatorName: validator.name,
       amount: stakePerValidator / LAMPORTS_PER_SOL,
       success: false,
@@ -210,7 +217,7 @@ async function executeStaking(): Promise<ExecutionResult> {
     try {
       const result = await stakeToValidator(
         agent,
-        new PublicKey(validator.vote_identity),
+        new PublicKey(validator.voteAccount),
         stakePerValidator,
       );
 
@@ -234,6 +241,7 @@ async function executeStaking(): Promise<ExecutionResult> {
 
   return {
     success: stakesCreated > 0,
+    network: "testnet",
     agentBalance: agentBalance / LAMPORTS_PER_SOL,
     availableToStake: availableToStake / LAMPORTS_PER_SOL,
     stakesCreated,
