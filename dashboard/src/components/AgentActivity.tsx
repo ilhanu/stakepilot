@@ -52,7 +52,7 @@ export function AgentActivity() {
     }
   };
 
-  const simulateExecution = async () => {
+  const executeStaking = async () => {
     if (!decision || decision.action !== "stake") return;
     
     setExecuting(true);
@@ -65,28 +65,53 @@ export function AgentActivity() {
     };
 
     addLog("🤖 Agent execution started...");
-    await sleep(800);
-    
-    addLog(`📊 Analyzing ${decision.analysis.length} validators...`);
-    await sleep(600);
-
-    for (const validator of decision.analysis) {
-      addLog(`🔍 Preparing stake for ${validator.name}...`);
-      await sleep(500);
-      addLog(`   → Amount: ${validator.allocation.toFixed(4)} SOL`);
-      await sleep(300);
-      addLog(`   → Vote account: ${validator.voteAccount.slice(0, 8)}...`);
-      await sleep(400);
-    }
-
-    addLog("📝 Building transaction...");
-    await sleep(700);
-    
-    addLog("⚠️ TESTNET: Demo execution");
     await sleep(500);
     
-    addLog("✅ Execution plan complete!");
-    addLog(`   Total: ${decision.availableToStake.toFixed(4)} SOL across ${decision.analysis.length} validators`);
+    addLog(`📊 Analyzing ${decision.analysis.length} validators...`);
+    await sleep(400);
+
+    addLog("📝 Building transaction...");
+    await sleep(300);
+    
+    addLog("🔗 Submitting to Solana testnet...");
+    
+    try {
+      const response = await fetch("/api/agent/execute-ui", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        if (result.message) {
+          // Already staked
+          addLog(`ℹ️ ${result.message}`);
+          if (result.existingStakes) {
+            for (const stake of result.existingStakes) {
+              addLog(`   → ${stake.lamports.toFixed(4)} SOL to ${stake.validator.slice(0, 8)}...`);
+            }
+          }
+        } else {
+          // New stake created
+          addLog(`✅ Staked ${result.amount.toFixed(4)} SOL to ${result.validatorName}`);
+          addLog(`   → Stake account: ${result.stakeAccount?.slice(0, 12)}...`);
+          addLog(`   → TX: ${result.signature?.slice(0, 16)}...`);
+          addLog(`🔗 Explorer: ${result.explorerUrl}`);
+        }
+        
+        // Refresh the decision data
+        await sleep(1000);
+        fetchAgentDecision();
+      } else {
+        addLog(`❌ Error: ${result.error}`);
+        if (result.hint) {
+          addLog(`💡 ${result.hint}`);
+        }
+      }
+    } catch (error: any) {
+      addLog(`❌ Network error: ${error.message}`);
+    }
     
     setExecuting(false);
   };
@@ -277,11 +302,11 @@ export function AgentActivity() {
         <div className="flex items-center gap-2 sm:gap-3">
           {decision?.action === "stake" && (
             <button 
-              onClick={simulateExecution}
+              onClick={executeStaking}
               disabled={executing}
               className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:bg-[var(--bg-elevated)] disabled:text-[var(--text-muted)] text-black rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 sm:gap-2"
             >
-              {executing ? "⚙️ Running..." : "▶️ Simulate"}
+              {executing ? "⚙️ Executing..." : "▶️ Execute"}
             </button>
           )}
           <button 

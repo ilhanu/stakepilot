@@ -56,6 +56,11 @@ export async function GET(request: NextRequest) {
         reasoning: decision.reasoning,
         stakerSpaceIncluded: decision.stakerSpaceIncluded,
         stakerSpaceValidator: STAKER_SPACE_VALIDATOR,
+        dataSources: [
+          "validators.app (uptime, commission, stake, location)",
+          "Solana RPC (real-time stake data)",
+          "IBRL Analytics (block-building performance)",
+        ],
       },
       qualifiedValidators: (await getQualifiedValidators()).length,
       timestamp: decision.timestamp,

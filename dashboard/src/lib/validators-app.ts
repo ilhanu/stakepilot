@@ -222,7 +222,7 @@ export async function getQualifiedValidators(
 /**
  * Score a validator using StakePilot algorithm
  */
-export function scoreValidator(v: NormalizedValidator, alwaysInclude: string[] = []): number {
+export function scoreValidator(v: NormalizedValidator, alwaysInclude: string[] = [], ibrlBonus = 0): number {
   let score = 0;
   
   const alwaysIncludeSet = new Set(alwaysInclude.map(a => a.toLowerCase()));
@@ -254,6 +254,10 @@ export function scoreValidator(v: NormalizedValidator, alwaysInclude: string[] =
   
   // DoubleZero bonus
   if (v.isDz) score += 5;
+  
+  // IBRL block-building performance bonus (0-25 points)
+  // Measures how well the validator builds blocks: tx packing, build time
+  score += ibrlBonus;
   
   return score;
 }

@@ -22,6 +22,12 @@ import {
   RpcValidator,
 } from "./validators-rpc";
 
+import {
+  getIBRLScores,
+  calculateIBRLBonus,
+  IBRLValidatorScore,
+} from "./ibrl-client";
+
 // Re-export types
 export type { NormalizedValidator, FilterCriteria, RpcValidator };
 
@@ -199,11 +205,28 @@ export async function generateStakingDecision(
   const qualified = await getQualifiedValidators();
   reasoningParts.push(`Found ${qualified.length} qualified validators`);
   
-  // Score all validators
-  const scored = qualified.map((v) => ({
-    validator: v,
-    score: scoreValidatorApp(v, [STAKER_SPACE_VALIDATOR]),
-  }));
+  // Fetch IBRL scores (mainnet block-building performance)
+  let ibrlScores: Map<string, IBRLValidatorScore> = new Map();
+  try {
+    ibrlScores = await getIBRLScores();
+    if (ibrlScores.size > 0) {
+      reasoningParts.push(`Loaded ${ibrlScores.size} IBRL block-building scores`);
+    }
+  } catch (e) {
+    reasoningParts.push("IBRL scores unavailable, using base scoring");
+  }
+  
+  // Score all validators (with IBRL bonus when available)
+  const scored = qualified.map((v) => {
+    const ibrlData = v.identity ? ibrlScores.get(v.identity) || null : null;
+    const ibrlBonus = calculateIBRLBonus(ibrlData);
+    return {
+      validator: v,
+      score: scoreValidatorApp(v, [STAKER_SPACE_VALIDATOR], ibrlBonus),
+      ibrlScore: ibrlData?.ibrl_score ?? null,
+      ibrlBonus,
+    };
+  });
   
   // Sort by score (highest first)
   scored.sort((a, b) => b.score - a.score);
@@ -224,11 +247,15 @@ export async function generateStakingDecision(
     const apy = estimateApy(s.validator);
     const formatted = formatValidator(s.validator);
     
+    const ibrlNote = s.ibrlScore !== null 
+      ? `, IBRL: ${s.ibrlScore.toFixed(1)}` 
+      : "";
+    
     return {
       validator: s.validator,
       allocatedAmount: amountPerValidator,
       score: s.score,
-      reason: `Score: ${s.score.toFixed(0)}, APY: ~${apy.toFixed(2)}%, Stake: ${formatted.stakeFormatted}`,
+      reason: `Score: ${s.score.toFixed(0)}, APY: ~${apy.toFixed(2)}%, Stake: ${formatted.stakeFormatted}${ibrlNote}`,
       estimatedApy: apy,
     };
   });
