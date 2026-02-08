@@ -9,6 +9,8 @@ import {
   formatValidator,
   estimateApy,
 } from "@/lib/validators";
+import { scoreValidator } from "@/lib/validators-app";
+import { getIBRLScores, calculateIBRLBonus } from "@/lib/ibrl-client";
 
 /**
  * Validators API - TESTNET ONLY
@@ -75,25 +77,41 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Format response
-    const formattedValidators = validators.map(v => ({
-      voteAccount: v.voteAccount,
-      identity: v.identity,
-      name: v.name,
-      commission: v.commission,
-      mevCommission: v.mevCommission,
-      activatedStake: v.activatedStake,
-      ...formatValidator(v),
-      estimatedApy: estimateApy(v),
-      delinquent: v.delinquent,
-      isJito: v.isJito,
-      isDz: v.isDz,
-      uptime: v.uptime,
-      totalScore: v.totalScore,
-      location: v.location,
-      avatarUrl: v.avatarUrl,
-      website: v.website,
-    }));
+    // Fetch IBRL scores for enrichment
+    let ibrlScores = new Map<string, any>();
+    try {
+      ibrlScores = await getIBRLScores();
+    } catch (_) {}
+
+    // Format response with StakePilot scoring
+    const formattedValidators = validators.map(v => {
+      const ibrlData = v.identity ? ibrlScores.get(v.identity) || null : null;
+      const ibrlBonus = calculateIBRLBonus(ibrlData);
+      const stakepilotScore = scoreValidator(v, [STAKER_SPACE_VALIDATOR], ibrlBonus);
+      return {
+        voteAccount: v.voteAccount,
+        identity: v.identity,
+        name: v.name,
+        commission: v.commission,
+        mevCommission: v.mevCommission,
+        activatedStake: v.activatedStake,
+        ...formatValidator(v),
+        estimatedApy: estimateApy(v),
+        delinquent: v.delinquent,
+        isJito: v.isJito,
+        isDz: v.isDz,
+        uptime: v.uptime,
+        totalScore: v.totalScore,
+        stakepilotScore,
+        ibrlScore: ibrlData?.ibrl_score ?? null,
+        location: v.location,
+        avatarUrl: v.avatarUrl,
+        website: v.website,
+      };
+    });
+
+    // Sort by StakePilot score by default
+    formattedValidators.sort((a, b) => b.stakepilotScore - a.stakepilotScore);
 
     return NextResponse.json({
       success: true,
