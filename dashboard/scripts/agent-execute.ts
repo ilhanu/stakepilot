@@ -38,8 +38,15 @@ const MIN_VAULT_RESERVE = 0.1 * LAMPORTS_PER_SOL;
 const MIN_STAKE_AMOUNT = 1 * LAMPORTS_PER_SOL;
 const MAX_VALIDATORS = 5;
 
-// stake_to_validator discriminator
+// Instruction discriminators (Anchor: sha256("global:<name>")[0..8])
 const STAKE_DISCRIMINATOR = Buffer.from([11, 111, 254, 86, 247, 52, 8, 233]);
+const DEACTIVATE_DISCRIMINATOR = Buffer.from([165, 158, 229, 97, 168, 220, 187, 225]);
+const WITHDRAW_DISCRIMINATOR = Buffer.from([153, 8, 22, 138, 105, 176, 87, 66]);
+
+// Rebalancing thresholds
+const MIN_SCORE_THRESHOLD = 30;       // Below this score → deactivate
+const SCORE_DROP_THRESHOLD = 0.5;     // If score drops to 50% of best → consider rebalancing
+const DEACTIVATION_COOLDOWN = 2;      // ~2 epochs for deactivation cooldown
 
 interface ValidatorRecommendation {
   validator: string;
@@ -119,11 +126,21 @@ async function getRecommendations(): Promise<ValidatorRecommendation[]> {
   }
 }
 
+interface ExistingStake {
+  pubkey: string;
+  voter: string;
+  stake: number;         // lamports
+  activationEpoch: number;
+  deactivationEpoch: string;
+  isDeactivating: boolean;
+  isActive: boolean;
+}
+
 async function getExistingStakeAccounts(
   connection: Connection,
-  agent: PublicKey
-): Promise<Set<string>> {
-  // Get stake accounts where agent is authorized staker
+  vaultPda: PublicKey
+): Promise<ExistingStake[]> {
+  // Get stake accounts where vault is the staker authority
   const stakeAccounts = await connection.getParsedProgramAccounts(
     StakeProgram.programId,
     {
@@ -131,22 +148,32 @@ async function getExistingStakeAccounts(
         {
           memcmp: {
             offset: 12, // Authorized staker offset
-            bytes: agent.toBase58(),
+            bytes: vaultPda.toBase58(),
           },
         },
       ],
     }
   );
   
-  const validators = new Set<string>();
+  const results: ExistingStake[] = [];
   for (const acc of stakeAccounts) {
     const parsed = (acc.account.data as any).parsed;
-    if (parsed?.info?.stake?.delegation?.voter) {
-      validators.add(parsed.info.stake.delegation.voter);
+    const delegation = parsed?.info?.stake?.delegation;
+    if (delegation?.voter) {
+      const deactivationEpoch = delegation.deactivationEpoch;
+      results.push({
+        pubkey: acc.pubkey.toBase58(),
+        voter: delegation.voter,
+        stake: parseInt(delegation.stake || "0"),
+        activationEpoch: parseInt(delegation.activationEpoch || "0"),
+        deactivationEpoch,
+        isDeactivating: deactivationEpoch !== "18446744073709551615",
+        isActive: deactivationEpoch === "18446744073709551615",
+      });
     }
   }
   
-  return validators;
+  return results;
 }
 
 async function stakeToValidator(
@@ -193,6 +220,61 @@ async function stakeToValidator(
   }
 }
 
+async function deactivateStake(
+  connection: Connection,
+  agent: Keypair,
+  stakeAccountPubkey: string
+): Promise<string | null> {
+  const ix = new TransactionInstruction({
+    keys: [
+      { pubkey: VAULT_PDA, isSigner: false, isWritable: false },
+      { pubkey: agent.publicKey, isSigner: true, isWritable: false },
+      { pubkey: new PublicKey(stakeAccountPubkey), isSigner: false, isWritable: true },
+      { pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false },
+      { pubkey: StakeProgram.programId, isSigner: false, isWritable: false },
+    ],
+    programId: PROGRAM_ID,
+    data: DEACTIVATE_DISCRIMINATOR,
+  });
+
+  const tx = new Transaction().add(ix);
+  try {
+    const sig = await sendAndConfirmTransaction(connection, tx, [agent]);
+    return sig;
+  } catch (error: any) {
+    log(`Deactivate failed: ${error.message}`);
+    return null;
+  }
+}
+
+async function withdrawStake(
+  connection: Connection,
+  agent: Keypair,
+  stakeAccountPubkey: string
+): Promise<string | null> {
+  const ix = new TransactionInstruction({
+    keys: [
+      { pubkey: VAULT_PDA, isSigner: false, isWritable: true },
+      { pubkey: agent.publicKey, isSigner: true, isWritable: false },
+      { pubkey: new PublicKey(stakeAccountPubkey), isSigner: false, isWritable: true },
+      { pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false },
+      { pubkey: SYSVAR_STAKE_HISTORY_PUBKEY, isSigner: false, isWritable: false },
+      { pubkey: StakeProgram.programId, isSigner: false, isWritable: false },
+    ],
+    programId: PROGRAM_ID,
+    data: WITHDRAW_DISCRIMINATOR,
+  });
+
+  const tx = new Transaction().add(ix);
+  try {
+    const sig = await sendAndConfirmTransaction(connection, tx, [agent]);
+    return sig;
+  } catch (error: any) {
+    log(`Withdraw failed: ${error.message}`);
+    return null;
+  }
+}
+
 async function main() {
   log("🤖 StakePilot Agent Execution Starting");
   
@@ -220,83 +302,179 @@ async function main() {
   log(`Vault balance: ${vaultBalance / LAMPORTS_PER_SOL} SOL`);
   log(`Agent balance: ${agentBalance / LAMPORTS_PER_SOL} SOL`);
   
-  // Check if there's enough to stake
-  const availableToStake = vaultBalance - MIN_VAULT_RESERVE;
-  if (availableToStake < MIN_STAKE_AMOUNT) {
-    log(`⏭️ Not enough to stake. Need ${MIN_STAKE_AMOUNT / LAMPORTS_PER_SOL} SOL, have ${availableToStake / LAMPORTS_PER_SOL} SOL available.`);
+  // Check vault has enough to stake
+  const vaultAvailable = vaultBalance - MIN_VAULT_RESERVE;
+  if (vaultAvailable < MIN_STAKE_AMOUNT) {
+    log(`⏭️ Vault: not enough to stake. Need ${MIN_STAKE_AMOUNT / LAMPORTS_PER_SOL} SOL, have ${vaultAvailable / LAMPORTS_PER_SOL} SOL available.`);
     return;
   }
   
-  // Agent needs funds for tx fees and rent
-  const agentMinBalance = MIN_STAKE_AMOUNT + 0.01 * LAMPORTS_PER_SOL;
-  if (agentBalance < agentMinBalance) {
-    log(`⚠️ Agent needs more SOL for transactions. Has ${agentBalance / LAMPORTS_PER_SOL}, needs ${agentMinBalance / LAMPORTS_PER_SOL}`);
+  // Agent needs SOL for tx fees + stake account rent (~0.003 SOL per stake account)
+  const TX_FEE_RESERVE = 0.01 * LAMPORTS_PER_SOL;
+  const STAKE_RENT = 0.00228288 * LAMPORTS_PER_SOL; // rent-exempt minimum for stake account
+  const agentAvailable = agentBalance - TX_FEE_RESERVE;
+  
+  if (agentAvailable < STAKE_RENT) {
+    log(`⚠️ Agent wallet too low for tx fees + rent. Has ${agentBalance / LAMPORTS_PER_SOL} SOL, needs at least ${(TX_FEE_RESERVE + STAKE_RENT) / LAMPORTS_PER_SOL} SOL`);
     return;
   }
   
-  // Get existing stake accounts
-  const existingValidators = await getExistingStakeAccounts(connection, agent.publicKey);
-  log(`Existing stakes: ${existingValidators.size} validators`);
+  // The actual stakeable amount is limited by both vault balance and what the program transfers
+  const availableToStake = vaultAvailable;
+  
+  // ==============================
+  // PHASE 1: REBALANCING
+  // ==============================
+  
+  // Get existing stake accounts (using vault PDA as staker authority)
+  const existingStakes = await getExistingStakeAccounts(connection, VAULT_PDA);
+  const activeStakes = existingStakes.filter(s => s.isActive);
+  const deactivatingStakes = existingStakes.filter(s => s.isDeactivating);
+  
+  log(`Existing positions: ${activeStakes.length} active, ${deactivatingStakes.length} deactivating`);
+  for (const s of existingStakes) {
+    log(`  ${s.pubkey.slice(0, 8)}... → ${s.voter.slice(0, 12)}... | ${(s.stake / LAMPORTS_PER_SOL).toFixed(2)} SOL | ${s.isDeactivating ? "DEACTIVATING" : "ACTIVE"}`);
+  }
   
   // Get recommendations
-  log("📊 Fetching validator recommendations...");
+  log("\n📊 Fetching validator recommendations...");
   const recommendations = await getRecommendations();
+  const recMap = new Map(recommendations.map(r => [r.validator, r]));
   log(`Got ${recommendations.length} recommendations`);
   
-  // Filter out validators we're already staking to
-  const newValidators = recommendations.filter(
-    (r) => !existingValidators.has(r.validator)
-  );
+  // --- STEP 1A: Withdraw fully deactivated stake back to vault ---
+  const epochInfo = await connection.getEpochInfo();
+  const currentEpoch = epochInfo.epoch;
   
-  if (newValidators.length === 0) {
-    log("✅ Already staking to all recommended validators");
-    return;
+  for (const stake of deactivatingStakes) {
+    // A deactivating stake can be withdrawn after deactivation epoch passes
+    log(`Attempting to withdraw deactivated stake ${stake.pubkey.slice(0, 8)}...`);
+    const sig = await withdrawStake(connection, agent, stake.pubkey);
+    if (sig) {
+      log(`✅ Withdrew ${(stake.stake / LAMPORTS_PER_SOL).toFixed(2)} SOL back to vault`);
+      log(`   TX: https://explorer.solana.com/tx/${sig}?cluster=testnet`);
+    } else {
+      log(`   ⏳ Not ready yet (cooldown not complete)`);
+    }
   }
   
-  log(`New validators to stake to: ${newValidators.length}`);
+  // --- STEP 1B: Evaluate active stakes for rebalancing ---
+  const bestScore = recommendations.length > 0 ? recommendations[0].score : 100;
+  let deactivatedCount = 0;
   
-  // Distribute available stake across new validators
-  const stakePerValidator = Math.floor(availableToStake / newValidators.length);
-  
-  if (stakePerValidator < MIN_STAKE_AMOUNT) {
-    // Just stake to the top validator
-    const topValidator = newValidators[0];
-    log(`Staking ${availableToStake / LAMPORTS_PER_SOL} SOL to ${topValidator.validatorName}`);
+  for (const stake of activeStakes) {
+    const rec = recMap.get(stake.voter);
     
-    const sig = await stakeToValidator(
-      connection,
-      agent,
-      topValidator.validator,
-      BigInt(availableToStake)
-    );
+    // Skip Staker Space — always keep
+    if (stake.voter === STAKER_SPACE_VALIDATOR) continue;
     
-    if (sig) {
-      log(`✅ Staked to ${topValidator.validatorName}`);
-      log(`   TX: https://explorer.solana.com/tx/${sig}?cluster=testnet`);
+    let shouldDeactivate = false;
+    let reason = "";
+    
+    if (!rec) {
+      // Validator dropped out of recommendations entirely (delinquent, high commission, etc.)
+      shouldDeactivate = true;
+      reason = "no longer in recommended set";
+    } else if (rec.score < MIN_SCORE_THRESHOLD) {
+      shouldDeactivate = true;
+      reason = `score too low (${rec.score} < ${MIN_SCORE_THRESHOLD})`;
+    } else if (bestScore > 0 && rec.score / bestScore < SCORE_DROP_THRESHOLD) {
+      shouldDeactivate = true;
+      reason = `score dropped to ${((rec.score / bestScore) * 100).toFixed(0)}% of best`;
     }
-  } else {
-    // Stake to multiple validators
-    for (const validator of newValidators) {
-      log(`Staking ${stakePerValidator / LAMPORTS_PER_SOL} SOL to ${validator.validatorName}`);
-      
-      const sig = await stakeToValidator(
-        connection,
-        agent,
-        validator.validator,
-        BigInt(stakePerValidator)
-      );
-      
+    
+    if (shouldDeactivate) {
+      log(`🔄 Deactivating ${stake.pubkey.slice(0, 8)}... (${(stake.stake / LAMPORTS_PER_SOL).toFixed(2)} SOL) — ${reason}`);
+      const sig = await deactivateStake(connection, agent, stake.pubkey);
       if (sig) {
-        log(`✅ Staked to ${validator.validatorName}`);
+        log(`✅ Deactivated — will be withdrawable in ~2 epochs`);
         log(`   TX: https://explorer.solana.com/tx/${sig}?cluster=testnet`);
+        deactivatedCount++;
+      } else {
+        log(`⚠️ Failed to deactivate`);
       }
     }
   }
   
-  // Final balance check
+  if (deactivatedCount > 0) {
+    log(`\n🔄 Deactivated ${deactivatedCount} positions for rebalancing`);
+  }
+  
+  // ==============================
+  // PHASE 2: NEW STAKING
+  // ==============================
+  
+  // Re-check vault balance (may have changed from withdrawals)
+  const updatedVaultInfo = await connection.getAccountInfo(VAULT_PDA);
+  const updatedVaultBalance = updatedVaultInfo ? updatedVaultInfo.lamports : 0;
+  const updatedAgentBalance = await connection.getBalance(agent.publicKey);
+  const updatedVaultAvailable = updatedVaultBalance - MIN_VAULT_RESERVE;
+  const updatedAgentAvailable = updatedAgentBalance - TX_FEE_RESERVE;
+  
+  log(`\nPost-rebalance balances: Vault ${(updatedVaultBalance / LAMPORTS_PER_SOL).toFixed(4)} SOL, Agent ${(updatedAgentBalance / LAMPORTS_PER_SOL).toFixed(4)} SOL`);
+  
+  // Get current active validators (refresh after deactivations)
+  const currentActiveVoters = new Set(
+    activeStakes
+      .filter(s => !deactivatingStakes.find(d => d.pubkey === s.pubkey))
+      .map(s => s.voter)
+  );
+  
+  // Also exclude validators we just deactivated (don't re-stake immediately)
+  const newValidators = recommendations.filter(
+    (r) => !currentActiveVoters.has(r.validator)
+  );
+  
+  if (newValidators.length === 0 && deactivatedCount === 0) {
+    log("✅ All positions optimal — nothing to do");
+  } else if (updatedVaultAvailable < MIN_STAKE_AMOUNT) {
+    log(`⏭️ Vault: not enough to stake new positions (${(updatedVaultAvailable / LAMPORTS_PER_SOL).toFixed(4)} SOL available)`);
+  } else if (updatedAgentAvailable < STAKE_RENT) {
+    log(`⚠️ Agent wallet too low for new stakes`);
+  } else if (newValidators.length > 0) {
+    const maxStakePerTx = updatedAgentAvailable - STAKE_RENT - TX_FEE_RESERVE;
+    
+    if (maxStakePerTx < MIN_STAKE_AMOUNT) {
+      log(`⚠️ Agent can't front enough for staking (${(maxStakePerTx / LAMPORTS_PER_SOL).toFixed(4)} SOL available)`);
+    } else {
+      log(`\nNew validators to stake to: ${newValidators.length}`);
+      log(`Agent can front up to ${(maxStakePerTx / LAMPORTS_PER_SOL).toFixed(4)} SOL per tx`);
+      
+      const validatorsToStake = newValidators.slice(0, MAX_VALIDATORS);
+      const idealPerValidator = Math.floor(updatedVaultAvailable / validatorsToStake.length);
+      const stakePerValidator = Math.min(idealPerValidator, maxStakePerTx);
+      
+      if (stakePerValidator < MIN_STAKE_AMOUNT) {
+        // Stake to just the top one
+        const top = validatorsToStake[0];
+        const amt = Math.min(updatedVaultAvailable, maxStakePerTx);
+        log(`Staking ${(amt / LAMPORTS_PER_SOL).toFixed(4)} SOL to ${top.validatorName}`);
+        const sig = await stakeToValidator(connection, agent, top.validator, BigInt(amt));
+        if (sig) {
+          log(`✅ Staked to ${top.validatorName}`);
+          log(`   TX: https://explorer.solana.com/tx/${sig}?cluster=testnet`);
+        }
+      } else {
+        let successCount = 0;
+        for (const validator of validatorsToStake) {
+          log(`Staking ${(stakePerValidator / LAMPORTS_PER_SOL).toFixed(4)} SOL to ${validator.validatorName}`);
+          const sig = await stakeToValidator(connection, agent, validator.validator, BigInt(stakePerValidator));
+          if (sig) {
+            log(`✅ Staked to ${validator.validatorName}`);
+            log(`   TX: https://explorer.solana.com/tx/${sig}?cluster=testnet`);
+            successCount++;
+          } else {
+            log(`⚠️ Failed to stake to ${validator.validatorName}, continuing...`);
+          }
+        }
+        log(`Staked to ${successCount}/${validatorsToStake.length} validators`);
+      }
+    }
+  }
+  
+  // Final summary
   const finalVault = await connection.getAccountInfo(VAULT_PDA);
   log(`\n📊 Final vault balance: ${finalVault ? finalVault.lamports / LAMPORTS_PER_SOL : 0} SOL`);
-  
   log("🤖 Agent execution complete");
 }
 
