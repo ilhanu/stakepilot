@@ -1,4 +1,4 @@
-# StakePilot — Agent Stake Vaults
+# StakePilot — Autonomous Staking Vault
 
 **Colosseum Agent Hackathon Submission**
 
@@ -6,111 +6,127 @@
 
 ## 🎯 One-Liner
 
-**Autonomous staking vault controlled by AI agents — you set the strategy, the agent executes.**
+**An AI agent that autonomously stakes SOL to the best underserved validators — and can never steal your funds.**
 
 ---
 
 ## 📝 Description
 
-StakePilot is an **Agent Stake Vault** — a smart contract that holds your SOL while an AI agent optimizes your staking based on your preferences.
+StakePilot is an **autonomous staking vault** on Solana. Users deposit SOL into an on-chain vault. An AI agent continuously evaluates 1,500+ validators, stakes to the best underserved ones, and automatically rebalances when performance drops — all without any user intervention.
 
-### How It Works
+The key innovation: **the agent can stake and rebalance, but the smart contract makes it mathematically impossible for the agent to withdraw funds to itself.** Only depositors can withdraw. This is not a promise — it's enforced by code.
 
-1. **Create Vault** → Connect wallet, create your personal vault on-chain
-2. **Set Strategy** → Choose risk level, target APY, max validators, decentralization preference
-3. **Deposit SOL** → Add funds to your vault
-4. **Agent Works** → AI analyzes 1,500+ validators, executes optimal staking decisions
-5. **Withdraw Anytime** → Full control, exit whenever you want
+### Why This Matters
 
-### The Key Innovation
+- **19 validators control 33% of Solana's stake** — massive centralization risk
+- Most users stake once and forget — no optimization, no rebalancing
+- Comparing validators is overwhelming (APY, commission, MEV, uptime, location...)
 
-**The agent can stake your funds TO validators, but can NEVER withdraw to itself.**
-
-This is enforced at the smart contract level. Only you can withdraw. The agent is a powerful executor with limited permissions — it optimizes, you control.
+StakePilot solves all three: deposit once, the agent handles everything, and it actively supports network decentralization by favoring underserved validators.
 
 ---
 
-## 🔐 Security Model
+## 🔐 Security Model — The Core Innovation
 
-| Action | Who Can Do It |
-|--------|---------------|
-| Deposit | User only |
-| Withdraw | User only |
-| Update Strategy | User only |
-| Change Agent | User only |
-| Execute Stake | Agent only |
-| Execute Unstake | Agent only |
+The smart contract enforces a strict permission model:
 
-The agent is a separate wallet with constrained permissions. Users can revoke the agent at any time.
+| Action | Who | Enforced By |
+|--------|-----|-------------|
+| Deposit SOL | User only | Smart contract |
+| Withdraw SOL | User only | Smart contract |
+| Stake to validators | Agent only | Smart contract |
+| Deactivate stake | Agent only | Smart contract |
+| Withdraw stake (back to vault) | Agent only | Smart contract |
+| Change agent | Admin only | Smart contract |
+
+The agent wallet (`By596j...`) can **only** move funds between the vault and stake accounts. It cannot transfer SOL to any arbitrary address. The vault PDA is the staker and withdrawer on all stake accounts — the agent merely triggers instructions that the program validates.
 
 ---
 
-## 🧠 Agent Algorithm
+## 🤖 Agent Algorithm
 
-The agent runs hourly and makes decisions based on your strategy:
+The agent runs hourly via cron and executes this flow:
 
-```
-1. Filter: Remove delinquent validators (score < 50)
-2. Risk: Apply stake minimums based on risk tolerance
-   - Low: Only validators with >1M SOL stake
-   - Medium: Validators with >100K SOL stake  
-   - High: No minimum (maximize APY)
-3. Decentralization: Filter by datacenter concentration (if enabled)
-4. Rank: Sort by NET APY (after commission)
-5. Target: Filter validators within 10% of target APY
-6. Select: Choose top N validators (up to max_validators)
-7. Allocate: Distribute stake evenly
-8. Execute: Submit transactions
-```
+### Phase 1: Rebalancing
+1. **Scan** existing stake accounts (vault PDA as authority)
+2. **Score** each validator using validators.app API (commission, uptime, delinquency, active stake)
+3. **Deactivate** underperformers (score < 30, or dropped to <50% of best)
+4. **Withdraw** fully-deactivated stakes back to the vault (after epoch cooldown)
+5. **Staker Space validator is always kept** — skin in the game
 
-All decisions are logged on-chain via events for full transparency.
+### Phase 2: New Staking
+1. **Check** vault balance (minus 0.1 SOL reserve)
+2. **Select** top validators from recommendations (≤5% commission, <1M SOL stake, not delinquent)
+3. **Allocate** evenly across up to 5 validators
+4. **Execute** on-chain stake transactions
+5. **Log** all activity for dashboard transparency
+
+### Scoring Factors
+- Commission (≤5%)
+- Active status (not delinquent)
+- Stake concentration (<1M SOL — favor decentralization)
+- validators.app total score
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         USER                                │
-│  • Deposits SOL                                             │
-│  • Sets strategy (risk, APY target, preferences)            │
-│  • Withdraws anytime                                        │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│              AGENT VAULT — SMART CONTRACT                   │
-│                                                             │
-│  Vault Account         Strategy Account                     │
-│  ├─ owner              ├─ risk_tolerance                    │
-│  ├─ agent              ├─ target_apy                        │
-│  ├─ balance            ├─ max_validators                    │
-│  └─ total_staked       └─ prefer_decentralization           │
-│                                                             │
-│  Instructions:                                              │
-│  • initialize_vault    • execute_stake (agent)              │
-│  • deposit             • execute_unstake (agent)            │
-│  • withdraw (owner)    • change_agent (owner)               │
-│  • update_strategy                                          │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      AI AGENT                               │
-│                                                             │
-│  1. Read strategy from chain                                │
-│  2. Fetch validator data (performance, APY, location)       │
-│  3. Run allocation algorithm                                │
-│  4. Submit execute_stake/execute_unstake transactions       │
-│  5. Log decisions for transparency                          │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    VALIDATORS                               │
-│  Stake accounts owned by vault PDA                          │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│           USERS                      │
+│  Deposit SOL → Vault PDA            │
+│  Withdraw SOL ← Vault PDA           │
+└──────────────┬───────────────────────┘
+               │
+┌──────────────▼───────────────────────┐
+│    AGENT VAULT — Smart Contract      │
+│    Program: 66VGaTF2qqo...           │
+│                                      │
+│  Vault PDA (HpsHuysk...)             │
+│  ├─ authority (admin)                │
+│  ├─ agent (By596j...)                │
+│  ├─ total_deposits                   │
+│  ├─ total_staked                     │
+│  └─ total_users                      │
+│                                      │
+│  Instructions:                       │
+│  • initialize_vault                  │
+│  • deposit / withdraw                │
+│  • stake_to_validator (agent)        │
+│  • deactivate_stake (agent)          │
+│  • withdraw_stake (agent → vault)    │
+│  • update_agent (admin)              │
+└──────────────┬───────────────────────┘
+               │
+┌──────────────▼───────────────────────┐
+│         AI AGENT (Cron)              │
+│                                      │
+│  1. Fetch validator data             │
+│  2. Score & rank                     │
+│  3. Rebalance underperformers        │
+│  4. Stake to new validators          │
+│  5. Log activity to dashboard        │
+└──────────────┬───────────────────────┘
+               │
+┌──────────────▼───────────────────────┐
+│     STAKE ACCOUNTS (Native)          │
+│  Staker: Vault PDA                   │
+│  Withdrawer: Vault PDA               │
+│  Delegated to: Selected validators   │
+└──────────────────────────────────────┘
 ```
+
+---
+
+## ✅ What's Working (Testnet)
+
+- [x] **Smart contract deployed** — Program ID: `66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b`
+- [x] **Vault initialized** — PDA: `HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u`
+- [x] **User deposits work** — Deposit SOL via dashboard
+- [x] **Agent stakes to 5 validators** — Real testnet transactions
+- [x] **Rebalancing logic** — Deactivate underperformers, withdraw after cooldown, restake
+- [x] **Dashboard** — Live vault status, stake positions, agent reasoning, activity log
+- [x] **Agent activity logging** — Full transparency of all agent decisions
 
 ---
 
@@ -118,87 +134,30 @@ All decisions are logged on-chain via events for full transparency.
 
 | Component | Technology |
 |-----------|------------|
-| Smart Contract | Anchor (Rust) |
-| Frontend | Next.js 16 + React 19 |
-| Styling | Tailwind CSS |
-| Wallet | @solana/wallet-adapter |
-| SDK | TypeScript |
-| Agent | Node.js cron + SDK |
-| Data | validators.app API + Solana RPC |
-
----
-
-## 📊 Strategy Parameters
-
-| Parameter | Options | Description |
-|-----------|---------|-------------|
-| Risk Tolerance | Low / Medium / High | How much variance you accept |
-| Target APY | 6-12% | Your yield goal |
-| Max Validators | 1-10 | Diversification level |
-| Decentralization | On / Off | Prefer validators that help network health |
-
----
-
-## ✅ What's Built
-
-- [x] **Smart Contract** — Full Anchor program with all instructions
-- [x] **TypeScript SDK** — Client library for interacting with vaults
-- [x] **Frontend** — Complete UI for vault management
-  - Landing page explaining Agent Vault
-  - Vault creation & management (`/vault`)
-  - Dashboard with positions & agent activity (`/dashboard`)
-  - Validator discovery (`/discover`)
-  - Documentation (`/docs`)
-- [x] **API Endpoints** — Agent-first design
-  - `/api/vault/status` — Get vault state
-  - `/api/agent/recommend` — AI staking recommendations
-- [x] **Algorithm** — Working staking decision logic
-
----
-
-## 🚀 What's Next
-
-- [ ] Deploy smart contract to devnet
-- [ ] Run agent cron job (hourly checks)
-- [ ] Production deployment
-- [ ] Auto-compounding rewards
-- [ ] Multi-vault support
+| Smart Contract | Anchor (Rust) on Solana |
+| Agent | TypeScript (Node.js cron job) |
+| Dashboard | Next.js 16 + React 19 + Tailwind |
+| Data Sources | validators.app API + Solana RPC |
+| Deployment | Vercel (dashboard) + Local server (agent) |
 
 ---
 
 ## 🔗 Links
 
-- **Live Demo:** https://stakepilot-olig.vercel.app
+- **Live Dashboard:** https://stakepilot-olig.vercel.app
 - **GitHub:** https://github.com/ilhanu/stakepilot
-- **Program ID:** `66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b`
+- **Program (Testnet):** [Explorer](https://explorer.solana.com/address/66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b?cluster=testnet)
+- **Vault (Testnet):** [Explorer](https://explorer.solana.com/address/HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u?cluster=testnet)
 
 ---
 
 ## 👤 Team
 
-**Staker Space** — Building staking infrastructure for Solana
+**Staker Space** — We run a Solana validator. We built this because we live the problem.
 
 - Twitter: [@StakerSpace](https://twitter.com/StakerSpace)
 - Website: [staker.space](https://staker.space)
 
 ---
 
-## 💡 Why This Matters
-
-**Staking is broken:**
-- 80% of stake goes to top 20 validators (centralization)
-- Users stake once and forget (no optimization)
-- Comparing validators is confusing (APY, commission, MEV, uptime...)
-
-**Agent Vault fixes this:**
-- Set your preferences once, agent optimizes continuously
-- Agent can support decentralization while maximizing your returns
-- You stay in control — withdraw anytime, change agent anytime
-- All decisions transparent (on-chain events)
-
-**The agent paradigm:**
-Instead of trusting a protocol to manage your funds, you trust a constrained agent that can only execute within your defined parameters. It's the best of both worlds — automation without custody risk.
-
----
-
-*StakePilot: Your SOL. Your strategy. Agent execution.*
+*StakePilot: Your SOL. Smart staking. Agent execution.*

@@ -216,7 +216,7 @@ export default function DocsPage() {
               },
               {
                 q: "What network is this on?",
-                a: "Currently on Devnet for testing. Mainnet launch is planned after hackathon judging."
+                a: "Currently on Testnet for testing. Mainnet launch is planned after hackathon judging."
               },
             ].map((item, i) => (
               <div key={i} className="card p-4 md:p-5">
@@ -237,7 +237,7 @@ export default function DocsPage() {
                 <h3 className="font-bold mb-2 md:mb-3 text-sm md:text-base">Smart Contract</h3>
                 <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-[var(--text-secondary)]">
                   <li><strong>Framework:</strong> Anchor (Rust)</li>
-                  <li><strong>Network:</strong> Devnet</li>
+                  <li><strong>Network:</strong> Testnet</li>
                   <li><strong>Program ID:</strong></li>
                   <li className="font-mono text-[10px] md:text-xs break-all text-[var(--text-muted)]">
                     66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b

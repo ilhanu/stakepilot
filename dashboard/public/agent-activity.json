@@ -1,0 +1,44 @@
+[
+  {
+    "timestamp": "2026-02-09T22:00:00.000Z",
+    "type": "check",
+    "summary": "Agent check complete. 5 active positions, vault 0.10 SOL"
+  },
+  {
+    "timestamp": "2026-02-09T18:15:32.000Z",
+    "type": "stake",
+    "summary": "Staked 1.00 SOL to 3S4jVg5p...",
+    "txSignature": "5example1signature",
+    "validator": "3S4jVg5p1rw7t8MS5UtjhnChmo6ABdmh3nyXTVzAyP9f",
+    "amount": 1.0
+  },
+  {
+    "timestamp": "2026-02-09T18:14:28.000Z",
+    "type": "stake",
+    "summary": "Staked 1.00 SOL to validator #2",
+    "amount": 1.0
+  },
+  {
+    "timestamp": "2026-02-09T18:13:15.000Z",
+    "type": "stake",
+    "summary": "Staked 1.00 SOL to validator #3",
+    "amount": 1.0
+  },
+  {
+    "timestamp": "2026-02-09T18:12:02.000Z",
+    "type": "stake",
+    "summary": "Staked 1.00 SOL to validator #4",
+    "amount": 1.0
+  },
+  {
+    "timestamp": "2026-02-09T18:10:50.000Z",
+    "type": "stake",
+    "summary": "Staked 1.00 SOL to validator #5",
+    "amount": 1.0
+  },
+  {
+    "timestamp": "2026-02-09T18:10:00.000Z",
+    "type": "check",
+    "summary": "Agent started. Vault balance: 5.10 SOL, 0 active positions"
+  }
+]

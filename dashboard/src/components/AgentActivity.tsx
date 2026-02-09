@@ -38,12 +38,21 @@ export function AgentActivity() {
     return () => clearInterval(interval);
   }, []);
 
+  const [recentActivity, setRecentActivity] = useState<{type: string; summary: string; timestamp: string; txSignature?: string}[]>([]);
+
   const fetchAgentDecision = async () => {
     try {
-      const res = await fetch("/api/agent/analyze");
-      if (res.ok) {
-        const data = await res.json();
+      const [analyzeRes, activityRes] = await Promise.all([
+        fetch("/api/agent/analyze"),
+        fetch("/api/agent/activity?limit=10"),
+      ]);
+      if (analyzeRes.ok) {
+        const data = await analyzeRes.json();
         setDecision(data);
+      }
+      if (activityRes.ok) {
+        const actData = await activityRes.json();
+        setRecentActivity(actData.activities || []);
       }
     } catch (err) {
       console.error("Failed to fetch agent decision:", err);
@@ -277,6 +286,43 @@ export function AgentActivity() {
           </div>
         )}
       </div>
+
+      {/* Recent Agent Activity (from cron job) */}
+      {recentActivity.length > 0 && (
+        <div className="px-4 sm:px-6 pb-2">
+          <h3 className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)] mb-2 flex items-center gap-2">
+            <span>📜</span> Recent Agent Activity
+          </h3>
+          <div className="space-y-1.5 max-h-40 overflow-y-auto">
+            {recentActivity.map((a, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs">
+                <span className={`mt-0.5 shrink-0 ${
+                  a.type === "stake" ? "text-[var(--accent)]" : 
+                  a.type === "deactivate" ? "text-orange-400" : 
+                  a.type === "withdraw" ? "text-blue-400" : 
+                  a.type === "error" ? "text-red-400" : "text-[var(--text-muted)]"
+                }`}>
+                  {a.type === "stake" ? "↗" : a.type === "deactivate" ? "⏸" : a.type === "withdraw" ? "↙" : a.type === "error" ? "✗" : "◉"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[var(--text-secondary)]">{a.summary}</span>
+                  {a.txSignature && (
+                    <a
+                      href={`https://explorer.solana.com/tx/${a.txSignature}?cluster=testnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 text-[var(--accent)] hover:underline"
+                    >
+                      tx →
+                    </a>
+                  )}
+                </div>
+                <span className="text-[var(--text-muted)] shrink-0">{new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Execution Log */}
       {executionLog.length > 0 && (

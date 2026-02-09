@@ -54,6 +54,39 @@ interface ValidatorRecommendation {
   score: number;
 }
 
+// Activity log file — dashboard reads this to show agent history
+const ACTIVITY_LOG_PATH = path.join(__dirname, "..", "public", "agent-activity.json");
+
+interface ActivityEntry {
+  timestamp: string;
+  type: "stake" | "deactivate" | "withdraw" | "rebalance" | "check" | "error";
+  summary: string;
+  txSignature?: string;
+  validator?: string;
+  amount?: number;
+}
+
+function loadActivityLog(): ActivityEntry[] {
+  try {
+    if (fs.existsSync(ACTIVITY_LOG_PATH)) {
+      return JSON.parse(fs.readFileSync(ACTIVITY_LOG_PATH, "utf-8"));
+    }
+  } catch {}
+  return [];
+}
+
+function appendActivity(entry: Omit<ActivityEntry, "timestamp">) {
+  const activities = loadActivityLog();
+  activities.unshift({ ...entry, timestamp: new Date().toISOString() });
+  // Keep last 200 entries
+  const trimmed = activities.slice(0, 200);
+  try {
+    fs.writeFileSync(ACTIVITY_LOG_PATH, JSON.stringify(trimmed, null, 2));
+  } catch (e) {
+    console.error("Failed to write activity log:", e);
+  }
+}
+
 function log(message: string) {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${message}`);
@@ -210,12 +243,20 @@ async function stakeToValidator(
   
   try {
     const sig = await sendAndConfirmTransaction(connection, tx, [agent, stakeAccount]);
+    appendActivity({
+      type: "stake",
+      summary: `Staked ${Number(amountLamports) / LAMPORTS_PER_SOL} SOL to ${validatorVote.slice(0, 8)}...`,
+      txSignature: sig,
+      validator: validatorVote,
+      amount: Number(amountLamports) / LAMPORTS_PER_SOL,
+    });
     return sig;
   } catch (error: any) {
     log(`Stake failed: ${error.message}`);
     if (error.logs) {
       error.logs.forEach((l: string) => log(`  ${l}`));
     }
+    appendActivity({ type: "error", summary: `Stake to ${validatorVote.slice(0, 8)}... failed: ${error.message}` });
     return null;
   }
 }
@@ -240,6 +281,11 @@ async function deactivateStake(
   const tx = new Transaction().add(ix);
   try {
     const sig = await sendAndConfirmTransaction(connection, tx, [agent]);
+    appendActivity({
+      type: "deactivate",
+      summary: `Deactivated stake ${stakeAccountPubkey.slice(0, 8)}...`,
+      txSignature: sig,
+    });
     return sig;
   } catch (error: any) {
     log(`Deactivate failed: ${error.message}`);
@@ -268,6 +314,11 @@ async function withdrawStake(
   const tx = new Transaction().add(ix);
   try {
     const sig = await sendAndConfirmTransaction(connection, tx, [agent]);
+    appendActivity({
+      type: "withdraw",
+      summary: `Withdrew deactivated stake ${stakeAccountPubkey.slice(0, 8)}... back to vault`,
+      txSignature: sig,
+    });
     return sig;
   } catch (error: any) {
     log(`Withdraw failed: ${error.message}`);
@@ -361,6 +412,7 @@ async function main() {
   // --- STEP 1B: Evaluate active stakes for rebalancing ---
   const bestScore = recommendations.length > 0 ? recommendations[0].score : 100;
   let deactivatedCount = 0;
+  const deactivatedVoters = new Set<string>();
   
   for (const stake of activeStakes) {
     const rec = recMap.get(stake.voter);
@@ -390,6 +442,7 @@ async function main() {
         log(`✅ Deactivated — will be withdrawable in ~2 epochs`);
         log(`   TX: https://explorer.solana.com/tx/${sig}?cluster=testnet`);
         deactivatedCount++;
+        deactivatedVoters.add(stake.voter);
       } else {
         log(`⚠️ Failed to deactivate`);
       }
@@ -413,14 +466,13 @@ async function main() {
   
   log(`\nPost-rebalance balances: Vault ${(updatedVaultBalance / LAMPORTS_PER_SOL).toFixed(4)} SOL, Agent ${(updatedAgentBalance / LAMPORTS_PER_SOL).toFixed(4)} SOL`);
   
-  // Get current active validators (refresh after deactivations)
+  // Get current active validators (exclude ones we just deactivated)
   const currentActiveVoters = new Set(
     activeStakes
-      .filter(s => !deactivatingStakes.find(d => d.pubkey === s.pubkey))
+      .filter(s => !deactivatedVoters.has(s.voter))
       .map(s => s.voter)
   );
   
-  // Also exclude validators we just deactivated (don't re-stake immediately)
   const newValidators = recommendations.filter(
     (r) => !currentActiveVoters.has(r.validator)
   );
@@ -474,11 +526,20 @@ async function main() {
   
   // Final summary
   const finalVault = await connection.getAccountInfo(VAULT_PDA);
-  log(`\n📊 Final vault balance: ${finalVault ? finalVault.lamports / LAMPORTS_PER_SOL : 0} SOL`);
+  const finalBalance = finalVault ? finalVault.lamports / LAMPORTS_PER_SOL : 0;
+  log(`\n📊 Final vault balance: ${finalBalance} SOL`);
   log("🤖 Agent execution complete");
+
+  // Log check activity
+  appendActivity({
+    type: "check",
+    summary: `Agent check complete. ${activeStakes.length} active positions, vault ${finalBalance.toFixed(2)} SOL`,
+    amount: finalBalance,
+  });
 }
 
 main().catch((error) => {
   log(`❌ Fatal error: ${error.message}`);
+  appendActivity({ type: "error", summary: `Fatal error: ${error.message}` });
   process.exit(1);
 });

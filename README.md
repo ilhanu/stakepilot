@@ -1,167 +1,94 @@
-# StakePilot — Agent Vault
+# StakePilot — Autonomous Staking Vault
 
-**Autonomous staking vault controlled by AI agents**
+An AI agent that autonomously stakes SOL to the best underserved validators. It can stake — but can **never** withdraw to itself. Enforced by smart contract.
 
----
-
-## What Is This?
-
-StakePilot lets you deposit SOL into a smart contract vault. You set your staking strategy (risk tolerance, target APY, preferences), and an AI agent executes optimal staking operations on your behalf.
-
-**Key guarantee:** The agent can stake your funds to validators, but can NEVER withdraw to itself. Only you can withdraw.
+**Live:** https://stakepilot-olig.vercel.app  
+**Network:** Solana Testnet  
+**Program:** `66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b`
 
 ---
 
 ## How It Works
 
-1. **Create Vault** — Connect wallet, create your personal vault
-2. **Set Strategy** — Choose risk level, target APY, preferences
-3. **Deposit SOL** — Add funds to your vault
-4. **Agent Works** — AI analyzes validators, executes optimal staking
-5. **Withdraw Anytime** — Full control, exit whenever you want
-
----
-
-## Strategy Options
-
-| Parameter | Options | Description |
-|-----------|---------|-------------|
-| Risk Tolerance | Low / Medium / High | How much variance you accept |
-| Target APY | 6-12% | Your yield goal |
-| Max Validators | 1-10 | Diversification level |
-| Decentralization | On / Off | Prefer validators that help network health |
-
-### Risk Levels
-
-- **Low**: Only established validators (>1M SOL stake)
-- **Medium**: Mix of established and growing validators
-- **High**: Maximize APY, accept more variance
-
----
+1. **Deposit** SOL into the vault (on-chain smart contract)
+2. **Agent scores** 1,500+ validators by commission, uptime, stake concentration
+3. **Agent stakes** to top underserved validators (up to 5)
+4. **Agent rebalances** — deactivates underperformers, withdraws after cooldown, restakes
+5. **Withdraw anytime** — only you can withdraw, ~2 day cooldown
 
 ## Security
 
-✅ **You always control your funds**
-- Only you can withdraw
-- Agent can only stake TO validators
-- You can change agent anytime
-- All operations are transparent (on-chain events)
+The smart contract enforces that the agent can only:
+- Stake vault funds **to validators**
+- Deactivate stake accounts
+- Withdraw deactivated stake **back to the vault** (not to the agent)
 
-❌ **What the agent CANNOT do**
-- Withdraw your funds
-- Change your strategy
-- Lock your funds
-
----
-
-## Architecture
-
-```
-User → Agent Vault (Smart Contract) → Validators
-              ↑
-         AI Agent
-```
-
-The AI agent reads your strategy from the chain, fetches validator performance data, and submits staking transactions that align with your preferences.
-
----
-
-## Quick Start
-
-### 1. Install Dependencies
-```bash
-npm install
-```
-
-### 2. Run Frontend
-```bash
-cd dashboard
-npm run dev
-```
-
-### 3. Build Smart Contract
-```bash
-anchor build
-```
-
-### 4. Deploy (Devnet)
-```bash
-anchor deploy --provider.cluster devnet
-```
-
----
+The agent **cannot** transfer funds to itself or any other address.
 
 ## Project Structure
 
 ```
 stakepilot/
-├── programs/
-│   └── agent-vault/          # Anchor smart contract
-│       └── src/
-│           └── lib.rs        # Main program logic
-├── src/
-│   └── lib/
-│       └── agent-vault-sdk.ts # TypeScript SDK
-├── dashboard/                 # Next.js frontend
-├── Anchor.toml               # Anchor config
+├── programs/agent-vault/src/lib.rs    # Anchor smart contract
+├── dashboard/                          # Next.js frontend
+│   ├── scripts/agent-execute.ts       # Agent cron job
+│   ├── src/app/                       # Pages (vault, dashboard, etc.)
+│   └── src/components/                # UI components
+├── SUBMISSION.md                       # Hackathon submission
 └── README.md
 ```
 
----
+## Quick Start
 
-## Smart Contract
+```bash
+# Install & run dashboard
+cd dashboard
+npm install
+npm run dev
 
-### Program ID (Devnet)
+# Run agent manually
+npx ts-node scripts/agent-execute.ts
+
+# Set up cron (hourly)
+# 0 * * * * cd /path/to/dashboard && npx ts-node scripts/agent-execute.ts >> /var/log/stakepilot-agent.log 2>&1
 ```
-66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b
+
+## Agent Algorithm
+
+```
+EVERY HOUR:
+  1. Scan existing stake accounts
+  2. Score validators (commission ≤5%, uptime, not delinquent, <1M SOL stake)
+  3. Deactivate underperformers (score <30 or <50% of best)
+  4. Withdraw fully-deactivated stakes → vault
+  5. Stake vault balance to top validators (evenly distributed)
+  6. Log all activity for dashboard transparency
 ```
 
-### Instructions
+## Smart Contract Instructions
 
 | Instruction | Caller | Description |
 |-------------|--------|-------------|
-| `initialize_vault` | User | Create vault |
-| `deposit` | User | Add SOL |
-| `withdraw` | User | Remove SOL |
-| `update_strategy` | User | Change preferences |
-| `execute_stake` | Agent | Stake to validator |
-| `execute_unstake` | Agent | Unstake |
-| `change_agent` | User | Replace agent |
+| `initialize_vault` | Admin | One-time vault setup |
+| `deposit` | User | Add SOL to vault |
+| `request_unstake` | User | Begin withdrawal process |
+| `withdraw` | User | Withdraw after cooldown |
+| `stake_to_validator` | Agent | Stake to a validator |
+| `deactivate_stake` | Agent | Begin unstaking |
+| `withdraw_stake` | Agent | Pull deactivated stake back to vault |
+| `update_agent` | Admin | Change agent wallet |
+
+## Tech Stack
+
+- **Smart Contract:** Anchor (Rust)
+- **Agent:** TypeScript + @solana/web3.js
+- **Dashboard:** Next.js 16, React 19, Tailwind CSS
+- **Data:** validators.app API, Solana RPC
+
+## Built by [Staker Space](https://staker.space)
+
+We run a Solana validator. We built StakePilot because we live the staking centralization problem every day.
 
 ---
 
-## API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/vault/status` | GET | Get vault status |
-| `/api/agent/recommend` | GET | Get staking recommendation |
-| `/api/agent/execute` | POST | Execute staking decision |
-
----
-
-## Hackathon
-
-**Colosseum Agent Hackathon**  
-**Deadline:** Feb 12, 2026
-
-### What Makes This Different
-
-1. **Real smart contract** — Not just an API, actual on-chain program
-2. **User control** — You set strategy, agent executes
-3. **Security-first** — Agent can't steal funds
-4. **Transparent** — All operations visible on-chain
-
----
-
-## License
-
-MIT
-
----
-
-## Contact
-
-Built by Staker Space  
-Website: [staker.space](https://staker.space)  
-Twitter: [@StakerSpace](https://twitter.com/StakerSpace)
+*Colosseum Agent Hackathon 2026*

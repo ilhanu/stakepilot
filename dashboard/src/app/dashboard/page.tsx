@@ -132,17 +132,31 @@ export default function DashboardPage() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   // Agent stats (derived from activity)
+  const lastCheckActivity = activities.find(a => a.type === "check");
+  const lastActionActivity = activities.find(a => ["stake", "unstake", "rebalance"].includes(a.type));
+  
   const agentStats: AgentStats = {
     status: activities.length > 0 ? "active" : "idle",
-    lastExecution: activities[0]?.timestamp 
-      ? formatTimeAgo(new Date(activities[0].timestamp))
+    lastExecution: lastCheckActivity?.timestamp 
+      ? formatTimeAgo(new Date(lastCheckActivity.timestamp))
       : "Never",
     totalDecisions: activities.filter(a => ["stake", "unstake", "rebalance"].includes(a.type)).length,
     successRate: 100, // All fetched txs succeeded
     avgApyAchieved: positions.length > 0 
       ? positions.reduce((sum, p) => sum + (p.netApy || 7), 0) / positions.length
       : 0,
-    nextCheck: "~1 hour",
+    nextCheck: lastCheckActivity?.timestamp
+      ? getNextRunEstimate(new Date(lastCheckActivity.timestamp))
+      : "~1 hour",
+  };
+
+  // Action summary counts
+  const actionSummary = {
+    totalStakes: activities.filter(a => a.type === "stake").length,
+    totalDeactivations: activities.filter(a => a.type === "unstake" || a.type === "rebalance").length,
+    totalChecks: activities.filter(a => a.type === "check").length,
+    totalDeposits: activities.filter(a => a.type === "deposit").length,
+    solStaked: activities.filter(a => a.type === "stake").reduce((sum, a) => sum + (a.amount || 0), 0),
   };
 
   // Fetch all data
@@ -340,6 +354,45 @@ export default function DashboardPage() {
         <div className="mb-6 inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-400 text-xs">
           <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
           Devnet · Epoch {currentEpoch}
+        </div>
+
+        {/* Agent Monitor Bar */}
+        <div className="mb-6 p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${agentStats.status === "active" ? "bg-[var(--accent)] animate-pulse" : "bg-[var(--text-muted)]"}`} />
+              <div>
+                <span className="text-sm font-medium">Agent {agentStats.status === "active" ? "Active" : "Idle"}</span>
+                <span className="text-xs text-[var(--text-muted)] ml-2">
+                  Last run: {agentStats.lastExecution}
+                  {lastCheckActivity?.timestamp && (
+                    <span className="ml-1">({formatTimestamp(lastCheckActivity.timestamp)})</span>
+                  )}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
+              <span>Next run: <span className="text-[var(--accent)] font-medium">{agentStats.nextCheck}</span></span>
+              <span>·</span>
+              <span>Cycle: hourly</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+          {[
+            { label: "Stake Actions", value: actionSummary.totalStakes, color: "text-[var(--accent)]" },
+            { label: "Rebalances", value: actionSummary.totalDeactivations, color: "text-blue-400" },
+            { label: "Agent Checks", value: actionSummary.totalChecks, color: "text-[var(--text-muted)]" },
+            { label: "SOL Staked", value: actionSummary.solStaked.toFixed(1), color: "text-[var(--accent-secondary)]" },
+            { label: "Deposits", value: actionSummary.totalDeposits, color: "text-green-400" },
+          ].map((stat, i) => (
+            <div key={i} className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-center">
+              <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
+              <div className="text-xs text-[var(--text-muted)]">{stat.label}</div>
+            </div>
+          ))}
         </div>
 
         {/* Main Stats Grid */}
@@ -550,6 +603,10 @@ export default function DashboardPage() {
                   <span>{agentStats.lastExecution}</span>
                 </div>
                 <div className="flex justify-between text-sm">
+                  <span className="text-[var(--text-muted)]">Next run</span>
+                  <span className="text-[var(--accent)]">{agentStats.nextCheck}</span>
+                </div>
+                <div className="flex justify-between text-sm">
                   <span className="text-[var(--text-muted)]">Decisions</span>
                   <span>{agentStats.totalDecisions}</span>
                 </div>
@@ -698,6 +755,16 @@ function formatTimeAgo(date: Date): string {
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+function getNextRunEstimate(lastRun: Date): string {
+  const nextRun = new Date(lastRun.getTime() + 60 * 60 * 1000); // +1 hour
+  const now = new Date();
+  const diffMs = nextRun.getTime() - now.getTime();
+  if (diffMs <= 0) return "Any moment";
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 60) return `~${diffMin}m`;
+  return `~${Math.floor(diffMin / 60)}h ${diffMin % 60}m`;
 }
 
 function formatTimestamp(isoString: string): string {
