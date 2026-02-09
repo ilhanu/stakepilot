@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Check if already staked to Staker Space
     const existingStakes = await getStakeAccounts(agent.publicKey);
     const alreadyStaked = existingStakes.some(
-      (sa) => sa.voter === STAKER_SPACE_VALIDATOR
+      (sa) => sa.validator === STAKER_SPACE_VALIDATOR
     );
 
     if (alreadyStaked) {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         message: "Already staked to Staker Space validator",
         existingStakes: existingStakes.map(sa => ({
           stakeAccount: sa.pubkey,
-          validator: sa.voter,
+          validator: sa.validator,
           lamports: sa.lamports / LAMPORTS_PER_SOL,
           state: sa.state,
         })),
