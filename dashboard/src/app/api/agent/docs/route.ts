@@ -43,13 +43,13 @@ Authorization: Bearer <agent-api-key>
 
 - **Program ID**: \`66VGaTF2qqogyAC6jczwepjk3C6i5QAe8YQ4mFHveC4b\`
 - **Vault PDA**: \`HpsHuysk6HJ8HW5VcRJvBCqdw4jpwLoHi1EW3Lma2p5u\`
-- **Network**: Devnet (Mainnet coming soon)
+- **Network**: Testnet (Mainnet coming soon)
 `,
   },
   servers: [
     {
       url: "https://stakepilot-olig.vercel.app/api/agent",
-      description: "Production (Devnet)",
+      description: "Production (Testnet)",
     },
     {
       url: "http://localhost:3000/api/agent",
