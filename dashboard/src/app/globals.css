@@ -44,6 +44,8 @@
   
   /* Font */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
 }
 
 :root {
@@ -97,9 +99,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Display font for headings */
+h1, h2, h3, h4 {
+  font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
+  letter-spacing: -0.03em;
+}
+
 /* Font utilities */
 .font-sans {
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
 }
 
 /* Scrollbar */
@@ -212,12 +228,13 @@ body {
   box-shadow: 0 8px 24px var(--coral-glow);
 }
 
-/* Stat number styling */
+/* Stat number styling — Space Grotesk for big numbers */
 .stat-value {
+  font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
   font-size: 3rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
   line-height: 1;
 }
 
@@ -225,6 +242,14 @@ body {
   .stat-value {
     font-size: 3.5rem;
   }
+}
+
+/* Mono numbers for smaller inline stats */
+.num {
+  font-family: var(--font-display), var(--font-inter), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  font-weight: 600;
 }
 
 /* Gradient text using the palette */

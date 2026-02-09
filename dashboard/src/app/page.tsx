@@ -88,19 +88,19 @@ export default function Home() {
           {/* Live Stats */}
           <div className="grid grid-cols-3 gap-3 md:gap-6 max-w-2xl mx-auto">
             <div className="p-4 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="text-2xl md:text-4xl font-bold text-[var(--accent)]">
+              <div className="text-2xl md:text-4xl font-bold text-[var(--accent)] font-display tracking-tight">
                 {loading ? "..." : (vaultStats?.totalStaked.toFixed(2) || "0")}
               </div>
               <div className="text-xs md:text-sm text-[var(--text-muted)] mt-1">SOL Staked</div>
             </div>
             <div className="p-4 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="text-2xl md:text-4xl font-bold text-white">
+              <div className="text-2xl md:text-4xl font-bold text-white font-display tracking-tight">
                 {loading ? "..." : (vaultStats?.stakePositions || 0)}
               </div>
               <div className="text-xs md:text-sm text-[var(--text-muted)] mt-1">Validators</div>
             </div>
             <div className="p-4 md:p-6 rounded-xl md:rounded-2xl bg-[var(--bg-card)] border border-[var(--border)]">
-              <div className="text-2xl md:text-4xl font-bold text-[var(--accent-secondary)]">
+              <div className="text-2xl md:text-4xl font-bold text-[var(--accent-secondary)] font-display tracking-tight">
                 ~6.3%
               </div>
               <div className="text-xs md:text-sm text-[var(--text-muted)] mt-1">Expected APY</div>
@@ -288,7 +288,7 @@ export default function Home() {
             ].map((gate, i) => (
               <div key={i} className="p-5 md:p-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--accent)]/15 text-center hover:border-[var(--accent)]/30 transition-colors">
                 <div className="text-2xl mb-3">{gate.icon}</div>
-                <div className="text-2xl md:text-3xl font-bold text-[var(--accent)]">{gate.value}</div>
+                <div className="text-2xl md:text-3xl font-bold text-[var(--accent)] font-display tracking-tight">{gate.value}</div>
                 <div className="text-xs text-[var(--accent)] font-medium">{gate.unit}</div>
                 <div className="font-semibold text-sm mt-2">{gate.label}</div>
                 <div className="text-xs text-[var(--text-muted)] mt-1">{gate.desc}</div>
@@ -374,22 +374,22 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-3 md:gap-4">
                 <div className="p-4 md:p-5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)]">
                   <div className="text-xs text-[var(--text-muted)] mb-1">Commission</div>
-                  <div className="text-xl md:text-2xl font-bold text-[var(--accent)]">0%</div>
+                  <div className="text-xl md:text-2xl font-bold text-[var(--accent)] font-display">0%</div>
                   <div className="text-xs text-[var(--text-muted)]">on mainnet</div>
                 </div>
                 <div className="p-4 md:p-5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)]">
                   <div className="text-xs text-[var(--text-muted)] mb-1">Location</div>
-                  <div className="text-xl md:text-2xl font-bold">🇳🇱</div>
+                  <div className="text-xl md:text-2xl font-bold font-display">🇳🇱</div>
                   <div className="text-xs text-[var(--text-muted)]">Netherlands</div>
                 </div>
                 <div className="p-4 md:p-5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)]">
                   <div className="text-xs text-[var(--text-muted)] mb-1">Client</div>
-                  <div className="text-xl md:text-2xl font-bold text-white">Agave</div>
+                  <div className="text-xl md:text-2xl font-bold text-white font-display">Agave</div>
                   <div className="text-xs text-[var(--text-muted)]">client diversity</div>
                 </div>
                 <div className="p-4 md:p-5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border)]">
                   <div className="text-xs text-[var(--text-muted)] mb-1">DoubleZero</div>
-                  <div className="text-xl md:text-2xl font-bold text-[var(--accent-secondary)]">Yes</div>
+                  <div className="text-xl md:text-2xl font-bold text-[var(--accent-secondary)] font-display">Yes</div>
                   <div className="text-xs text-[var(--text-muted)]">low-latency infra</div>
                 </div>
               </div>
