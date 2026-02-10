@@ -43,15 +43,39 @@ const STAKE_DISCRIMINATOR = Buffer.from([11, 111, 254, 86, 247, 52, 8, 233]);
 const DEACTIVATE_DISCRIMINATOR = Buffer.from([165, 158, 229, 97, 168, 220, 187, 225]);
 const WITHDRAW_DISCRIMINATOR = Buffer.from([153, 8, 22, 138, 105, 176, 87, 66]);
 
-// Rebalancing thresholds
-const MIN_SCORE_THRESHOLD = 30;       // Below this score → deactivate
-const SCORE_DROP_THRESHOLD = 0.5;     // If score drops to 50% of best → consider rebalancing
-const DEACTIVATION_COOLDOWN = 2;      // ~2 epochs for deactivation cooldown
+// Rebalancing thresholds — conservative to protect APY
+// Deactivating stake = ~2 epochs of ZERO rewards, so only do it when justified
+const MAX_COMMISSION_TOLERATED = 8;   // Deactivate if commission rises above this
+const COMMISSION_JUMP_THRESHOLD = 3;  // Deactivate if commission increased by 3%+ from what we expected  
+const DELINQUENCY_TRIGGER = true;     // Deactivate if validator goes delinquent
 
 interface ValidatorRecommendation {
   validator: string;
   validatorName: string;
   score: number;
+  commission: number;
+  delinquent: boolean;
+  activeStake: number;
+}
+
+// Cache file for tracking validator state between runs
+const STATE_FILE = path.join(__dirname, "..", "public", "agent-state.json");
+
+interface AgentState {
+  lastRun: string;
+  validatorCommissions: Record<string, number>; // vote_account -> commission at time of staking
+  epochAtLastRebalance: number;
+}
+
+function loadState(): AgentState {
+  try {
+    if (fs.existsSync(STATE_FILE)) return JSON.parse(fs.readFileSync(STATE_FILE, "utf-8"));
+  } catch {}
+  return { lastRun: "", validatorCommissions: {}, epochAtLastRebalance: 0 };
+}
+
+function saveState(state: AgentState) {
+  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
 }
 
 // Activity log file — dashboard reads this to show agent history
@@ -110,39 +134,41 @@ async function getRecommendations(): Promise<ValidatorRecommendation[]> {
     
     const validators = await response.json();
     
-    // Filter and score validators
-    const qualified = validators
-      .filter((v: any) => 
-        v.is_active && 
-        !v.delinquent && 
-        v.commission <= 5 &&
-        (v.active_stake / 1e9) < 1_000_000
-      )
-      .map((v: any) => ({
+    // Build a full map for lookups (used in rebalancing too)
+    const allValidators = new Map<string, ValidatorRecommendation>();
+    for (const v of validators) {
+      allValidators.set(v.vote_account, {
         validator: v.vote_account,
         validatorName: v.name || `${v.vote_account.slice(0, 8)}...`,
         score: v.total_score || 0,
-        stake: v.active_stake / 1e9,
-        commission: v.commission,
-      }))
-      .sort((a: any, b: any) => b.score - a.score)
+        commission: v.commission ?? 0,
+        delinquent: v.delinquent ?? false,
+        activeStake: (v.active_stake || 0) / 1e9,
+      });
+    }
+    
+    // Store full map for rebalancing lookups
+    (global as any).__validatorMap = allValidators;
+    
+    // Filter for new staking candidates
+    const qualified = [...allValidators.values()]
+      .filter((v) => 
+        !v.delinquent && 
+        v.commission <= 5 &&
+        v.activeStake < 1_000_000
+      )
+      .sort((a, b) => b.score - a.score)
       .slice(0, MAX_VALIDATORS);
     
     // Always include Staker Space
     const hasStakerSpace = qualified.some(
-      (v: any) => v.validator === STAKER_SPACE_VALIDATOR
+      (v) => v.validator === STAKER_SPACE_VALIDATOR
     );
     
     if (!hasStakerSpace) {
-      const stakerSpace = validators.find(
-        (v: any) => v.vote_account === STAKER_SPACE_VALIDATOR
-      );
+      const stakerSpace = allValidators.get(STAKER_SPACE_VALIDATOR);
       if (stakerSpace) {
-        qualified.unshift({
-          validator: STAKER_SPACE_VALIDATOR,
-          validatorName: stakerSpace.name || "Staker Space",
-          score: 100,
-        });
+        qualified.unshift(stakerSpace);
         qualified.pop(); // Keep at MAX_VALIDATORS
       }
     }
@@ -155,6 +181,9 @@ async function getRecommendations(): Promise<ValidatorRecommendation[]> {
       validator: STAKER_SPACE_VALIDATOR,
       validatorName: "Staker Space",
       score: 100,
+      commission: 0,
+      delinquent: false,
+      activeStake: 0,
     }];
   }
 }
@@ -345,6 +374,14 @@ async function main() {
   
   const connection = new Connection(RPC_URL, "confirmed");
   
+  // Check epoch progress — only rebalance when 80%+ through epoch
+  // (staking changes take effect next epoch, so act near end)
+  const epochInfo = await connection.getEpochInfo();
+  const epochProgress = epochInfo.slotIndex / epochInfo.slotsInEpoch;
+  const slotsRemaining = epochInfo.slotsInEpoch - epochInfo.slotIndex;
+  const hoursRemaining = (slotsRemaining * 0.4) / 3600; // ~400ms per slot on testnet
+  log(`📅 Epoch ${epochInfo.epoch} — ${(epochProgress * 100).toFixed(1)}% complete, ~${hoursRemaining.toFixed(1)}h remaining`);
+  
   // Check balances
   const vaultInfo = await connection.getAccountInfo(VAULT_PDA);
   const vaultBalance = vaultInfo ? vaultInfo.lamports : 0;
@@ -394,7 +431,6 @@ async function main() {
   log(`Got ${recommendations.length} recommendations`);
   
   // --- STEP 1A: Withdraw fully deactivated stake back to vault ---
-  const epochInfo = await connection.getEpochInfo();
   const currentEpoch = epochInfo.epoch;
   
   for (const stake of deactivatingStakes) {
@@ -410,29 +446,44 @@ async function main() {
   }
   
   // --- STEP 1B: Evaluate active stakes for rebalancing ---
-  const bestScore = recommendations.length > 0 ? recommendations[0].score : 100;
+  // ECONOMICS: Deactivating = ~2 epochs of ZERO rewards (~4 days on testnet).
+  // Only deactivate when the cost of NOT deactivating exceeds the lost yield:
+  //   1. Commission raised significantly (staker is getting ripped off)
+  //   2. Validator went delinquent (earning nothing anyway)
+  //   3. Validator no longer exists / shut down
+  // Do NOT deactivate just because score dropped — that destroys APY.
+  
+  const state = loadState();
+  const validatorMap: Map<string, ValidatorRecommendation> = (global as any).__validatorMap || new Map();
   let deactivatedCount = 0;
   const deactivatedVoters = new Set<string>();
   
   for (const stake of activeStakes) {
-    const rec = recMap.get(stake.voter);
-    
     // Skip Staker Space — always keep
     if (stake.voter === STAKER_SPACE_VALIDATOR) continue;
+    
+    const currentInfo = validatorMap.get(stake.voter);
+    const originalCommission = state.validatorCommissions[stake.voter];
     
     let shouldDeactivate = false;
     let reason = "";
     
-    if (!rec) {
-      // Validator dropped out of recommendations entirely (delinquent, high commission, etc.)
+    if (!currentInfo) {
+      // Validator completely disappeared from the network
       shouldDeactivate = true;
-      reason = "no longer in recommended set";
-    } else if (rec.score < MIN_SCORE_THRESHOLD) {
+      reason = "validator no longer found on network";
+    } else if (currentInfo.delinquent) {
+      // Delinquent = not voting = earning zero rewards anyway
       shouldDeactivate = true;
-      reason = `score too low (${rec.score} < ${MIN_SCORE_THRESHOLD})`;
-    } else if (bestScore > 0 && rec.score / bestScore < SCORE_DROP_THRESHOLD) {
+      reason = `validator is delinquent (earning no rewards)`;
+    } else if (currentInfo.commission > MAX_COMMISSION_TOLERATED) {
+      // Commission too high — staker is losing too much yield
       shouldDeactivate = true;
-      reason = `score dropped to ${((rec.score / bestScore) * 100).toFixed(0)}% of best`;
+      reason = `commission too high (${currentInfo.commission}% > ${MAX_COMMISSION_TOLERATED}% max)`;
+    } else if (originalCommission !== undefined && currentInfo.commission >= originalCommission + COMMISSION_JUMP_THRESHOLD) {
+      // Commission was raised significantly since we staked
+      shouldDeactivate = true;
+      reason = `commission raised from ${originalCommission}% to ${currentInfo.commission}% (+${currentInfo.commission - originalCommission}%)`;
     }
     
     if (shouldDeactivate) {
@@ -443,14 +494,20 @@ async function main() {
         log(`   TX: https://explorer.solana.com/tx/${sig}?cluster=testnet`);
         deactivatedCount++;
         deactivatedVoters.add(stake.voter);
+        appendActivity({ type: "deactivate", summary: `Deactivated ${stake.pubkey.slice(0, 8)}... — ${reason}`, txSignature: sig, validator: stake.voter, amount: stake.stake / LAMPORTS_PER_SOL });
       } else {
         log(`⚠️ Failed to deactivate`);
       }
+    } else if (currentInfo) {
+      // Validator is fine — log why we're keeping it
+      log(`  ✅ ${stake.pubkey.slice(0, 8)}... → ${currentInfo.validatorName} | ${currentInfo.commission}% comm | score ${currentInfo.score} — KEEPING`);
     }
   }
   
   if (deactivatedCount > 0) {
-    log(`\n🔄 Deactivated ${deactivatedCount} positions for rebalancing`);
+    log(`\n🔄 Deactivated ${deactivatedCount} positions (only for commission/delinquency issues)`);
+  } else {
+    log(`\n✅ All active positions healthy — no deactivations needed`);
   }
   
   // ==============================
@@ -500,21 +557,26 @@ async function main() {
         // Stake to just the top one
         const top = validatorsToStake[0];
         const amt = Math.min(updatedVaultAvailable, maxStakePerTx);
-        log(`Staking ${(amt / LAMPORTS_PER_SOL).toFixed(4)} SOL to ${top.validatorName}`);
+        log(`Staking ${(amt / LAMPORTS_PER_SOL).toFixed(4)} SOL to ${top.validatorName} (${top.commission}% comm)`);
         const sig = await stakeToValidator(connection, agent, top.validator, BigInt(amt));
         if (sig) {
           log(`✅ Staked to ${top.validatorName}`);
           log(`   TX: https://explorer.solana.com/tx/${sig}?cluster=testnet`);
+          state.validatorCommissions[top.validator] = top.commission;
+          appendActivity({ type: "stake", summary: `Staked ${(amt / LAMPORTS_PER_SOL).toFixed(2)} SOL to ${top.validatorName}`, txSignature: sig, validator: top.validator, amount: amt / LAMPORTS_PER_SOL });
         }
       } else {
         let successCount = 0;
         for (const validator of validatorsToStake) {
-          log(`Staking ${(stakePerValidator / LAMPORTS_PER_SOL).toFixed(4)} SOL to ${validator.validatorName}`);
+          log(`Staking ${(stakePerValidator / LAMPORTS_PER_SOL).toFixed(4)} SOL to ${validator.validatorName} (${validator.commission}% comm)`);
           const sig = await stakeToValidator(connection, agent, validator.validator, BigInt(stakePerValidator));
           if (sig) {
             log(`✅ Staked to ${validator.validatorName}`);
             log(`   TX: https://explorer.solana.com/tx/${sig}?cluster=testnet`);
             successCount++;
+            // Track commission at time of staking
+            state.validatorCommissions[validator.validator] = validator.commission;
+            appendActivity({ type: "stake", summary: `Staked ${(stakePerValidator / LAMPORTS_PER_SOL).toFixed(2)} SOL to ${validator.validatorName} (${validator.commission}% comm)`, txSignature: sig, validator: validator.validator, amount: stakePerValidator / LAMPORTS_PER_SOL });
           } else {
             log(`⚠️ Failed to stake to ${validator.validatorName}, continuing...`);
           }
@@ -523,6 +585,20 @@ async function main() {
       }
     }
   }
+  
+  // Save state (commission tracking, last run time)
+  state.lastRun = new Date().toISOString();
+  state.epochAtLastRebalance = currentEpoch;
+  // Also record commissions for any existing active positions we kept
+  for (const stake of activeStakes) {
+    if (!deactivatedVoters.has(stake.voter)) {
+      const info = validatorMap.get(stake.voter);
+      if (info && state.validatorCommissions[stake.voter] === undefined) {
+        state.validatorCommissions[stake.voter] = info.commission;
+      }
+    }
+  }
+  saveState(state);
   
   // Final summary
   const finalVault = await connection.getAccountInfo(VAULT_PDA);

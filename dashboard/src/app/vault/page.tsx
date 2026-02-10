@@ -115,9 +115,20 @@ function FlowBar({ positions }: { positions: PositionSummary }) {
 function AgentStatusWidget({ activity, positionCount, currentEpoch }: {
   activity: ActivityEntry[]; positionCount: number; currentEpoch: number;
 }) {
+  const [schedule, setSchedule] = useState<{
+    epoch: number; epochProgress: number; epochHoursRemaining: number;
+    nextAgentRun: string; lastAgentRun: string | null; cronIntervalHours: number;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/agent/schedule").then(r => r.json()).then(setSchedule).catch(() => {});
+    const interval = setInterval(() => {
+      fetch("/api/agent/schedule").then(r => r.json()).then(setSchedule).catch(() => {});
+    }, 60000); // refresh every minute
+    return () => clearInterval(interval);
+  }, []);
+
   const lastAction = activity[0];
-  const lastTime = lastAction ? new Date(lastAction.timestamp) : null;
-  const nextRun = lastTime ? new Date(lastTime.getTime() + 60 * 60 * 1000) : null;
   const now = new Date();
 
   const formatRelative = (d: Date) => {
@@ -129,13 +140,15 @@ function AgentStatusWidget({ activity, positionCount, currentEpoch }: {
     return `${hrs}h ${mins % 60}m ago`;
   };
 
-  const formatUntil = (d: Date) => {
-    const diff = d.getTime() - now.getTime();
+  const formatUntil = (iso: string) => {
+    const diff = new Date(iso).getTime() - now.getTime();
     if (diff <= 0) return "imminent";
     const mins = Math.floor(diff / 60000);
     if (mins < 60) return `~${mins}m`;
     return `~${Math.floor(mins / 60)}h ${mins % 60}m`;
   };
+
+  const epochPct = schedule?.epochProgress ?? 0;
 
   return (
     <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
@@ -143,26 +156,51 @@ function AgentStatusWidget({ activity, positionCount, currentEpoch }: {
         <div className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
         <span className="text-sm font-semibold">Autonomous Agent</span>
         <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent)]/10 text-[var(--accent)] font-medium">ACTIVE</span>
+        <span className="text-[10px] text-[var(--text-muted)] ml-auto">every {schedule?.cronIntervalHours ?? 8}h</span>
       </div>
+      
+      {/* Epoch Progress */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] mb-1">
+          <span>Epoch {schedule?.epoch ?? currentEpoch}</span>
+          <span>{epochPct}% — {schedule ? `~${schedule.epochHoursRemaining}h left` : "..."}</span>
+        </div>
+        <div className="w-full h-2 bg-[var(--bg-elevated)] rounded-full overflow-hidden">
+          <div 
+            className="h-full rounded-full transition-all duration-500"
+            style={{ 
+              width: `${epochPct}%`,
+              background: epochPct >= 80 
+                ? 'linear-gradient(90deg, var(--accent), var(--accent-secondary))' 
+                : 'var(--accent)',
+              opacity: epochPct >= 80 ? 1 : 0.6,
+            }}
+          />
+        </div>
+        {epochPct >= 80 && (
+          <div className="text-[10px] text-[var(--accent)] mt-1">⚡ Rebalancing window open</div>
+        )}
+      </div>
+      
       <div className="grid grid-cols-2 gap-3 text-xs">
         <div>
           <div className="text-[var(--text-muted)]">Last Action</div>
           <div className="font-medium truncate" title={lastAction?.summary}>
             {lastAction ? lastAction.summary.slice(0, 40) : "—"}
           </div>
-          <div className="text-[var(--text-muted)]">{lastTime ? formatRelative(lastTime) : "—"}</div>
+          <div className="text-[var(--text-muted)]">{lastAction ? formatRelative(new Date(lastAction.timestamp)) : "—"}</div>
         </div>
         <div>
-          <div className="text-[var(--text-muted)]">Next Run</div>
-          <div className="font-medium">{nextRun ? formatUntil(nextRun) : "—"}</div>
+          <div className="text-[var(--text-muted)]">Next Rebalance</div>
+          <div className="font-medium text-[var(--accent)]">{schedule ? formatUntil(schedule.nextAgentRun) : "—"}</div>
         </div>
         <div>
           <div className="text-[var(--text-muted)]">Positions</div>
           <div className="font-medium">{positionCount}</div>
         </div>
         <div>
-          <div className="text-[var(--text-muted)]">Epoch</div>
-          <div className="font-medium">{currentEpoch || "—"}</div>
+          <div className="text-[var(--text-muted)]">Strategy</div>
+          <div className="font-medium text-[10px]">Commission-watch</div>
         </div>
       </div>
       {/* Recent activity mini-log */}
