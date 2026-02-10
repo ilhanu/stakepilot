@@ -1,6 +1,498 @@
 [
   {
     "type": "check",
+    "summary": "Agent check complete. 7 active positions, vault 1.42 SOL",
+    "amount": 1.42017436,
+    "timestamp": "2026-02-10T08:00:15.759Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27564316 SOL to 6jJK69ae...",
+    "txSignature": "5Bo6q8BFCdcXYQEggHST7mxrUaK7EDZvkXCS4GDLK6qcSZb3Gu3YZNjMZi2rno4c9XRzUrXXiQwu2ptTeRJksSbt",
+    "validator": "6jJK69aeuLbVnM6nUKnmMMwyQG2rNjKNFrfM459kfAdL",
+    "amount": 2.27564316,
+    "timestamp": "2026-02-10T08:00:15.652Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake ERyihKTg...",
+    "txSignature": "4r7rbmvQMWDLsMmHYektyN9oN4RgN4FpkSr6tgi5cE63zGaqiTgWNW6JkHP15bvkkJKZMPHjbCHdAmbKYfbqcrwj",
+    "timestamp": "2026-02-10T08:00:14.585Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 35VLBLHo...",
+    "txSignature": "58wbd216Uj5EB4eNLhbhHUwUSmHTZJXd72gZoAa2JYmapPcGk7pqPV6zPs2tWRrNNDd2dbUFhqKJ5K2YwgLC165M",
+    "timestamp": "2026-02-10T08:00:13.872Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake FDv8aX3p...",
+    "txSignature": "64h6knfVWnZQiMdc5nPWbSo2EbgM2GseYy53M91wqn8GnM1cFT1q8vEBxeJFbryyXdLbE9MNnrCH1XBKffm1TXSL",
+    "timestamp": "2026-02-10T08:00:12.846Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 45Xajasx...",
+    "txSignature": "55WKFR8EtCcrxpjfJaEnYZHTq2YBwcLfbXapytyHeW63X5tZz9AkFEypufRxtjdHFFrsZePHQQFV13B6BFmHDdTp",
+    "timestamp": "2026-02-10T08:00:12.127Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake FzULeSLn... back to vault",
+    "txSignature": "3YpM2GL774pQyoiL3DPesP6vvBAr5zmBntbuhbgWXENs1r7AYJoAi1VApEchcAX5JisWsrymqayziCY9KzPKaJ77",
+    "timestamp": "2026-02-10T08:00:10.935Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 4 active positions, vault 1.42 SOL",
+    "amount": 1.42007436,
+    "timestamp": "2026-02-10T07:00:22.962Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27570816 SOL to 6jJK69ae...",
+    "txSignature": "2vfaUtRoy4t9VWqxtqzkdBTJa9jBHxYC4RFp5ES4nKHnxEam5o5nseHZusW4HGUX8cSrT7STgdUHbj31Nokx4C8d",
+    "validator": "6jJK69aeuLbVnM6nUKnmMMwyQG2rNjKNFrfM459kfAdL",
+    "amount": 2.27570816,
+    "timestamp": "2026-02-10T07:00:22.854Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27570816 SOL to 8tYEstnm...",
+    "txSignature": "4Gzcmv6hBe9jWDVp7zGBtqJ3e67x1waKm7Tx5qgi7rgasx1mcz5fmus2A2qAzYaeFArzaofSuGYDeLsgzAkRdUx4",
+    "validator": "8tYEstnm9xAUG9LMCS95XMZ4STGMSqcW7zZDyhQ4KEFB",
+    "amount": 2.27570816,
+    "timestamp": "2026-02-10T07:00:20.971Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27570816 SOL to 9BydjNsP...",
+    "txSignature": "3wdHQHMijCrnT9DBbJC8WJpPEo1XT7ANcHr3AUCNsZJGR4HFfBfBfbawP7C5RvSrPKpYysjpsTifCtDHUqJCK2FT",
+    "validator": "9BydjNsPGiiLp3LYwb5sg4o66ohupLCcEcq3dfhbZQro",
+    "amount": 2.27570816,
+    "timestamp": "2026-02-10T07:00:19.720Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27570816 SOL to 8kX4xNBY...",
+    "txSignature": "3r94z2754pLQ9A5GQd5fzBL1EpkeWHu1F5wdFRMfZzY3eWhFtcEeMEmnmpfZawtYzibhGf8L8n18PdXYjxSmCDa4",
+    "validator": "8kX4xNBYGpgHxYokxzzQJ341Jf8LCd7CGqxaRsAVfacd",
+    "amount": 2.27570816,
+    "timestamp": "2026-02-10T07:00:19.070Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake FzULeSLn...",
+    "txSignature": "uZBiqfStEAmiDsB8x7XVvQBvSWhJiu2RRzrwY1U6pKfJepJPx9xVQkDWseFNxF7rKNTDUWVQc8fpEoD66FA8uof",
+    "timestamp": "2026-02-10T07:00:16.483Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake CNL2o6TM... back to vault",
+    "txSignature": "5eKDRq6Psa6BDwKfMeGVdkxswthRZHeGHKF99MSTaBB7b1WoB96Ax4JEjsJXW2PYbWtR8WendZ85B5HELFuryFfg",
+    "timestamp": "2026-02-10T07:00:13.614Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 2uAe5Tx7... back to vault",
+    "txSignature": "399uuL57fzTgvdY9MdceJEysz4PicqXwCcRRiFxkxtN7siJZpCPoBM6jXLh7sCkhCnXoN42iTbttYwXraUSUE3mq",
+    "timestamp": "2026-02-10T07:00:12.179Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 6FbZNAXu... back to vault",
+    "txSignature": "49JZKoHe6TTkMN78tx2DZMhPcz6cy7BPKuZRvs1J8UdaqQi8CjnwKnCYwjf8AY2UH5yYtCT2XT3SrkqGTB64SMGT",
+    "timestamp": "2026-02-10T07:00:11.424Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 5DKjqWkg... back to vault",
+    "txSignature": "648x6RhnEPgrE9M8TYxnJA3mXnVcKRDz2w3Uawa5sJG2WDi3Hn56Lr8j1koXbVisV63kJMJrsVxCrJ6Ry8aRzaCY",
+    "timestamp": "2026-02-10T07:00:10.817Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 7 active positions, vault 1.42 SOL",
+    "amount": 1.41967436,
+    "timestamp": "2026-02-10T06:00:20.318Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27574316 SOL to EF2HGsnK...",
+    "txSignature": "5KXHrn7ZuN6nweKqFoqxvA8F7sUtCrp36Dyc9sEgBWi5WcjyAHQrFv7XrNCSbEAKqJn3RFwDQc3U3sFqKbwvERqp",
+    "validator": "EF2HGsnKf8jQ59mUFzJiNRLTBuNhYB4HusmFEsCRH6be",
+    "amount": 2.27574316,
+    "timestamp": "2026-02-10T06:00:20.209Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake CNL2o6TM...",
+    "txSignature": "8Ayiw8Nj236SXq6P96eVkY4vidMkiZNur2KcHGvGNmVruAvpurHKesGkQWfY1NWVGpZPv2LEuqPPZ27iifqZEfP",
+    "timestamp": "2026-02-10T06:00:14.101Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 2uAe5Tx7...",
+    "txSignature": "5gfEMoMs3dW59rYExjuD1oLSFvXyE9NuRmPqRovatoD4FChQCBWEseGwcZthETzBfMMNNxFLpYztm5zSpZD4TYVU",
+    "timestamp": "2026-02-10T06:00:13.577Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 6FbZNAXu...",
+    "txSignature": "2RiLMrc8bh5tEisvqfvtj1VugBFNNMc4xuk2rpBsUvqHcM9HyetEp4GrYYNzLjUnZuVsxyDv3fhtVPwWPPShfehz",
+    "timestamp": "2026-02-10T06:00:12.650Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 5DKjqWkg...",
+    "txSignature": "4JtZH1w9Xp7CpFSGNmC9GRihy4eiNTDudV11SU2JHB1GBAL2qMUnH2wdwv6Qiv4EheH4c7n3s4Snb2ByacoprAvg",
+    "timestamp": "2026-02-10T06:00:11.641Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake HeHbxm82... back to vault",
+    "txSignature": "5TUQde5dFjTjpUe2LTpm9JN9ZJXhG8mPGMVBwNsYGKzwvgn3MV4DrT8RZhCVEB5fEgQgHe3h9ka8DqBgk4Q1cuf1",
+    "timestamp": "2026-02-10T06:00:10.485Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 4 active positions, vault 1.42 SOL",
+    "amount": 1.41957436,
+    "timestamp": "2026-02-10T05:00:27.102Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27580816 SOL to 8tYEstnm...",
+    "txSignature": "4RKnrE92uEM9eTopphewzu3URVFoy3aQeZ5fp2xc5XCiNeQZhCvVmVUvxUk5x5HNazp7BuMudEQdTWYcX1VNs7jK",
+    "validator": "8tYEstnm9xAUG9LMCS95XMZ4STGMSqcW7zZDyhQ4KEFB",
+    "amount": 2.27580816,
+    "timestamp": "2026-02-10T05:00:26.990Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27580816 SOL to 9BydjNsP...",
+    "txSignature": "KhyrpR5hX327xE9s92KR7SSPMZjq89sqvar2dvfuB42evCgsQNXJrcdLGUpa6WuG6rrwJqnYerLe7ZGk7TLvTxm",
+    "validator": "9BydjNsPGiiLp3LYwb5sg4o66ohupLCcEcq3dfhbZQro",
+    "amount": 2.27580816,
+    "timestamp": "2026-02-10T05:00:20.336Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27580816 SOL to 6jJK69ae...",
+    "txSignature": "5i9FmJfiFWGx275SvieDKU3ye3m7FGQA527EAMZdEFAojrLCxzwSnWJ41pnrxb7CpRrDYiMdqnna7G7F36Bc8K8f",
+    "validator": "6jJK69aeuLbVnM6nUKnmMMwyQG2rNjKNFrfM459kfAdL",
+    "amount": 2.27580816,
+    "timestamp": "2026-02-10T05:00:17.660Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27580816 SOL to EF2HGsnK...",
+    "txSignature": "4wKDucqmAoqAqVDRUr185XFqmYKqD4YWDM6GYmNU66pwfaVcxLfPhFCfTMwWzBubL3tiGMRA6126Xvyh7owYKnHG",
+    "validator": "EF2HGsnKf8jQ59mUFzJiNRLTBuNhYB4HusmFEsCRH6be",
+    "amount": 2.27580816,
+    "timestamp": "2026-02-10T05:00:16.909Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake HeHbxm82...",
+    "txSignature": "3abUcFLrfHgkaEw4EWtcxEtusdeY1tgSsJZq47fXKcyofQGHALcyoF4B2dBshhNQptdV5AyhR12iZTvwhWrKudkY",
+    "timestamp": "2026-02-10T05:00:15.690Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake Dpfsnbsk... back to vault",
+    "txSignature": "5vQTu7pGHwAsB3SUjdan2Qy312LNsPzfDiNCLN2UsjsfDhZotfjP3JhTppXqrLfU1qrJJjX6Ws6toQcv9vJC7oqr",
+    "timestamp": "2026-02-10T05:00:14.832Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake HkepRt7n... back to vault",
+    "txSignature": "eiCX6nR5gKpAnupuCMpHQ9Te2pQKnbYRvDSfrWUvTv9LoxSRJPSpAiz6XuVBs948hGUp3a7sP2SvQ5xEdvbSsZM",
+    "timestamp": "2026-02-10T05:00:13.758Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 2zdL3YrW... back to vault",
+    "txSignature": "2hsqK5a1LLAqBMBT35HF2PokJHC1Lr7tXiiWhXYs9BGFGdVnsd72aEqWdH1o7Hr4ENhS86aD5GreowXYMRD6e8sU",
+    "timestamp": "2026-02-10T05:00:11.522Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 5i9qk56d... back to vault",
+    "txSignature": "5RddYrJuTc9KgZL15ncYRPK21AArXtq5MdwURrWzqjKdY8GzBB9wJYKx9PAcpU23hzSUczuzoqqz41isAzss2HLu",
+    "timestamp": "2026-02-10T05:00:10.843Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 7 active positions, vault 1.42 SOL",
+    "amount": 1.41917436,
+    "timestamp": "2026-02-10T04:00:16.641Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27584316 SOL to 6jJK69ae...",
+    "txSignature": "3WyKTB9eknxM8m5WMLbPpTvFKRNeSySvgRNNreCqaC16r8vNiFkPt6huSChL1c4oBN6ug8ikUa5xvbGt2ssAzzrn",
+    "validator": "6jJK69aeuLbVnM6nUKnmMMwyQG2rNjKNFrfM459kfAdL",
+    "amount": 2.27584316,
+    "timestamp": "2026-02-10T04:00:16.526Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake Dpfsnbsk...",
+    "txSignature": "4xCgugMq7XVQ3VFfb83YA5jj1cjafq2jv8KQvA9LgEjHkZMkPn4d1CeWmAdr56KvsHwyz46E934CBDxaZB8cdfmF",
+    "timestamp": "2026-02-10T04:00:14.505Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake HkepRt7n...",
+    "txSignature": "5HnGJaRitHhJvsLroUVLGPFrFetpQYbfpu2xThHF9eWo5iVJtDvXJqhtQaH84sBAWvpwP6f2PgQtD6sbJeXBXwf3",
+    "timestamp": "2026-02-10T04:00:13.521Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 2zdL3YrW...",
+    "txSignature": "q4idoPTsa5ucgsZHPmEjTGd4YfUfFdv3TwoXkJbW1UTwmi9piqh5RRK6LFb2CkqSJ2eLiZ6MMMNjnX7iJSFoCJw",
+    "timestamp": "2026-02-10T04:00:12.723Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 5i9qk56d...",
+    "txSignature": "58yeosqX9QFh7mgfAF2oYmzJMPsrsKGMzj11tZ8qWiASwMJBhjhyc6oCcpkzvx5ycdcwbQRCo382WLHm41ExQCXE",
+    "timestamp": "2026-02-10T04:00:12.062Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 6seHGqPT... back to vault",
+    "txSignature": "59r8czVE1pht3dS5CqygqUm9g1H8TEdKeugUQkHmHm95xoz8KukC3BTq59nGG2AU8LkLxxdoQp4gekBxBVQQ2NTv",
+    "timestamp": "2026-02-10T04:00:11.253Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 4 active positions, vault 1.42 SOL",
+    "amount": 1.41907436,
+    "timestamp": "2026-02-10T03:00:19.217Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27590816 SOL to 8tYEstnm...",
+    "txSignature": "55CYLreX5a7NvzQmRZLsQJzB1Z3w33KTDhBCdxxiyUnkEPGdp8kW66MvHF6Y9L5xxejSpyVaMNxT1MaL8j8HEqpz",
+    "validator": "8tYEstnm9xAUG9LMCS95XMZ4STGMSqcW7zZDyhQ4KEFB",
+    "amount": 2.27590816,
+    "timestamp": "2026-02-10T03:00:19.105Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27590816 SOL to 6jJK69ae...",
+    "txSignature": "eH7oHpj27U7XMQnX34sTRw7yFNpmsV6xYHeK2MwDZvhhVkbKkKx9o6NbUZ2KgaM6TLY2KPSQ8No5FdjNc6WYgLw",
+    "validator": "6jJK69aeuLbVnM6nUKnmMMwyQG2rNjKNFrfM459kfAdL",
+    "amount": 2.27590816,
+    "timestamp": "2026-02-10T03:00:18.103Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27590816 SOL to 8kX4xNBY...",
+    "txSignature": "2b2HASjGPM1qr9X5b7R3XCbiWvCYmpgADhU9smNnHXCcLraUbmXgjWyxjM2va78yJever2J1JiV3NhxLMZhQpqC6",
+    "validator": "8kX4xNBYGpgHxYokxzzQJ341Jf8LCd7CGqxaRsAVfacd",
+    "amount": 2.27590816,
+    "timestamp": "2026-02-10T03:00:17.115Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27590816 SOL to 9BydjNsP...",
+    "txSignature": "34jn9WdyR3q4YSs5386EpdGUusMCKXCFdubwNm4LzL7bFHPGcNWRVyf9NnQe49wPFQ7qZc44VEPXLRRVsUJHb6an",
+    "validator": "9BydjNsPGiiLp3LYwb5sg4o66ohupLCcEcq3dfhbZQro",
+    "amount": 2.27590816,
+    "timestamp": "2026-02-10T03:00:16.396Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 6seHGqPT...",
+    "txSignature": "5as7UbEo4VRsHMBW9A94cypwbRtgFqqAU3ZEa2FCQDPPbQHsCfRr9HxNt1sEd61ABBcjb2aE1nqW59ChmwtKSNap",
+    "timestamp": "2026-02-10T03:00:15.232Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake nPNCeDEX... back to vault",
+    "txSignature": "wwdNva4H2hkAKQV433syLiAq2siWeFhDuR2rr6j6fLwd2Aq5ASRoWuL1b5WUyYxNU9ZKppKh15t5EmexqN5Zq2n",
+    "timestamp": "2026-02-10T03:00:14.421Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake ufJnrKhn... back to vault",
+    "txSignature": "3j98vJVBgp6HZgNqSnMx6ZRYTmZd2eFgvTLVV1mjryp45825UZMxvMg39KQB6VMcxjhbNwLkoC9kuMXbxfi3pjY4",
+    "timestamp": "2026-02-10T03:00:12.373Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake HaLHwXT5... back to vault",
+    "txSignature": "5yVuT1JnBuE47kLd8N5zHde7quq5ec35GteHu8LcwjXvo5enDv6rcWA1pWhofB3gJa8Q2zcGCEY8Jh4ohdRpWqSX",
+    "timestamp": "2026-02-10T03:00:11.592Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake e624pnX8... back to vault",
+    "txSignature": "2cQD9ntcbtQkzakFeZBohUJHa2cVVjPtWLrF6n6bpwH3M72gvij5fAMGyf6oJfpgdYLL88DxjrPG1r1KcjYrHqLH",
+    "timestamp": "2026-02-10T03:00:10.471Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 7 active positions, vault 1.42 SOL",
+    "amount": 1.41867436,
+    "timestamp": "2026-02-10T02:00:21.127Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27594316 SOL to 6jJK69ae...",
+    "txSignature": "3W1Meng6HXLeePT3dHB3ZrgJnNwLVAegFycLawL7u9CbecSViqk3nCuBYmT8HduTjgNS9Km2S9exseAgCMghDejC",
+    "validator": "6jJK69aeuLbVnM6nUKnmMMwyQG2rNjKNFrfM459kfAdL",
+    "amount": 2.27594316,
+    "timestamp": "2026-02-10T02:00:21.018Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake nPNCeDEX...",
+    "txSignature": "2gY5R4xDFY2CFies9Uq1FS2dwc1UnoR25XLXxoKthDP5sCurKuKXdaXREGd9aMDSbE6TL3Cxq5u5BXSFEk5QqhMo",
+    "timestamp": "2026-02-10T02:00:19.642Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake ufJnrKhn...",
+    "txSignature": "4XzAxq9wef5r9neY7zdWK4BP8dFZfNSvRYTxB3Cj4X6P6erK8RsAG1xNDAfaFyTHuGujjv2dB1KyEJrC6bpq3afV",
+    "timestamp": "2026-02-10T02:00:17.463Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake HaLHwXT5...",
+    "txSignature": "2mTDt4XwbyTJHUQhdzxbBXkdpPPKnd3t8C2kLCsRU5ym6mhfLVCdeMoKwcVgVH9QXeFZDpzB4Wwcpb1owidTw25d",
+    "timestamp": "2026-02-10T02:00:16.740Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake e624pnX8...",
+    "txSignature": "q6zdHFsdJrASD2xQk76iF8CBxpmiRKMgQa3fR9btj3K9994ZMr727hAWcNYockvr8qKWBmbmjiELxcbNjCmyfFc",
+    "timestamp": "2026-02-10T02:00:14.762Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake BGHicHrn... back to vault",
+    "txSignature": "5wUt2EkmbLu4umhp9CGj8brTRWJgoNMkguuxRXvbYf8NK8G21rZEzydRLgFN7Xf3usan2TCsnH6x1uJFtwKyaiL8",
+    "timestamp": "2026-02-10T02:00:11.327Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 4 active positions, vault 1.42 SOL",
+    "amount": 1.41857436,
+    "timestamp": "2026-02-10T01:00:28.504Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27600816 SOL to 8kX4xNBY...",
+    "txSignature": "5ahERbi67e1Mw5btLui9xRGDEyGCPPLDXLWV43GgLozbh4MyDhFVdTHckr2BGJMjuoruHR5nP778KSdVNjwUpfDi",
+    "validator": "8kX4xNBYGpgHxYokxzzQJ341Jf8LCd7CGqxaRsAVfacd",
+    "amount": 2.27600816,
+    "timestamp": "2026-02-10T01:00:28.394Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27600816 SOL to EF2HGsnK...",
+    "txSignature": "GBtrBMq8EbEg8x9g6VsV2XGD1KuBKwMyHBkNBNpuWJzSUMpwTuMDHRynTfkz26Bk3hVpXCRaiiMkavjkNmHeq24",
+    "validator": "EF2HGsnKf8jQ59mUFzJiNRLTBuNhYB4HusmFEsCRH6be",
+    "amount": 2.27600816,
+    "timestamp": "2026-02-10T01:00:27.102Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27600816 SOL to 6jJK69ae...",
+    "txSignature": "2bo7iVppfq31VE4gFXH85LgmypsZpgnBe2GyWSh1N8bYxBFX7ZMYtJUYXibJNq2xKrkUuroTXoSGnbSamgRSazsy",
+    "validator": "6jJK69aeuLbVnM6nUKnmMMwyQG2rNjKNFrfM459kfAdL",
+    "amount": 2.27600816,
+    "timestamp": "2026-02-10T01:00:22.530Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27600816 SOL to 8tYEstnm...",
+    "txSignature": "5M6SpDQdRe73HHAGrskTv69j7L9rg8MMvqH1usw8tqvRsjL3nk9AawKL3n4vswUeLSYsyuhu7wo2VsTdnnc6W6uH",
+    "validator": "8tYEstnm9xAUG9LMCS95XMZ4STGMSqcW7zZDyhQ4KEFB",
+    "amount": 2.27600816,
+    "timestamp": "2026-02-10T01:00:21.768Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake BGHicHrn...",
+    "txSignature": "5MYA1PDqUN47Vd9Pgkbigr1niNNDtYSsnLdaGNizEVBRSqvgPeB87XafmFkWZqM8CQa4uWHeuZH33YyuiWrvcXH6",
+    "timestamp": "2026-02-10T01:00:19.182Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 95f3FVhj... back to vault",
+    "txSignature": "rUHRDroWPD2Qd5EvMXF3etb3ceXNoFkXnAaaLfekw53XSPUMncJWYGnFTgz9qzEVXfCHznxgu14eZRbPt83NJK2",
+    "timestamp": "2026-02-10T01:00:17.280Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 8NZ3CyGS... back to vault",
+    "txSignature": "57ZKBVezZBSFVH6xmCNB5BbJzhDJyrB8cK8jS1BbUuy4GNXrRTGya2vPbULaMfutyw3BAZrMMRLiWaFaQVRYDpYR",
+    "timestamp": "2026-02-10T01:00:15.341Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 5PQHwdhb... back to vault",
+    "txSignature": "3n8CvHYHKs2BG7oqS8ZUhuDQzEQoF7efR5ZAi88otfHfDnen2Sj3f6C5deTbU5BDYv2wAd9hXLsRBHvp1oJzWdD5",
+    "timestamp": "2026-02-10T01:00:14.521Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 3nsfZV2S... back to vault",
+    "txSignature": "B6Ja3LSgM3oY9Moye7ydjJNzMa7Pwbbsem2aPa6ubNfg71ovQoB3duQLXMwaTrYCQQhgaBT2gX2b4k6GxBpCrv1",
+    "timestamp": "2026-02-10T01:00:12.526Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 7 active positions, vault 1.42 SOL",
+    "amount": 1.41817436,
+    "timestamp": "2026-02-10T00:00:20.802Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27604316 SOL to 9BydjNsP...",
+    "txSignature": "3854A3t5msGekL8VFffnqL6WYTzLH11eUAMLhcszNaXDKxWDTn33ay2ZkJNpYoe9hecVwQvufpdxLJ4doMjjc4Ud",
+    "validator": "9BydjNsPGiiLp3LYwb5sg4o66ohupLCcEcq3dfhbZQro",
+    "amount": 2.27604316,
+    "timestamp": "2026-02-10T00:00:17.818Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 95f3FVhj...",
+    "txSignature": "5vzECsyRf7rLrqaoj4HCq5Wm4i2XLoNqM9sPgkEXrKDjDsgDYCXXoz3YpyRoPmJaQydQJH33z5q7Hon1x11typJY",
+    "timestamp": "2026-02-10T00:00:16.807Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 8NZ3CyGS...",
+    "txSignature": "5pEo4YgVsDbTpRunro611UnkA92sKUyDDteCTzbpvxLtu2WmZBCj3TRZGpZ1s28ZY6bVbAbPrescNhvQ4pduPDXW",
+    "timestamp": "2026-02-10T00:00:14.551Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 5PQHwdhb...",
+    "txSignature": "4s87LbofMShGQ8dikH22enNqCYi48iY9Yr5tCekujhSUP1PQr55mcLgw5PsEZAVFtgVzKRr3u1SEoWZiWxRKcqLZ",
+    "timestamp": "2026-02-10T00:00:13.850Z"
+  },
+  {
+    "type": "deactivate",
+    "summary": "Deactivated stake 3nsfZV2S...",
+    "txSignature": "5X6vw2W8hnxo9DF3JQ7jCGgjVNjimHpGeR7nVo3tcw9PTp4ntf72iqvSCZXR3zFUwee5bVuCBKLRhiWsMyEFvesx",
+    "timestamp": "2026-02-10T00:00:12.546Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake CLyjTzy5... back to vault",
+    "txSignature": "579gUmFqZF2qaE2NHBr7ewoknLbW8g896Nvg1qTf3HC91D8GEiMnsM6W8xx4kmNCtitDHR6zojKXaTZn1XAgvWYN",
+    "timestamp": "2026-02-10T00:00:11.299Z"
+  },
+  {
+    "type": "check",
     "summary": "Agent check complete. 4 active positions, vault 1.42 SOL",
     "amount": 1.41807436,
     "timestamp": "2026-02-09T23:00:27.869Z"
