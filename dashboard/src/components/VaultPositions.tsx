@@ -18,6 +18,20 @@ interface ValidatorInfo {
   location?: string;
 }
 
+interface PositionGroup {
+  status: "active" | "activating" | "deactivating" | "inactive";
+  label: string;
+  emoji: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  description: string;
+  positions: StakePosition[];
+  totalSol: number;
+}
+
+const STAKER_SPACE_VOTE = "3S4jVg5p1rw7t8MS5UtjhnChmo6ABdmh3nyXTVzAyP9f";
+
 export function VaultPositions() {
   const [positions, setPositions] = useState<StakePosition[]>([]);
   const [validatorNames, setValidatorNames] = useState<Map<string, ValidatorInfo>>(new Map());
@@ -28,7 +42,6 @@ export function VaultPositions() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch positions
         const posRes = await fetch("/api/agent/positions");
         const posData = await posRes.json();
         
@@ -37,9 +50,7 @@ export function VaultPositions() {
           setTotalStaked(posData.totalStaked || 0);
           setCurrentEpoch(posData.currentEpoch || 0);
           
-          // Fetch validator names for each position
           const validatorVotes = [...new Set(posData.positions.map((p: StakePosition) => p.validatorVote))] as string[];
-          
           const nameMap = new Map<string, ValidatorInfo>();
           for (const vote of validatorVotes) {
             try {
@@ -64,29 +75,8 @@ export function VaultPositions() {
         setLoading(false);
       }
     }
-    
     fetchData();
   }, []);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active": return "text-[var(--accent)] bg-[var(--accent)]/10";
-      case "activating": return "text-blue-400 bg-blue-400/10";
-      case "deactivating": return "text-orange-400 bg-orange-400/10";
-      case "inactive": return "text-gray-400 bg-gray-400/10";
-      default: return "text-gray-400 bg-gray-400/10";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "active": return "Active";
-      case "activating": return "Warming Up";
-      case "deactivating": return "Cooling Down";
-      case "inactive": return "Inactive";
-      default: return status;
-    }
-  };
 
   if (loading) {
     return (
@@ -100,91 +90,106 @@ export function VaultPositions() {
     );
   }
 
-  return (
-    <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
-      <div className="flex items-center justify-between mb-3 md:mb-4">
-        <h2 className="text-base md:text-lg font-semibold">Stake Positions</h2>
-        <div className="text-xs md:text-sm text-[var(--text-secondary)]">
-          Epoch {currentEpoch}
-        </div>
-      </div>
-      
-      {positions.length === 0 ? (
+  if (positions.length === 0) {
+    return (
+      <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
+        <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Stake Positions</h2>
         <div className="text-center py-8 text-[var(--text-secondary)]">
           <div className="text-3xl mb-2">🥩</div>
           <div className="text-sm">No active stakes yet</div>
           <div className="text-xs mt-1">Deposit SOL and the agent will stake automatically</div>
         </div>
-      ) : (
-        <>
-          {/* Summary */}
-          <div className="flex items-center justify-between p-3 bg-[var(--bg-elevated)] rounded-lg mb-4">
-            <div>
-              <div className="text-xs text-[var(--text-secondary)]">Total Staked</div>
-              <div className="text-lg font-bold text-[var(--accent)]">{totalStaked.toFixed(2)} SOL</div>
+      </div>
+    );
+  }
+
+  // Group positions by status
+  const groupConfigs: Omit<PositionGroup, "positions" | "totalSol">[] = [
+    { status: "active", label: "Active", emoji: "🟢", color: "text-[var(--accent)]", bgColor: "bg-[var(--accent)]/5", borderColor: "border-[var(--accent)]/20", description: "Earning staking rewards" },
+    { status: "activating", label: "Warming Up", emoji: "🟡", color: "text-yellow-400", bgColor: "bg-yellow-400/5", borderColor: "border-yellow-400/20", description: "Pending activation this epoch" },
+    { status: "deactivating", label: "Cooling Down", emoji: "🟠", color: "text-orange-400", bgColor: "bg-orange-400/5", borderColor: "border-orange-400/20", description: "Being unstaked, ~2 day cooldown" },
+    { status: "inactive", label: "Ready to Withdraw", emoji: "🔵", color: "text-blue-400", bgColor: "bg-blue-400/5", borderColor: "border-blue-400/20", description: "Fully deactivated, can be withdrawn" },
+  ];
+
+  const groups: PositionGroup[] = groupConfigs
+    .map((config) => {
+      const groupPositions = positions.filter((p) => p.status === config.status);
+      return {
+        ...config,
+        positions: groupPositions,
+        totalSol: groupPositions.reduce((sum, p) => sum + p.stakedAmount, 0),
+      };
+    })
+    .filter((g) => g.positions.length > 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base md:text-lg font-semibold">Stake Positions</h2>
+        <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
+          <span>Epoch {currentEpoch}</span>
+          <span>•</span>
+          <span>{positions.length} positions</span>
+          <span>•</span>
+          <span className="text-[var(--accent)] font-medium">{totalStaked.toFixed(2)} SOL</span>
+        </div>
+      </div>
+
+      {groups.map((group) => (
+        <div key={group.status} className={`rounded-xl border ${group.borderColor} ${group.bgColor} overflow-hidden`}>
+          {/* Group Header */}
+          <div className="px-4 py-3 flex items-center justify-between border-b border-[var(--border)]/50">
+            <div className="flex items-center gap-2">
+              <span>{group.emoji}</span>
+              <span className={`font-semibold text-sm ${group.color}`}>{group.label}</span>
+              <span className="text-xs text-[var(--text-muted)]">({group.positions.length})</span>
+              <span className="text-xs text-[var(--text-muted)] hidden sm:inline">— {group.description}</span>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-[var(--text-secondary)]">Validators</div>
-              <div className="text-lg font-bold">{positions.length}</div>
-            </div>
+            <span className={`font-bold text-sm ${group.color}`}>{group.totalSol.toFixed(3)} SOL</span>
           </div>
-          
-          {/* Positions List */}
-          <div className="space-y-2 md:space-y-3">
-            {positions.map((pos) => {
+
+          {/* Positions */}
+          <div className="divide-y divide-[var(--border)]/30">
+            {group.positions.map((pos) => {
               const validator = validatorNames.get(pos.validatorVote);
-              const isStakerSpace = pos.validatorVote === "3S4jVg5p1rw7t8MS5UtjhnChmo6ABdmh3nyXTVzAyP9f";
-              
+              const isStakerSpace = pos.validatorVote === STAKER_SPACE_VOTE;
+
               return (
-                <div 
-                  key={pos.stakeAccount} 
-                  className={`p-3 rounded-lg border transition-colors ${
-                    isStakerSpace 
-                      ? "bg-[var(--accent)]/5 border-[var(--accent)]/20" 
-                      : "bg-[var(--bg-elevated)] border-transparent"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {isStakerSpace && (
-                        <span className="text-xs">⭐</span>
-                      )}
-                      <span className="font-medium text-sm truncate">
-                        {validator?.name || `${pos.validatorVote.slice(0, 8)}...`}
-                      </span>
-                      {validator?.location && (
-                        <span className="text-xs text-[var(--text-secondary)]">
-                          {validator.location === "NL" ? "🇳🇱" : validator.location}
-                        </span>
-                      )}
-                    </div>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(pos.status)}`}>
-                      {getStatusLabel(pos.status)}
+                <div key={pos.stakeAccount} className="px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {isStakerSpace && <span className="text-xs" title="Staker Space validator">⭐</span>}
+                    <span className="font-medium text-sm truncate">
+                      {pos.validatorName || validator?.name || `${pos.validatorVote.slice(0, 8)}...`}
                     </span>
+                    {validator?.commission !== undefined && (
+                      <span className="text-[10px] text-[var(--text-muted)] hidden sm:inline">{validator.commission}% fee</span>
+                    )}
                   </div>
-                  
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3 text-[var(--text-secondary)]">
-                      <span>{pos.stakedAmount.toFixed(3)} SOL</span>
-                      {validator?.commission !== undefined && (
-                        <span>{validator.commission}% fee</span>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {pos.activationEpoch && group.status === "active" && (
+                      <span className="text-[10px] text-[var(--text-muted)] hidden sm:inline">since epoch {pos.activationEpoch}</span>
+                    )}
+                    {pos.deactivationEpoch && group.status === "deactivating" && currentEpoch > 0 && (
+                      <span className="text-[10px] text-orange-400 hidden sm:inline">
+                        ~{Math.max(0, pos.deactivationEpoch + 1 - currentEpoch)} epoch(s) left
+                      </span>
+                    )}
+                    <span className="text-sm font-mono font-medium w-24 text-right">{pos.stakedAmount.toFixed(3)} SOL</span>
                     <a
                       href={`https://explorer.solana.com/address/${pos.stakeAccount}?cluster=testnet`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[var(--accent)] hover:underline"
+                      className="text-[var(--text-muted)] hover:text-[var(--accent)] text-xs transition-colors"
                     >
-                      View →
+                      ↗
                     </a>
                   </div>
                 </div>
               );
             })}
           </div>
-        </>
-      )}
+        </div>
+      ))}
     </div>
   );
 }
