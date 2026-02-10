@@ -45,7 +45,7 @@ const WITHDRAW_DISCRIMINATOR = Buffer.from([153, 8, 22, 138, 105, 176, 87, 66]);
 
 // Rebalancing thresholds — conservative to protect APY
 // Deactivating stake = ~2 epochs of ZERO rewards, so only do it when justified
-const MAX_COMMISSION_TOLERATED = 8;   // Deactivate if commission rises above this
+const MAX_COMMISSION_TOLERATED = 15;  // Deactivate if commission rises above this (relaxed for testnet)
 const COMMISSION_JUMP_THRESHOLD = 3;  // Deactivate if commission increased by 3%+ from what we expected  
 const DELINQUENCY_TRIGGER = true;     // Deactivate if validator goes delinquent
 
@@ -154,8 +154,8 @@ async function getRecommendations(): Promise<ValidatorRecommendation[]> {
     const qualified = [...allValidators.values()]
       .filter((v) => 
         !v.delinquent && 
-        v.commission <= 5 &&
-        v.activeStake < 1_000_000
+        v.commission <= 10 &&
+        v.activeStake < 5_000_000
       )
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_VALIDATORS);
