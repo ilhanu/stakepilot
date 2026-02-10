@@ -93,7 +93,7 @@ pub mod agent_vault {
         
         // Check cooldown period (1 epoch ≈ 2-3 days on mainnet)
         let current_time = Clock::get()?.unix_timestamp;
-        let cooldown_seconds = 172800; // 2 days
+        let cooldown_seconds = 3600; // 1 hour (testnet — mainnet would be ~172800)
         require!(
             current_time - user_deposit.unstake_request_time >= cooldown_seconds,
             VaultError::CooldownNotComplete

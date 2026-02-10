@@ -249,6 +249,8 @@ export default function VaultPage() {
     avgNet: number; effective: number; base: number; avgCommission: number;
   } | null>(null);
 
+  const [unstakeRequestTime, setUnstakeRequestTime] = useState(0);
+
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [txPending, setTxPending] = useState(false);
@@ -273,15 +275,17 @@ export default function VaultPage() {
       const [userDepositPDA] = PublicKey.findProgramAddressSync(
         [Buffer.from("deposit"), publicKey.toBuffer()], PROGRAM_ID
       );
-      let userDeposit = 0, userPendingUnstake = 0;
+      let userDeposit = 0, userPendingUnstake = 0, unstakeRequestTime = 0;
       const userDepositAccount = await connection.getAccountInfo(userDepositPDA);
       if (userDepositAccount) {
         const depositData = userDepositAccount.data.slice(8);
         userDeposit = Number(depositData.readBigUInt64LE(32)) / LAMPORTS_PER_SOL;
         userPendingUnstake = Number(depositData.readBigUInt64LE(40)) / LAMPORTS_PER_SOL;
+        unstakeRequestTime = Number(depositData.readBigInt64LE(48));
       }
 
       setVaultStatus({ totalDeposits, totalStaked, totalUsers, userDeposit, userPendingUnstake });
+      setUnstakeRequestTime(unstakeRequestTime);
 
       // Fetch positions summary + vault balance + activity in parallel
       const [posRes, vaultRes, actRes, recRes, apyRes] = await Promise.all([
@@ -403,6 +407,53 @@ export default function VaultPage() {
       console.error("Request unstake failed:", err); setError(err.message || "Request unstake failed");
     } finally { setTxPending(false); }
   };
+
+  const handleWithdraw = async () => {
+    if (!publicKey || !signTransaction || !vaultStatus) return;
+    const amount = vaultStatus.userPendingUnstake;
+    if (amount <= 0) { setError("No pending unstake to withdraw"); return; }
+
+    // Check cooldown (1 hour on testnet)
+    const now = Math.floor(Date.now() / 1000);
+    const cooldownSeconds = 3600;
+    if (unstakeRequestTime > 0 && now - unstakeRequestTime < cooldownSeconds) {
+      const remaining = cooldownSeconds - (now - unstakeRequestTime);
+      const mins = Math.ceil(remaining / 60);
+      setError(`Cooldown not complete. ${mins} minute${mins !== 1 ? "s" : ""} remaining.`);
+      return;
+    }
+
+    setTxPending(true); setError(null); setSuccess(null);
+    try {
+      const lamports = Math.floor(amount * LAMPORTS_PER_SOL);
+      const [userDepositPDA] = PublicKey.findProgramAddressSync([Buffer.from("deposit"), publicKey.toBuffer()], PROGRAM_ID);
+      // withdraw discriminator: sha256("global:withdraw")[0..8]
+      const discriminator = new Uint8Array([0xb7, 0x12, 0x46, 0x9c, 0x94, 0x6d, 0xa1, 0x22]);
+      const amountBuffer = encodeU64(lamports);
+      const data = new Uint8Array(16); data.set(discriminator, 0); data.set(amountBuffer, 8);
+      const instruction = new TransactionInstruction({
+        programId: PROGRAM_ID,
+        keys: [
+          { pubkey: VAULT_PDA, isSigner: false, isWritable: true },
+          { pubkey: userDepositPDA, isSigner: false, isWritable: true },
+          { pubkey: publicKey, isSigner: true, isWritable: true },
+        ],
+        data: Buffer.from(data),
+      });
+      const transaction = new Transaction().add(instruction);
+      transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+      transaction.feePayer = publicKey;
+      const signed = await signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signed.serialize());
+      await connection.confirmTransaction(signature, "confirmed");
+      setSuccess(`Withdrawn ${amount.toFixed(4)} SOL! Tx: ${signature.slice(0, 8)}...`);
+      fetchData();
+    } catch (err: any) {
+      console.error("Withdraw failed:", err); setError(err.message || "Withdraw failed");
+    } finally { setTxPending(false); }
+  };
+
+  const cooldownReady = unstakeRequestTime > 0 && (Math.floor(Date.now() / 1000) - unstakeRequestTime) >= 3600;
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -543,6 +594,28 @@ export default function VaultPage() {
                       Max: {vaultStatus?.userDeposit.toFixed(2) || "0"} SOL
                     </button>
                   </div>
+
+                  {/* Withdraw ready funds */}
+                  {vaultStatus && vaultStatus.userPendingUnstake > 0 && (
+                    <div className="pt-3 border-t border-[var(--border)]/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs text-[var(--text-secondary)]">Ready to Withdraw</label>
+                        <span className="text-sm font-bold text-blue-400">{vaultStatus.userPendingUnstake.toFixed(4)} SOL</span>
+                      </div>
+                      {cooldownReady ? (
+                        <button onClick={handleWithdraw} disabled={txPending}
+                          className="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-semibold text-sm text-white transition">
+                          {txPending ? "..." : `Withdraw ${vaultStatus.userPendingUnstake.toFixed(4)} SOL`}
+                        </button>
+                      ) : (
+                        <div className="text-xs text-[var(--text-muted)] bg-[var(--bg-elevated)] rounded-lg p-3 text-center">
+                          ⏳ Cooldown in progress — available {unstakeRequestTime > 0 
+                            ? `in ~${Math.max(0, Math.ceil((3600 - (Math.floor(Date.now()/1000) - unstakeRequestTime)) / 60))} min`
+                            : "soon"}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
