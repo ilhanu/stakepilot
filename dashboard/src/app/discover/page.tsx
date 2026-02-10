@@ -232,7 +232,7 @@ export default function DiscoverPage() {
                         <div className="text-xs text-[var(--text-secondary)]">Commission</div>
                       </div>
                       <div>
-                        <div className="text-lg font-bold">{v.stakepilotScore}</div>
+                        <div className="text-lg font-bold">{Math.round(v.stakepilotScore * 10) / 10}</div>
                         <div className="text-xs text-[var(--text-secondary)]">SP Score</div>
                       </div>
                       <div>
@@ -269,6 +269,33 @@ export default function DiscoverPage() {
             <div>No validators found matching your criteria</div>
           </div>
         )}
+
+        {/* SP Score Explanation */}
+        <div className="mt-8 bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
+          <h3 className="text-sm md:text-base font-semibold mb-3">How the SP Score works</h3>
+          <p className="text-xs md:text-sm text-[var(--text-secondary)] mb-3">
+            The StakePilot Score ranks validators by what matters most to stakers — yield, reliability, and network health. Higher is better.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 text-xs">
+            {[
+              { factor: "Decentralization", weight: "up to 40 pts", desc: "Lower stake = higher score" },
+              { factor: "Commission", weight: "up to 25 pts", desc: "0% = max, 10%+ = 0" },
+              { factor: "MEV Fairness", weight: "up to 20 pts", desc: "Low Jito MEV commission" },
+              { factor: "Uptime", weight: "up to 15 pts", desc: "Vote performance >90%" },
+              { factor: "Reputation", weight: "up to 10 pts", desc: "validators.app total score" },
+              { factor: "Infrastructure", weight: "up to 30 pts", desc: "DoubleZero + IBRL block quality" },
+            ].map((f) => (
+              <div key={f.factor} className="p-2 md:p-3 rounded-lg bg-[var(--bg-elevated)]">
+                <div className="font-medium text-[var(--text-primary)]">{f.factor}</div>
+                <div className="text-[var(--accent)] font-medium">{f.weight}</div>
+                <div className="text-[var(--text-muted)] mt-0.5">{f.desc}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] md:text-xs text-[var(--text-muted)] mt-3">
+            The agent uses this score to decide where to stake. Validators that raise commission or go delinquent get deactivated — protecting your APY.
+          </p>
+        </div>
       </div>
     </div>
   );
