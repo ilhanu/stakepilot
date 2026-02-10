@@ -245,6 +245,10 @@ export default function VaultPage() {
   const [vaultBalance, setVaultBalance] = useState(0);
   const [availableToStake, setAvailableToStake] = useState(0);
 
+  const [apyData, setApyData] = useState<{
+    avgNet: number; effective: number; base: number; avgCommission: number;
+  } | null>(null);
+
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [txPending, setTxPending] = useState(false);
@@ -280,11 +284,12 @@ export default function VaultPage() {
       setVaultStatus({ totalDeposits, totalStaked, totalUsers, userDeposit, userPendingUnstake });
 
       // Fetch positions summary + vault balance + activity in parallel
-      const [posRes, vaultRes, actRes, recRes] = await Promise.all([
+      const [posRes, vaultRes, actRes, recRes, apyRes] = await Promise.all([
         fetch("/api/agent/positions").then(r => r.json()).catch(() => null),
         fetch("/api/agent/vault").then(r => r.json()).catch(() => null),
         fetch("/api/agent/activity?limit=10").then(r => r.json()).catch(() => null),
         fetch("/api/agent/recommend?balance=1000&maxValidators=5").then(r => r.json()).catch(() => null),
+        fetch("/api/agent/apy").then(r => r.json()).catch(() => null),
       ]);
 
       if (posRes?.positions) {
@@ -313,6 +318,10 @@ export default function VaultPage() {
 
       if (recRes?.success) {
         setRecommendations(recRes.decision.recommendations);
+      }
+
+      if (apyRes?.success) {
+        setApyData(apyRes.apy);
       }
     } catch (err) {
       console.error("Failed to fetch data:", err);
@@ -433,6 +442,44 @@ export default function VaultPage() {
         ) : (
           <div className="space-y-6">
             {/* ═══ VAULT COMMAND CENTER ═══ */}
+            {/* APY Banner */}
+            {apyData && (
+              <div className="bg-gradient-to-r from-[var(--accent)]/10 via-[var(--bg-card)] to-[var(--accent)]/5 rounded-xl p-4 md:p-5 border border-[var(--accent)]/20">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4 md:gap-8">
+                    <div>
+                      <div className="text-[10px] md:text-xs text-[var(--text-muted)] uppercase tracking-wide mb-0.5">Vault Avg APY</div>
+                      <div className="text-2xl md:text-3xl font-bold text-[var(--accent)]">
+                        {apyData.avgNet > 0 ? `${apyData.avgNet.toFixed(2)}%` : "—"}
+                      </div>
+                    </div>
+                    <div className="h-10 w-px bg-[var(--border)] hidden md:block" />
+                    <div className="hidden md:block">
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide mb-0.5">Effective APY</div>
+                      <div className="text-lg font-semibold text-[var(--text-primary)]">
+                        {apyData.effective > 0 ? `${apyData.effective.toFixed(2)}%` : "—"}
+                      </div>
+                      <div className="text-[10px] text-[var(--text-muted)]">incl. cooling/idle capital</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 md:gap-6 text-xs">
+                    <div className="text-center">
+                      <div className="text-[var(--text-muted)] text-[10px]">Base Rate</div>
+                      <div className="font-medium">{apyData.base}%</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[var(--text-muted)] text-[10px]">Avg Commission</div>
+                      <div className="font-medium">{apyData.avgCommission}%</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[var(--text-muted)] text-[10px]">Net to You</div>
+                      <div className="font-medium text-[var(--accent)]">{apyData.avgNet > 0 ? `${apyData.avgNet.toFixed(2)}%` : "—"}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* State Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <VaultStateCard

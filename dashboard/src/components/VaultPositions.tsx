@@ -164,6 +164,11 @@ export function VaultPositions() {
                     {validator?.commission !== undefined && (
                       <span className="text-[10px] text-[var(--text-muted)] hidden sm:inline">{validator.commission}% fee</span>
                     )}
+                    {validator?.commission !== undefined && (group.status === "active" || group.status === "activating") && (
+                      <span className="text-[10px] text-[var(--accent)] hidden sm:inline">
+                        {(7.0 * (1 - validator.commission / 100)).toFixed(2)}% APY
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     {pos.activationEpoch && group.status === "active" && (
