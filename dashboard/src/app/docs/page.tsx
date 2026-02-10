@@ -10,10 +10,11 @@ export default function DocsPage() {
         <p className="text-sm md:text-base text-[var(--text-secondary)] mb-8 md:mb-12">Everything you need to know about StakePilot Agent Vault</p>
 
         {/* Quick Links */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
           {[
             { href: "#how-it-works", title: "How It Works", desc: "Understand the vault system" },
             { href: "#security", title: "Security", desc: "How we keep your funds safe" },
+            { href: "#selection", title: "Selection Criteria", desc: "How validators are scored" },
             { href: "#strategy", title: "Strategy Guide", desc: "Configure your preferences" },
           ].map((link) => (
             <a
@@ -188,6 +189,66 @@ export default function DocsPage() {
           </div>
         </section>
 
+        {/* Validator Selection */}
+        <section id="selection" className="mb-12 md:mb-16">
+          <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Validator Selection Criteria</h2>
+          <p className="text-sm md:text-base text-[var(--text-secondary)] mb-4 md:mb-6">
+            The agent uses a multi-factor scoring system to select and monitor validators. Here&apos;s exactly how it works:
+          </p>
+
+          <div className="card p-4 md:p-6 mb-3 md:mb-4">
+            <h3 className="font-bold mb-3 md:mb-4 text-sm md:text-base">📊 Scoring Formula (max 140 pts)</h3>
+            <div className="space-y-2 md:space-y-3">
+              {[
+                { factor: "Decentralization", weight: "40 pts", desc: "Prefers validators outside superminority and in unique data centers" },
+                { factor: "Commission", weight: "25 pts", desc: "Lower commission = higher score. 0% gets full marks, scales linearly" },
+                { factor: "MEV Fairness", weight: "20 pts", desc: "Validators running Jito MEV with fair tip distribution score higher" },
+                { factor: "Uptime", weight: "15 pts", desc: "Based on vote credits — validators that miss fewer votes rank better" },
+                { factor: "Reputation", weight: "10 pts", desc: "Established validators with verified identity get bonus points" },
+                { factor: "Infrastructure", weight: "up to 30 pts", desc: "Bonus for bare-metal servers, IBRL, and geographic diversity" },
+              ].map((item) => (
+                <div key={item.factor} className="flex items-start gap-3 text-sm md:text-base">
+                  <span className="text-[var(--accent)] font-mono text-xs md:text-sm min-w-[60px] md:min-w-[70px] text-right shrink-0">{item.weight}</span>
+                  <div>
+                    <strong className="text-[var(--text-primary)]">{item.factor}</strong>
+                    <span className="text-[var(--text-secondary)]"> — {item.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card p-4 md:p-6 mb-3 md:mb-4">
+            <h3 className="font-bold mb-3 md:mb-4 text-sm md:text-base">✅ Selection Filters</h3>
+            <p className="text-xs md:text-sm text-[var(--text-secondary)] mb-3">Before scoring, validators must pass these minimum requirements:</p>
+            <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-[var(--text-secondary)]">
+              <li className="flex items-start gap-2"><span className="text-[var(--accent)]">•</span> <span><strong className="text-[var(--text-primary)]">Commission ≤ 10%</strong> — validators charging more than 10% are excluded</span></li>
+              <li className="flex items-start gap-2"><span className="text-[var(--accent)]">•</span> <span><strong className="text-[var(--text-primary)]">Not delinquent</strong> — must be actively voting</span></li>
+              <li className="flex items-start gap-2"><span className="text-[var(--accent)]">•</span> <span><strong className="text-[var(--text-primary)]">Active stake &lt; 5M SOL</strong> — avoids over-concentrated validators to help decentralization</span></li>
+            </ul>
+            <p className="text-xs md:text-sm text-[var(--text-muted)] mt-3">Validators that pass filters are ranked by score. The agent stakes to the top 5.</p>
+          </div>
+
+          <div className="card p-4 md:p-6">
+            <h3 className="font-bold mb-3 md:mb-4 text-sm md:text-base">🔄 Rebalancing Rules</h3>
+            <p className="text-xs md:text-sm text-[var(--text-secondary)] mb-3">
+              The agent runs every 8 hours and checks existing positions. It will only deactivate a stake for serious issues — never just because a score dropped slightly:
+            </p>
+            <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-[var(--text-secondary)]">
+              <li className="flex items-start gap-2"><span className="text-red-400">⚠</span> <span><strong className="text-[var(--text-primary)]">Commission hike &gt; 15%</strong> — deactivate if commission rises above tolerance</span></li>
+              <li className="flex items-start gap-2"><span className="text-red-400">⚠</span> <span><strong className="text-[var(--text-primary)]">Commission jump +3%</strong> — deactivate if commission increases by 3+ points since staking</span></li>
+              <li className="flex items-start gap-2"><span className="text-red-400">⚠</span> <span><strong className="text-[var(--text-primary)]">Delinquency</strong> — deactivate if validator stops voting</span></li>
+              <li className="flex items-start gap-2"><span className="text-red-400">⚠</span> <span><strong className="text-[var(--text-primary)]">Validator disappears</strong> — deactivate if no longer in the validator set</span></li>
+            </ul>
+            <div className="mt-3 md:mt-4 bg-[var(--bg-secondary)] rounded-lg p-3 md:p-4">
+              <p className="text-xs md:text-sm text-[var(--text-muted)]">
+                <strong>Why conservative?</strong> Deactivating a stake means ~2 epochs (~4 days on mainnet) of zero rewards while the stake cools down. 
+                The agent only deactivates when the risk of staying outweighs the cost of lost yield.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* FAQ */}
         <section id="faq" className="mb-12 md:mb-16">
           <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">FAQ</h2>
@@ -200,7 +261,7 @@ export default function DocsPage() {
               },
               {
                 q: "How often does the agent rebalance?",
-                a: "The agent evaluates your portfolio hourly but only executes when the potential improvement exceeds transaction costs."
+                a: "The agent runs every 8 hours (3 times per day). It checks all positions and only rebalances when there's a serious issue like a commission hike or delinquency — not for minor score changes."
               },
               {
                 q: "Are there fees?",

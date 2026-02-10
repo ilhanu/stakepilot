@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     if (!agent) {
       return NextResponse.json({
         success: false,
-        error: "Agent keypair not available. Run agent locally on beast.",
+        error: "Agent keypair not available. Agent runs on a secure local server.",
         hint: "The agent private key is kept secure on the local machine, not in Vercel.",
       }, { status: 400 });
     }

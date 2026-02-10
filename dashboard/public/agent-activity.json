@@ -1,6 +1,34 @@
 [
   {
     "type": "check",
+    "summary": "Agent check complete. 7 active positions, vault 21.42 SOL",
+    "amount": 21.42065436,
+    "timestamp": "2026-02-10T16:00:12.850Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to QubeStake (5% comm)",
+    "txSignature": "4EmD9ESGQDftLWLXZhn9EwUu5SA7DQUJCcATwFQP6nfcqjfAS5t9KdKiBkA1psbW5mKBFh66bKNvWYh6gbmpwc6Z",
+    "validator": "9BydjNsPGiiLp3LYwb5sg4o66ohupLCcEcq3dfhbZQro",
+    "amount": 2.27556316,
+    "timestamp": "2026-02-10T16:00:12.724Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27556316 SOL to 9BydjNsP...",
+    "txSignature": "4EmD9ESGQDftLWLXZhn9EwUu5SA7DQUJCcATwFQP6nfcqjfAS5t9KdKiBkA1psbW5mKBFh66bKNvWYh6gbmpwc6Z",
+    "validator": "9BydjNsPGiiLp3LYwb5sg4o66ohupLCcEcq3dfhbZQro",
+    "amount": 2.27556316,
+    "timestamp": "2026-02-10T16:00:12.724Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 2HJvJ94J... back to vault",
+    "txSignature": "317hxLJ2fKq6CTTUoturUZmgvebvFGqSJBiB1i9yTwEP2CnK1j3sCJHwE7nkYurxFBsDbAoUkk2zHnkT7gzjgPbX",
+    "timestamp": "2026-02-10T16:00:11.291Z"
+  },
+  {
+    "type": "check",
     "summary": "Agent check complete. 4 active positions, vault 21.42 SOL",
     "amount": 21.42057436,
     "timestamp": "2026-02-10T08:16:58.317Z"
