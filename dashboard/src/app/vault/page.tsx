@@ -404,6 +404,8 @@ export default function VaultPage() {
     } finally { setTxPending(false); }
   };
 
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Testnet Banner */}
@@ -414,7 +416,7 @@ export default function VaultPage() {
         </span>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
         {/* Title */}
         <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -441,225 +443,194 @@ export default function VaultPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* ═══ VAULT COMMAND CENTER ═══ */}
-            {/* APY Banner */}
-            {apyData && (
-              <div className="bg-gradient-to-r from-[var(--accent)]/10 via-[var(--bg-card)] to-[var(--accent)]/5 rounded-xl p-4 md:p-5 border border-[var(--accent)]/20">
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                  <div className="flex items-center gap-4 md:gap-8">
+
+            {/* ═══ HERO: APY + Key Metrics ═══ */}
+            <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] p-6 md:p-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                {/* APY */}
+                <div className="flex items-center gap-6 md:gap-10">
+                  <div>
+                    <div className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1">Vault APY</div>
+                    <div className="text-4xl md:text-5xl font-bold text-[var(--accent)]">
+                      {apyData && apyData.avgNet > 0 ? `${apyData.avgNet.toFixed(2)}%` : "6.65%"}
+                    </div>
+                    <div className="text-xs text-[var(--text-muted)] mt-1">net after validator fees</div>
+                  </div>
+                  <div className="h-16 w-px bg-[var(--border)] hidden md:block" />
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
                     <div>
-                      <div className="text-[10px] md:text-xs text-[var(--text-muted)] uppercase tracking-wide mb-0.5">Vault Avg APY</div>
-                      <div className="text-2xl md:text-3xl font-bold text-[var(--accent)]">
-                        {apyData.avgNet > 0 ? `${apyData.avgNet.toFixed(2)}%` : "—"}
-                      </div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Total Staked</div>
+                      <div className="text-lg font-bold">{positionSummary.active.toFixed(2)} <span className="text-sm text-[var(--text-muted)]">SOL</span></div>
                     </div>
-                    <div className="h-10 w-px bg-[var(--border)] hidden md:block" />
-                    <div className="hidden md:block">
-                      <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wide mb-0.5">Effective APY</div>
-                      <div className="text-lg font-semibold text-[var(--text-primary)]">
-                        {apyData.effective > 0 ? `${apyData.effective.toFixed(2)}%` : "—"}
-                      </div>
-                      <div className="text-[10px] text-[var(--text-muted)]">incl. cooling/idle capital</div>
+                    <div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Validators</div>
+                      <div className="text-lg font-bold">{positionSummary.count}</div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4 md:gap-6 text-xs">
-                    <div className="text-center">
-                      <div className="text-[var(--text-muted)] text-[10px]">Base Rate</div>
-                      <div className="font-medium">{apyData.base}%</div>
+                    <div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Available</div>
+                      <div className="text-lg font-bold text-[var(--text-secondary)]">{availableToStake.toFixed(2)} <span className="text-sm text-[var(--text-muted)]">SOL</span></div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-[var(--text-muted)] text-[10px]">Avg Commission</div>
-                      <div className="font-medium">{apyData.avgCommission}%</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-[var(--text-muted)] text-[10px]">Net to You</div>
-                      <div className="font-medium text-[var(--accent)]">{apyData.avgNet > 0 ? `${apyData.avgNet.toFixed(2)}%` : "—"}</div>
+                    <div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Avg Commission</div>
+                      <div className="text-lg font-bold text-[var(--text-secondary)]">{apyData?.avgCommission ?? 5}%</div>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* State Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-              <VaultStateCard
-                icon="💰"
-                label="Available to Stake"
-                value={availableToStake.toFixed(2)}
-                color="text-[var(--accent)]"
-                subtitle={`Vault balance: ${vaultBalance.toFixed(2)} SOL`}
-              />
-              <VaultStateCard
-                icon="⚡"
-                label="Actively Staked"
-                value={positionSummary.active.toFixed(2)}
-                color="text-[var(--accent)]"
-                subtitle={`${positionSummary.count} position${positionSummary.count !== 1 ? "s" : ""} across validators`}
-              />
-              <VaultStateCard
-                icon="🔄"
-                label="Cooling Down"
-                value={positionSummary.deactivating.toFixed(2)}
-                color="text-orange-400"
-                subtitle={positionSummary.deactivating > 0 ? "~1-2 epochs until withdrawable" : "Nothing cooling down"}
-              />
-              <VaultStateCard
-                icon="✅"
-                label="Ready to Withdraw"
-                value={positionSummary.inactive.toFixed(2)}
-                color="text-blue-400"
-                subtitle={positionSummary.inactive > 0 ? "Can be withdrawn now" : "Nothing to withdraw"}
-              />
-            </div>
-
-            {/* Flow Bar + Agent Status Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">SOL Flow Distribution</span>
-                  <span className="text-xs text-[var(--text-muted)]">Total: {positionSummary.total.toFixed(2)} SOL staked</span>
+              {/* Flow Bar */}
+              {positionSummary.total > 0 && (
+                <div className="mt-6 pt-5 border-t border-[var(--border)]/50">
+                  <FlowBar positions={positionSummary} />
                 </div>
-                <FlowBar positions={positionSummary} />
-                {positionSummary.total === 0 && (
-                  <div className="text-center py-3 text-xs text-[var(--text-muted)]">No stake positions yet — deposit SOL and the agent will stake automatically</div>
-                )}
-              </div>
-              <AgentStatusWidget activity={recentActivity} positionCount={positionSummary.count} currentEpoch={currentEpoch} />
+              )}
             </div>
 
-            {/* ═══ MAIN CONTENT ═══ */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                {/* Stake Positions */}
-                <VaultPositions />
+            {/* ═══ DEPOSIT / WITHDRAW + YOUR POSITION ═══ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Your Position */}
+              <div className="bg-[var(--bg-card)] rounded-xl p-5 border border-[var(--border)]">
+                <h2 className="text-sm font-semibold mb-4 text-[var(--text-secondary)] uppercase tracking-wide">Your Position</h2>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <div className="text-[var(--text-muted)] text-[10px] uppercase">Wallet</div>
+                    <div className="text-xl font-bold mt-0.5">{walletBalance.toFixed(2)}</div>
+                    <div className="text-[10px] text-[var(--text-muted)]">SOL</div>
+                  </div>
+                  <div>
+                    <div className="text-[var(--text-muted)] text-[10px] uppercase">Deposited</div>
+                    <div className="text-xl font-bold text-[var(--accent)] mt-0.5">{vaultStatus?.userDeposit.toFixed(2) || "0"}</div>
+                    <div className="text-[10px] text-[var(--text-muted)]">SOL</div>
+                  </div>
+                  <div>
+                    <div className="text-[var(--text-muted)] text-[10px] uppercase">Withdrawable</div>
+                    <div className="text-xl font-bold text-blue-400 mt-0.5">{positionSummary.inactive.toFixed(2)}</div>
+                    <div className="text-[10px] text-[var(--text-muted)]">SOL</div>
+                  </div>
+                </div>
+              </div>
 
-                {/* Agent Activity */}
-                <AgentActivity />
+              {/* Deposit / Withdraw */}
+              <div className="bg-[var(--bg-card)] rounded-xl p-5 border border-[var(--border)]">
+                {error && <div className="mb-3 p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs">{error}</div>}
+                {success && <div className="mb-3 p-2.5 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-lg text-[var(--accent)] text-xs">{success}</div>}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-[var(--text-secondary)] mb-1.5">Deposit SOL</label>
+                    <div className="flex gap-2">
+                      <input type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0.00"
+                        className="flex-1 min-w-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--accent)]" disabled={txPending} />
+                      <button onClick={handleDeposit} disabled={txPending || !depositAmount}
+                        className="px-4 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-semibold text-sm text-black transition whitespace-nowrap">
+                        {txPending ? "..." : "Deposit"}
+                      </button>
+                    </div>
+                    <button onClick={() => setDepositAmount(walletBalance.toFixed(4))} className="mt-1 text-[10px] text-[var(--accent)] hover:text-[var(--accent-hover)]">
+                      Max: {walletBalance.toFixed(2)} SOL
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[var(--text-secondary)] mb-1.5">Request Unstake</label>
+                    <div className="flex gap-2">
+                      <input type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="0.00"
+                        className="flex-1 min-w-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--coral)]" disabled={txPending} />
+                      <button onClick={handleRequestUnstake} disabled={txPending || !withdrawAmount}
+                        className="px-4 py-2.5 bg-[var(--coral)] hover:opacity-90 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">
+                        {txPending ? "..." : "Unstake"}
+                      </button>
+                    </div>
+                    <button onClick={() => setWithdrawAmount(vaultStatus?.userDeposit.toFixed(4) || "0")} className="mt-1 text-[10px] text-[var(--coral)] hover:opacity-80">
+                      Max: {vaultStatus?.userDeposit.toFixed(2) || "0"} SOL
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                {/* Validator Targets */}
-                {recommendations.length > 0 && (
-                  <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
-                    <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4">Validator Targets</h2>
-                    <p className="text-[var(--text-secondary)] text-xs mb-3">The agent stakes to these quality decentralized validators</p>
-                    <div className="space-y-2">
-                      {recommendations.map((rec, i) => (
-                        <div key={rec.validator} className="flex items-center justify-between p-2.5 md:p-3 bg-[var(--bg-elevated)] rounded-lg">
-                          <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center text-xs md:text-sm font-bold shrink-0">{i + 1}</div>
-                            <div className="min-w-0">
-                              <div className="font-medium text-sm truncate">{rec.validatorName}</div>
-                              <div className="text-[10px] text-[var(--text-secondary)] font-mono">{rec.validator.slice(0, 6)}...</div>
+            {/* ═══ POSITIONS (clean) ═══ */}
+            <VaultPositions />
+
+            {/* ═══ ADVANCED / AGENT DETAILS (collapsed by default) ═══ */}
+            <div className="border border-[var(--border)] rounded-xl overflow-hidden">
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="w-full flex items-center justify-between px-5 py-3.5 bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] transition text-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[var(--text-muted)]">🤖</span>
+                  <span className="font-medium">Agent Details & Activity</span>
+                  <span className="text-[10px] text-[var(--text-muted)]">— logs, epoch progress, validator targets</span>
+                </div>
+                <svg className={`w-4 h-4 text-[var(--text-muted)] transition-transform ${showAdvanced ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showAdvanced && (
+                <div className="border-t border-[var(--border)] bg-[var(--bg-primary)] p-4 md:p-6 space-y-6">
+                  {/* Agent Status + Epoch */}
+                  <AgentStatusWidget activity={recentActivity} positionCount={positionSummary.count} currentEpoch={currentEpoch} />
+
+                  {/* Agent Activity Log */}
+                  <AgentActivity />
+
+                  {/* Validator Targets */}
+                  {recommendations.length > 0 && (
+                    <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
+                      <h2 className="text-base font-semibold mb-3">Validator Targets</h2>
+                      <p className="text-[var(--text-secondary)] text-xs mb-3">The agent stakes to these quality decentralized validators</p>
+                      <div className="space-y-2">
+                        {recommendations.map((rec, i) => (
+                          <div key={rec.validator} className="flex items-center justify-between p-2.5 md:p-3 bg-[var(--bg-elevated)] rounded-lg">
+                            <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                              <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center text-xs md:text-sm font-bold shrink-0">{i + 1}</div>
+                              <div className="min-w-0">
+                                <div className="font-medium text-sm truncate">{rec.validatorName}</div>
+                                <div className="text-[10px] text-[var(--text-secondary)] font-mono">{rec.validator.slice(0, 6)}...</div>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0 ml-2">
+                              <div className="text-[var(--accent)] font-medium text-sm">{(rec.expectedApy ?? 0).toFixed(1)}%</div>
+                              <div className="text-[10px] text-[var(--text-secondary)]">Score: {(rec.score ?? rec.wizScore ?? 0).toFixed(0)}</div>
                             </div>
                           </div>
-                          <div className="text-right shrink-0 ml-2">
-                            <div className="text-[var(--accent)] font-medium text-sm">{(rec.expectedApy ?? 0).toFixed(1)}%</div>
-                            <div className="text-[10px] text-[var(--text-secondary)]">Score: {(rec.score ?? rec.wizScore ?? 0).toFixed(0)}</div>
-                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Technical Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
+                      <h3 className="text-sm font-semibold mb-3">Vault Stats</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between"><span className="text-[var(--text-muted)]">Total Deposits</span><span className="font-medium">{vaultStatus?.totalDeposits.toFixed(2)} SOL</span></div>
+                        <div className="flex justify-between"><span className="text-[var(--text-muted)]">Total Staked</span><span className="font-medium text-[var(--accent)]">{vaultStatus?.totalStaked.toFixed(2)} SOL</span></div>
+                        <div className="flex justify-between"><span className="text-[var(--text-muted)]">Depositors</span><span className="font-medium">{vaultStatus?.totalUsers || 0}</span></div>
+                      </div>
+                    </div>
+                    <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
+                      <h3 className="text-sm font-semibold mb-3">Vault Info</h3>
+                      <div className="space-y-2 text-xs">
+                        <div>
+                          <div className="text-[var(--text-muted)]">Network</div>
+                          <div className="font-mono text-[var(--accent)]">Testnet</div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ═══ SIDEBAR ═══ */}
-              <div className="space-y-4">
-                {/* Your Position + Deposit/Withdraw */}
-                <div className="bg-[var(--bg-card)] rounded-xl p-4 md:p-6 border border-[var(--border)]">
-                  <h2 className="text-base font-semibold mb-3">Your Position</h2>
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div>
-                      <div className="text-[var(--text-muted)] text-[10px]">Wallet</div>
-                      <div className="text-sm font-bold">{walletBalance.toFixed(2)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[var(--text-muted)] text-[10px]">Deposited</div>
-                      <div className="text-sm font-bold text-[var(--accent)]">{vaultStatus?.userDeposit.toFixed(2) || "0"}</div>
-                    </div>
-                    <div>
-                      <div className="text-[var(--text-muted)] text-[10px]">Pending</div>
-                      <div className="text-sm font-bold text-[var(--coral)]">{vaultStatus?.userPendingUnstake.toFixed(2) || "0"}</div>
-                    </div>
-                  </div>
-
-                  {error && <div className="mb-3 p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs">{error}</div>}
-                  {success && <div className="mb-3 p-2.5 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-lg text-[var(--accent)] text-xs">{success}</div>}
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1.5">Deposit SOL</label>
-                      <div className="flex gap-2">
-                        <input type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="0.00"
-                          className="flex-1 min-w-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]" disabled={txPending} />
-                        <button onClick={handleDeposit} disabled={txPending || !depositAmount}
-                          className="px-3 py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium text-sm text-black transition whitespace-nowrap">
-                          {txPending ? "..." : "Deposit"}
-                        </button>
+                        <div>
+                          <div className="text-[var(--text-muted)]">Vault Address</div>
+                          <a href={`https://explorer.solana.com/address/${VAULT_PDA.toBase58()}?cluster=testnet`} target="_blank" rel="noopener noreferrer"
+                            className="font-mono text-[var(--accent)] hover:underline break-all text-[11px]">{VAULT_PDA.toBase58().slice(0, 20)}...</a>
+                        </div>
+                        <div>
+                          <div className="text-[var(--text-muted)]">Program</div>
+                          <a href={`https://explorer.solana.com/address/${PROGRAM_ID.toBase58()}?cluster=testnet`} target="_blank" rel="noopener noreferrer"
+                            className="font-mono text-[var(--accent)] hover:underline break-all text-[11px]">{PROGRAM_ID.toBase58().slice(0, 20)}...</a>
+                        </div>
                       </div>
-                      <button onClick={() => setDepositAmount(walletBalance.toFixed(4))} className="mt-1 text-[10px] text-[var(--accent)] hover:text-[var(--accent-hover)]">
-                        Max: {walletBalance.toFixed(2)} SOL
-                      </button>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1.5">Request Unstake</label>
-                      <div className="flex gap-2">
-                        <input type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} placeholder="0.00"
-                          className="flex-1 min-w-0 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--coral)]" disabled={txPending} />
-                        <button onClick={handleRequestUnstake} disabled={txPending || !withdrawAmount}
-                          className="px-3 py-2 bg-[var(--coral)] hover:opacity-90 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium text-sm text-white transition whitespace-nowrap">
-                          {txPending ? "..." : "Unstake"}
-                        </button>
-                      </div>
-                      <button onClick={() => setWithdrawAmount(vaultStatus?.userDeposit.toFixed(4) || "0")} className="mt-1 text-[10px] text-[var(--coral)] hover:opacity-80">
-                        Max: {vaultStatus?.userDeposit.toFixed(2) || "0"} SOL
-                      </button>
                     </div>
                   </div>
                 </div>
-
-                {/* Vault Stats */}
-                <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
-                  <h2 className="text-base font-semibold mb-3">Vault Stats</h2>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">Total Deposits</span><span className="font-medium">{vaultStatus?.totalDeposits.toFixed(2)} SOL</span></div>
-                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">Total Staked</span><span className="font-medium text-[var(--accent)]">{vaultStatus?.totalStaked.toFixed(2)} SOL</span></div>
-                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">Depositors</span><span className="font-medium">{vaultStatus?.totalUsers || 0}</span></div>
-                  </div>
-                </div>
-
-                {/* Validator Criteria */}
-                <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
-                  <h2 className="text-base font-semibold mb-3">Validator Criteria</h2>
-                  <ul className="space-y-1.5 text-xs text-[var(--text-secondary)]">
-                    <li className="flex items-center gap-2"><span className="text-[var(--accent)]">✓</span> Stake &lt; 1M SOL (decentralization)</li>
-                    <li className="flex items-center gap-2"><span className="text-[var(--accent)]">✓</span> Commission ≤ 5%</li>
-                    <li className="flex items-center gap-2"><span className="text-[var(--accent)]">✓</span> MEV Commission ≤ 10%</li>
-                    <li className="flex items-center gap-2"><span className="text-[var(--accent)]">✓</span> Uptime &gt; 95%</li>
-                    <li className="flex items-center gap-2"><span className="text-[var(--accent)]">✓</span> Includes Staker Space validator ⭐</li>
-                  </ul>
-                </div>
-
-                {/* Vault Info */}
-                <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
-                  <h2 className="text-base font-semibold mb-3">Vault Info</h2>
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <div className="text-[var(--text-muted)]">Network</div>
-                      <div className="font-mono text-[var(--accent)]">Testnet</div>
-                    </div>
-                    <div>
-                      <div className="text-[var(--text-muted)]">Vault Address</div>
-                      <a href={`https://explorer.solana.com/address/${VAULT_PDA.toBase58()}?cluster=testnet`} target="_blank" rel="noopener noreferrer"
-                        className="font-mono text-[var(--accent)] hover:underline break-all text-[11px]">{VAULT_PDA.toBase58().slice(0, 16)}...</a>
-                    </div>
-                    <div>
-                      <div className="text-[var(--text-muted)]">Program</div>
-                      <a href={`https://explorer.solana.com/address/${PROGRAM_ID.toBase58()}?cluster=testnet`} target="_blank" rel="noopener noreferrer"
-                        className="font-mono text-[var(--accent)] hover:underline break-all text-[11px]">{PROGRAM_ID.toBase58().slice(0, 16)}...</a>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
