@@ -16,9 +16,10 @@ export function Header() {
   
   const navLinks = [
     { href: "/vault", label: "Vault" },
-    { href: "/dashboard", label: "Dashboard" },
+    { href: "/dashboard", label: "Monitor" },
     { href: "/discover", label: "Validators" },
     { href: "/docs", label: "Docs" },
+    { href: "/agent-docs", label: "API" },
   ];
 
   return (
