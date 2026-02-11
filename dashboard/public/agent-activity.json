@@ -1,6 +1,150 @@
 [
   {
     "type": "check",
+    "summary": "Agent check complete. 12 active positions, vault 16.81 SOL",
+    "amount": 16.812410268,
+    "timestamp": "2026-02-11T14:52:03.588Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to Meria (10% comm)",
+    "txSignature": "33kqMKa2rELE6ZeeZHmDFoLFyuGbNXGSHkm26t9zenD6iShPkRdtJC3Q4WSDNjiz68wJXqbg7EYq6Zj3Uy8u3FjU",
+    "validator": "5pjvfmZY31bf8gueCAaveV91NC1We63x2AqpcUXbsGA1",
+    "amount": 2.27548816,
+    "timestamp": "2026-02-11T14:52:03.473Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27548816 SOL to 5pjvfmZY...",
+    "txSignature": "33kqMKa2rELE6ZeeZHmDFoLFyuGbNXGSHkm26t9zenD6iShPkRdtJC3Q4WSDNjiz68wJXqbg7EYq6Zj3Uy8u3FjU",
+    "validator": "5pjvfmZY31bf8gueCAaveV91NC1We63x2AqpcUXbsGA1",
+    "amount": 2.27548816,
+    "timestamp": "2026-02-11T14:52:03.473Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to 1000x.sh (10% comm)",
+    "txSignature": "xf5n6caPyBrBEjcdhFbzTruCh8Rv8A5FXbPtW9SvHYJYNnVDXzUpwwtP828946kMdNjgJbyTb9fibDfH6TD9w9X",
+    "validator": "1KXVAA1hom7jdPSjgqkgpi7kEEfgi6rTYNNYHL6PJxn",
+    "amount": 2.27548816,
+    "timestamp": "2026-02-11T14:52:01.249Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27548816 SOL to 1KXVAA1h...",
+    "txSignature": "xf5n6caPyBrBEjcdhFbzTruCh8Rv8A5FXbPtW9SvHYJYNnVDXzUpwwtP828946kMdNjgJbyTb9fibDfH6TD9w9X",
+    "validator": "1KXVAA1hom7jdPSjgqkgpi7kEEfgi6rTYNNYHL6PJxn",
+    "amount": 2.27548816,
+    "timestamp": "2026-02-11T14:52:01.248Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 11 active positions, vault 21.37 SOL",
+    "amount": 21.367952348,
+    "timestamp": "2026-02-11T08:00:11.021Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to algo|stake (5% comm)",
+    "txSignature": "3afsPjv7RQxJ8Af77NFWhpvry2RwN9L7ECSsos4kCPLTUoiNVzZihTm3LbUXdSu3WkLtS5xkMYAKqWigZkWTi7Ug",
+    "validator": "69rUCD1qk6hJ3AqEkCi236QaceHTBSv1isiCEW6EZnVa",
+    "amount": 2.27549816,
+    "timestamp": "2026-02-11T08:00:10.696Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27549816 SOL to 69rUCD1q...",
+    "txSignature": "3afsPjv7RQxJ8Af77NFWhpvry2RwN9L7ECSsos4kCPLTUoiNVzZihTm3LbUXdSu3WkLtS5xkMYAKqWigZkWTi7Ug",
+    "validator": "69rUCD1qk6hJ3AqEkCi236QaceHTBSv1isiCEW6EZnVa",
+    "amount": 2.27549816,
+    "timestamp": "2026-02-11T08:00:10.695Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 8 active positions, vault 23.65 SOL",
+    "amount": 23.645733388,
+    "timestamp": "2026-02-11T00:00:18.043Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to KitBull (10% comm)",
+    "txSignature": "4vZXpmX1ZecZ1nA4VEXZbkrcVuK95TGYKnAzA52pshoF7DWv8AZdWeGcmdsHXu7wpJLDMVGy7pDXWfTkhFmMsiKZ",
+    "validator": "Cyamxp8EreqyZpVxwAq3gGjfHvBhGjTtJVg8LeqQyknQ",
+    "amount": 2.27552816,
+    "timestamp": "2026-02-11T00:00:17.931Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27552816 SOL to Cyamxp8E...",
+    "txSignature": "4vZXpmX1ZecZ1nA4VEXZbkrcVuK95TGYKnAzA52pshoF7DWv8AZdWeGcmdsHXu7wpJLDMVGy7pDXWfTkhFmMsiKZ",
+    "validator": "Cyamxp8EreqyZpVxwAq3gGjfHvBhGjTtJVg8LeqQyknQ",
+    "amount": 2.27552816,
+    "timestamp": "2026-02-11T00:00:17.930Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to VEGA (10% comm)",
+    "txSignature": "5CBQoANZRYhhyxAMNdgS4eqBn9zPbn4QyXKmZywifH3We7gDSqSyYmPjguzXqZsArNDEZKSJRoJFobkS2iMf1GwM",
+    "validator": "7xV19kxHGT98ZbMT4vTo4QoPaY9oYJBHzkTvTXHTZT32",
+    "amount": 2.27552816,
+    "timestamp": "2026-02-11T00:00:15.639Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27552816 SOL to 7xV19kxH...",
+    "txSignature": "5CBQoANZRYhhyxAMNdgS4eqBn9zPbn4QyXKmZywifH3We7gDSqSyYmPjguzXqZsArNDEZKSJRoJFobkS2iMf1GwM",
+    "validator": "7xV19kxHGT98ZbMT4vTo4QoPaY9oYJBHzkTvTXHTZT32",
+    "amount": 2.27552816,
+    "timestamp": "2026-02-11T00:00:15.639Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to Epics DAO (7% comm)",
+    "txSignature": "664YDi3bAKAcge1jCJDKdp5e4tBbYZ7dwaQfEkJYDMhympEgDBehsoK9eCrk91e8fKRktPMGk3ybC8rEEG3LNwZr",
+    "validator": "6XdQ6szHJjm1t3XbgahSS6WVEhsrs5fniZbLgfkN1QWn",
+    "amount": 2.27552816,
+    "timestamp": "2026-02-11T00:00:14.892Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27552816 SOL to 6XdQ6szH...",
+    "txSignature": "664YDi3bAKAcge1jCJDKdp5e4tBbYZ7dwaQfEkJYDMhympEgDBehsoK9eCrk91e8fKRktPMGk3ybC8rEEG3LNwZr",
+    "validator": "6XdQ6szHJjm1t3XbgahSS6WVEhsrs5fniZbLgfkN1QWn",
+    "amount": 2.27552816,
+    "timestamp": "2026-02-11T00:00:14.892Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake ECTHiCcj... back to vault",
+    "txSignature": "4PcLzWmJYLwuJDVgPAMFMpWDS17UA9b1sf2zhRJazVothYn845egGm8pvHG3dcgVuQdMA1y8rXCwpHbLhRU6vwcE",
+    "timestamp": "2026-02-11T00:00:14.131Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake Gb4xWvUh... back to vault",
+    "txSignature": "5JuPRsqG1ffDMCkPDQLNjbariBurUSzw9EFcTcQtS7N3hLAD8DcVMCF3ryBVQoQyJTPiZMkkmtays8TkA3vHLdg4",
+    "timestamp": "2026-02-11T00:00:13.479Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 5FfCvh8q... back to vault",
+    "txSignature": "51RRwkWRm258ASY7Tki7fNkmD4oVQNAuWmP8RYUuMCowJyGee2R2wUaepP6KaLK88PXtV9W2rJ1BwsfJhxmJipSH",
+    "timestamp": "2026-02-11T00:00:12.589Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 5GceX6th... back to vault",
+    "txSignature": "4t2SysKETsDWGM4U7i5SBYfyPAqSeerxh4xrevmdUmQY1zKC3m9caKBvboepp47y5FEQo8e8xiArwSxJ2fYTKugB",
+    "timestamp": "2026-02-11T00:00:11.862Z"
+  },
+  {
+    "type": "withdraw",
+    "summary": "Withdrew deactivated stake 7y6bVedb... back to vault",
+    "txSignature": "478acYuHVVUhStECMeZhEAJnAXCMpb7sRD3fHYU9JATRxjdu4a5w22j5wHYpZhtPwhze7YAKxzrFfBuQ8DSf1VW5",
+    "timestamp": "2026-02-11T00:00:10.335Z"
+  },
+  {
+    "type": "check",
     "summary": "Agent check complete. 7 active positions, vault 21.42 SOL",
     "amount": 21.42065436,
     "timestamp": "2026-02-10T16:00:12.850Z"

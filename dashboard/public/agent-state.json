@@ -1,12 +1,18 @@
 {
-  "lastRun": "2026-02-10T16:00:12.725Z",
+  "lastRun": "2026-02-11T14:52:03.474Z",
   "validatorCommissions": {
     "9BydjNsPGiiLp3LYwb5sg4o66ohupLCcEcq3dfhbZQro": 5,
     "6jJK69aeuLbVnM6nUKnmMMwyQG2rNjKNFrfM459kfAdL": 5,
     "8kX4xNBYGpgHxYokxzzQJ341Jf8LCd7CGqxaRsAVfacd": 5,
     "EF2HGsnKf8jQ59mUFzJiNRLTBuNhYB4HusmFEsCRH6be": 5,
     "8tYEstnm9xAUG9LMCS95XMZ4STGMSqcW7zZDyhQ4KEFB": 5,
-    "3S4jVg5p1rw7t8MS5UtjhnChmo6ABdmh3nyXTVzAyP9f": 10
+    "3S4jVg5p1rw7t8MS5UtjhnChmo6ABdmh3nyXTVzAyP9f": 10,
+    "6XdQ6szHJjm1t3XbgahSS6WVEhsrs5fniZbLgfkN1QWn": 7,
+    "7xV19kxHGT98ZbMT4vTo4QoPaY9oYJBHzkTvTXHTZT32": 10,
+    "Cyamxp8EreqyZpVxwAq3gGjfHvBhGjTtJVg8LeqQyknQ": 10,
+    "69rUCD1qk6hJ3AqEkCi236QaceHTBSv1isiCEW6EZnVa": 5,
+    "1KXVAA1hom7jdPSjgqkgpi7kEEfgi6rTYNNYHL6PJxn": 10,
+    "5pjvfmZY31bf8gueCAaveV91NC1We63x2AqpcUXbsGA1": 10
   },
-  "epochAtLastRebalance": 909
+  "epochAtLastRebalance": 910
 }

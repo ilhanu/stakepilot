@@ -18,6 +18,7 @@ export function Header() {
     { href: "/vault", label: "Vault" },
     { href: "/dashboard", label: "Monitor" },
     { href: "/discover", label: "Validators" },
+    { href: "/strategy", label: "Strategy" },
     { href: "/docs", label: "Docs" },
     { href: "/agent-docs", label: "API" },
   ];
