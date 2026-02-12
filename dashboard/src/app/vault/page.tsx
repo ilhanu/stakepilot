@@ -244,6 +244,9 @@ export default function VaultPage() {
   const [recentActivity, setRecentActivity] = useState<ActivityEntry[]>([]);
   const [vaultBalance, setVaultBalance] = useState(0);
   const [availableToStake, setAvailableToStake] = useState(0);
+  const [agentBalance, setAgentBalance] = useState(0);
+  const [onChainStaked, setOnChainStaked] = useState(0);
+  const [totalManaged, setTotalManaged] = useState(0);
 
   const [apyData, setApyData] = useState<{
     avgNet: number; effective: number; base: number; avgCommission: number;
@@ -312,8 +315,11 @@ export default function VaultPage() {
       }
 
       if (vaultRes) {
-        setVaultBalance(vaultRes.balance ?? vaultRes.vaultBalance ?? 0);
+        setVaultBalance(vaultRes.vault?.balance ?? vaultRes.balance ?? vaultRes.vaultBalance ?? 0);
         setAvailableToStake(vaultRes.availableToStake ?? vaultRes.available ?? (vaultRes.balance ?? 0));
+        setAgentBalance(vaultRes.agentBalance ?? 0);
+        setOnChainStaked(vaultRes.onChainStaked ?? 0);
+        setTotalManaged(vaultRes.totalManaged ?? 0);
       }
 
       if (actRes?.activities) {
@@ -508,18 +514,26 @@ export default function VaultPage() {
                     <div className="text-xs text-[var(--text-muted)] mt-1">net after validator fees</div>
                   </div>
                   <div className="h-16 w-px bg-[var(--border)] hidden md:block" />
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                  <div className="grid grid-cols-3 gap-x-6 gap-y-3">
                     <div>
-                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Total Staked</div>
-                      <div className="text-lg font-bold">{positionSummary.active.toFixed(2)} <span className="text-sm text-[var(--text-muted)]">SOL</span></div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Total Managed</div>
+                      <div className="text-lg font-bold text-[var(--accent)]">{totalManaged.toFixed(2)} <span className="text-sm text-[var(--text-muted)]">SOL</span></div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Validators</div>
-                      <div className="text-lg font-bold">{positionSummary.count}</div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Staked On-Chain</div>
+                      <div className="text-lg font-bold">{onChainStaked.toFixed(2)} <span className="text-sm text-[var(--text-muted)]">SOL</span></div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Available</div>
-                      <div className="text-lg font-bold text-[var(--text-secondary)]">{availableToStake.toFixed(2)} <span className="text-sm text-[var(--text-muted)]">SOL</span></div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Vault Liquid</div>
+                      <div className="text-lg font-bold text-[var(--text-secondary)]">{vaultBalance.toFixed(2)} <span className="text-sm text-[var(--text-muted)]">SOL</span></div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Agent Wallet</div>
+                      <div className="text-lg font-bold text-[var(--text-secondary)]">{agentBalance.toFixed(2)} <span className="text-sm text-[var(--text-muted)]">SOL</span></div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase">Positions</div>
+                      <div className="text-lg font-bold">{positionSummary.count} <span className="text-sm text-[var(--text-muted)]">validators</span></div>
                     </div>
                     <div>
                       <div className="text-[10px] text-[var(--text-muted)] uppercase">Avg Commission</div>

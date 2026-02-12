@@ -71,10 +71,78 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    // Fetch on-chain stake accounts for this vault
+    const stakeAccounts = await connection.getProgramAccounts(
+      new PublicKey("Stake11111111111111111111111111111111111111"),
+      {
+        filters: [
+          { memcmp: { offset: 12, bytes: vaultPDA.toBase58() } },
+        ],
+      }
+    );
+
+    const epochInfo = await connection.getEpochInfo();
+    const currentEpoch = epochInfo.epoch;
+
+    let onChainStaked = 0;
+    let activePositions = 0;
+    let deactivatingPositions = 0;
+    const positions: { stakeAccount: string; validator: string; amount: number; status: string }[] = [];
+
+    for (const account of stakeAccounts) {
+      const data = account.account.data;
+      const delegationOffset = 124;
+
+      if (data.length > delegationOffset + 72) {
+        const voterPubkey = new PublicKey(data.slice(delegationOffset, delegationOffset + 32));
+        const stake = Number(data.readBigUInt64LE(delegationOffset + 32)) / 1e9;
+        const activationEpoch = Number(data.readBigUInt64LE(delegationOffset + 40));
+        const deactivationEpoch = Number(data.readBigUInt64LE(delegationOffset + 48));
+
+        let status = "active";
+        if (deactivationEpoch !== 0xffffffffffffffff && deactivationEpoch <= currentEpoch) {
+          status = "inactive";
+        } else if (deactivationEpoch !== 0xffffffffffffffff) {
+          status = "deactivating";
+          deactivatingPositions++;
+          onChainStaked += stake;
+        } else if (activationEpoch >= currentEpoch) {
+          status = "activating";
+          activePositions++;
+          onChainStaked += stake;
+        } else {
+          activePositions++;
+          onChainStaked += stake;
+        }
+
+        positions.push({
+          stakeAccount: account.pubkey.toBase58(),
+          validator: voterPubkey.toBase58(),
+          amount: stake,
+          status,
+        });
+      }
+    }
+
+    // Get agent wallet balance
+    const AGENT_WALLET = new PublicKey("By596jaboXuq2jt6EKB8XuMMWxpccTdEJdmmgL1HoBny");
+    const agentBalance = (await connection.getBalance(AGENT_WALLET)) / 1e9;
+    const totalManaged = vault.balance + onChainStaked + agentBalance;
+
     return NextResponse.json({
       exists: true,
       vault,
       strategy,
+      staking: {
+        onChainStaked,
+        activePositions,
+        deactivatingPositions,
+        totalPositions: stakeAccounts.length,
+        positions,
+        agentBalance,
+        totalManaged,
+        currentEpoch,
+      },
     });
   } catch (error) {
     console.error("Error fetching vault:", error);

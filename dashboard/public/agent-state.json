@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-02-11T14:52:03.474Z",
+  "lastRun": "2026-02-12T00:00:09.867Z",
   "validatorCommissions": {
     "9BydjNsPGiiLp3LYwb5sg4o66ohupLCcEcq3dfhbZQro": 5,
     "6jJK69aeuLbVnM6nUKnmMMwyQG2rNjKNFrfM459kfAdL": 5,
@@ -12,7 +12,11 @@
     "Cyamxp8EreqyZpVxwAq3gGjfHvBhGjTtJVg8LeqQyknQ": 10,
     "69rUCD1qk6hJ3AqEkCi236QaceHTBSv1isiCEW6EZnVa": 5,
     "1KXVAA1hom7jdPSjgqkgpi7kEEfgi6rTYNNYHL6PJxn": 10,
-    "5pjvfmZY31bf8gueCAaveV91NC1We63x2AqpcUXbsGA1": 10
+    "5pjvfmZY31bf8gueCAaveV91NC1We63x2AqpcUXbsGA1": 10,
+    "StsaCN2kL9JUTRziGNDCY3j3wuaqQuoSgGkGsBRGvQL": 8,
+    "HBmjVZ1TjLRdC1j3dbxLAFsNY3KkrmzYbbCYTAg7i28P": 10,
+    "vouNpQ4b6mZRAKHG312QrBhbG3t5QdBLRuWXr2YYevo": 0,
+    "AZwhuCe3DJ5RrGenvYTUjJJG8u6fQKLBTHLY5RkwNVpV": 5
   },
   "epochAtLastRebalance": 910
 }

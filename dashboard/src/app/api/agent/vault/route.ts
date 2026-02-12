@@ -37,6 +37,54 @@ export async function GET() {
 
     const availableToStake = Math.max(0, vaultBalance - MIN_VAULT_BALANCE);
 
+    // Get agent wallet balance
+    const agentBalance = (await connection.getBalance(AGENT_PUBKEY)) / LAMPORTS_PER_SOL;
+
+    // Get on-chain staked SOL from stake accounts
+    const stakeAccounts = await connection.getProgramAccounts(
+      new PublicKey("Stake11111111111111111111111111111111111111"),
+      {
+        filters: [
+          { memcmp: { offset: 12, bytes: VAULT_PDA.toBase58() } },
+        ],
+      }
+    );
+
+    const epochInfo = await connection.getEpochInfo();
+    const currentEpoch = epochInfo.epoch;
+
+    let onChainStaked = 0;
+    let activePositions = 0;
+    let deactivatingPositions = 0;
+
+    for (const account of stakeAccounts) {
+      const data = account.account.data;
+      const lamports = account.account.lamports;
+      const delegationOffset = 124;
+
+      if (data.length > delegationOffset + 72) {
+        const deactivationEpoch = Number(data.readBigUInt64LE(delegationOffset + 48));
+        const activationEpoch = Number(data.readBigUInt64LE(delegationOffset + 40));
+        const stake = Number(data.readBigUInt64LE(delegationOffset + 32)) / LAMPORTS_PER_SOL;
+
+        if (deactivationEpoch !== 0xffffffffffffffff && deactivationEpoch <= currentEpoch) {
+          // inactive
+        } else if (deactivationEpoch !== 0xffffffffffffffff) {
+          deactivatingPositions++;
+          onChainStaked += stake;
+        } else {
+          if (activationEpoch >= currentEpoch) {
+            activePositions++; // activating
+          } else {
+            activePositions++;
+          }
+          onChainStaked += stake;
+        }
+      }
+    }
+
+    const totalManaged = vaultBalance + onChainStaked + agentBalance;
+
     return NextResponse.json({
       vault: {
         address: VAULT_PDA.toBase58(),
@@ -47,7 +95,14 @@ export async function GET() {
         authority: authority.toBase58(),
       },
       agent: agent.toBase58(),
+      agentBalance,
       availableToStake,
+      onChainStaked,
+      activePositions,
+      deactivatingPositions,
+      totalPositions: stakeAccounts.length,
+      totalManaged,
+      currentEpoch,
       minVaultBalance: MIN_VAULT_BALANCE,
       network: "testnet",
       timestamp: new Date().toISOString(),

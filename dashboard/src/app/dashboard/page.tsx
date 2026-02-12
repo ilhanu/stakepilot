@@ -63,6 +63,11 @@ export default function MonitorPage() {
   const [schedule, setSchedule] = useState<ScheduleData | null>(null);
   const [positions, setPositions] = useState<PositionData[]>([]);
   const [vaultBalance, setVaultBalance] = useState(0);
+  const [agentBalance, setAgentBalance] = useState(0);
+  const [onChainStaked, setOnChainStaked] = useState(0);
+  const [activePositionCount, setActivePositionCount] = useState(0);
+  const [deactivatingPositionCount, setDeactivatingPositionCount] = useState(0);
+  const [totalManaged, setTotalManaged] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>("all");
 
@@ -79,7 +84,14 @@ export default function MonitorPage() {
         if (actRes?.activities) setActivities(actRes.activities);
         if (schedRes) setSchedule(schedRes);
         if (posRes?.positions) setPositions(posRes.positions);
-        if (vaultRes) setVaultBalance(vaultRes.balance ?? vaultRes.vaultBalance ?? 0);
+        if (vaultRes) {
+          setVaultBalance(vaultRes.vault?.balance ?? vaultRes.balance ?? vaultRes.vaultBalance ?? 0);
+          setAgentBalance(vaultRes.agentBalance ?? 0);
+          setOnChainStaked(vaultRes.onChainStaked ?? 0);
+          setActivePositionCount(vaultRes.activePositions ?? 0);
+          setDeactivatingPositionCount(vaultRes.deactivatingPositions ?? 0);
+          setTotalManaged(vaultRes.totalManaged ?? 0);
+        }
       } catch (e) {
         console.error("Failed to fetch monitor data:", e);
       } finally {
@@ -127,7 +139,39 @@ export default function MonitorPage() {
         </div>
 
         {/* Agent State Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
+          <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🏦</span>
+              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-medium">Total Managed</span>
+            </div>
+            <div className="text-2xl font-bold text-[var(--accent)]">{totalManaged.toFixed(2)}</div>
+            <div className="text-[10px] text-[var(--text-muted)] mt-1">SOL (liquid + staked + agent)</div>
+          </div>
+          <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">💰</span>
+              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-medium">Vault Liquid</span>
+            </div>
+            <div className="text-2xl font-bold">{vaultBalance.toFixed(2)}</div>
+            <div className="text-[10px] text-[var(--text-muted)] mt-1">SOL available</div>
+          </div>
+          <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">⚡</span>
+              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-medium">Staked</span>
+            </div>
+            <div className="text-2xl font-bold text-[var(--accent)]">{onChainStaked.toFixed(2)}</div>
+            <div className="text-[10px] text-[var(--text-muted)] mt-1">{activePositionCount} active · {deactivatingPositionCount} deactivating</div>
+          </div>
+          <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🤖</span>
+              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-medium">Agent Wallet</span>
+            </div>
+            <div className="text-2xl font-bold">{agentBalance.toFixed(2)}</div>
+            <div className="text-[10px] text-[var(--text-muted)] mt-1">SOL for tx fees</div>
+          </div>
           <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
@@ -137,30 +181,6 @@ export default function MonitorPage() {
             <div className="text-[10px] text-[var(--text-muted)] mt-1">
               Every {schedule?.cronIntervalHours ?? 8}h cycle
             </div>
-          </div>
-          <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">⚡</span>
-              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-medium">Staked</span>
-            </div>
-            <div className="text-2xl font-bold text-[var(--accent)]">{totalStaked.toFixed(2)}</div>
-            <div className="text-[10px] text-[var(--text-muted)] mt-1">SOL across {positions.filter(p => p.status === "active").length} positions</div>
-          </div>
-          <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">👁</span>
-              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-medium">Commissions Tracked</span>
-            </div>
-            <div className="text-2xl font-bold">{commissionTracked}</div>
-            <div className="text-[10px] text-[var(--text-muted)] mt-1">Validators monitored</div>
-          </div>
-          <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border)]">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">💰</span>
-              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide font-medium">Vault Balance</span>
-            </div>
-            <div className="text-2xl font-bold">{vaultBalance.toFixed(2)}</div>
-            <div className="text-[10px] text-[var(--text-muted)] mt-1">SOL available</div>
           </div>
         </div>
 

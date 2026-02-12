@@ -1,6 +1,82 @@
 [
   {
     "type": "check",
+    "summary": "Agent check complete. 17 active positions, vault 7.70 SOL",
+    "amount": 7.701436108,
+    "timestamp": "2026-02-12T00:00:10.242Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to DarkSalt-1 (5% comm)",
+    "txSignature": "5J1A2BKYTKiKtPjuKVpmo1psqLH2wp58DyVdFNKC48vKs2Awa7sdjfnXACiMyiurWNrbWHvnr3ger5hsRHrRoYdw",
+    "validator": "AZwhuCe3DJ5RrGenvYTUjJJG8u6fQKLBTHLY5RkwNVpV",
+    "amount": 2.27543816,
+    "timestamp": "2026-02-12T00:00:09.867Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27543816 SOL to AZwhuCe3...",
+    "txSignature": "5J1A2BKYTKiKtPjuKVpmo1psqLH2wp58DyVdFNKC48vKs2Awa7sdjfnXACiMyiurWNrbWHvnr3ger5hsRHrRoYdw",
+    "validator": "AZwhuCe3DJ5RrGenvYTUjJJG8u6fQKLBTHLY5RkwNVpV",
+    "amount": 2.27543816,
+    "timestamp": "2026-02-12T00:00:09.867Z"
+  },
+  {
+    "type": "check",
+    "summary": "Agent check complete. 14 active positions, vault 9.98 SOL",
+    "amount": 9.979157148,
+    "timestamp": "2026-02-11T16:00:13.491Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to polkachu.com (0% comm)",
+    "txSignature": "PrvwEpvtTCRrRWwRHhFMej7MVxWzye1fc4nwpcw5zVamMDtvM2QfWQbD1xjC1CHDtHzWmSVBpoMvhMWtJReGZ5q",
+    "validator": "vouNpQ4b6mZRAKHG312QrBhbG3t5QdBLRuWXr2YYevo",
+    "amount": 2.27546816,
+    "timestamp": "2026-02-11T16:00:13.375Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27546816 SOL to vouNpQ4b...",
+    "txSignature": "PrvwEpvtTCRrRWwRHhFMej7MVxWzye1fc4nwpcw5zVamMDtvM2QfWQbD1xjC1CHDtHzWmSVBpoMvhMWtJReGZ5q",
+    "validator": "vouNpQ4b6mZRAKHG312QrBhbG3t5QdBLRuWXr2YYevo",
+    "amount": 2.27546816,
+    "timestamp": "2026-02-11T16:00:13.374Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to Solid State (10% comm)",
+    "txSignature": "5YawpWfu8iNEEjDmnsjYZvuTqfi8ZodySmpDK6EoUfaXwgTYFjRWyqpa7BirqjBgPWD8NNGudivdh8XUR8c8mfk3",
+    "validator": "HBmjVZ1TjLRdC1j3dbxLAFsNY3KkrmzYbbCYTAg7i28P",
+    "amount": 2.27546816,
+    "timestamp": "2026-02-11T16:00:12.322Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27546816 SOL to HBmjVZ1T...",
+    "txSignature": "5YawpWfu8iNEEjDmnsjYZvuTqfi8ZodySmpDK6EoUfaXwgTYFjRWyqpa7BirqjBgPWD8NNGudivdh8XUR8c8mfk3",
+    "validator": "HBmjVZ1TjLRdC1j3dbxLAFsNY3KkrmzYbbCYTAg7i28P",
+    "amount": 2.27546816,
+    "timestamp": "2026-02-11T16:00:12.321Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.28 SOL to Superteam South Africa Validator (8% comm)",
+    "txSignature": "3NoeeNhcc7y69WyUXzR6q4fjAZWzaoY55QqQ6xgdkx8hXdn4cq4hp6MwWRdnUYzu8C7ASqcMWyuqQM9XwzzyA6xS",
+    "validator": "StsaCN2kL9JUTRziGNDCY3j3wuaqQuoSgGkGsBRGvQL",
+    "amount": 2.27546816,
+    "timestamp": "2026-02-11T16:00:11.617Z"
+  },
+  {
+    "type": "stake",
+    "summary": "Staked 2.27546816 SOL to StsaCN2k...",
+    "txSignature": "3NoeeNhcc7y69WyUXzR6q4fjAZWzaoY55QqQ6xgdkx8hXdn4cq4hp6MwWRdnUYzu8C7ASqcMWyuqQM9XwzzyA6xS",
+    "validator": "StsaCN2kL9JUTRziGNDCY3j3wuaqQuoSgGkGsBRGvQL",
+    "amount": 2.27546816,
+    "timestamp": "2026-02-11T16:00:11.617Z"
+  },
+  {
+    "type": "check",
     "summary": "Agent check complete. 12 active positions, vault 16.81 SOL",
     "amount": 16.812410268,
     "timestamp": "2026-02-11T14:52:03.588Z"
